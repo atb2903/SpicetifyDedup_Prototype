@@ -279,3 +279,4 @@ This WP is mostly configuration; the only test introduced is the architecture te
 ## Activity Log
 
 - 2026-06-02T16:03:56Z – claude – shell_pid=43064 – Assigned agent via action command
+- 2026-06-02T16:18:03Z – claude – shell_pid=43064 – Ready for review: zustand installed, 100% coverage gate active, hexagonal architecture import test landed, Spicetify.Platform RootlistAPI/LibraryAPI typed. Note: added typescript + @types/node as devDeps and updated tsconfig.json types[] to include 'node' (out of owned_files but required to satisfy tsc gate).

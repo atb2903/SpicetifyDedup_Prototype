@@ -23,10 +23,10 @@ Parallel opportunities: WP02 + WP03 after WP01; WP07 + WP08 after WP06.
 
 | ID | Description | WP | Parallel |
 |----|-------------|----|----------|
-| T001 | Install `zustand` runtime dep | WP01 | |
-| T002 | Add `@vitest/coverage-v8` + configure thresholds | WP01 | [P] |
-| T003 | Architecture import-graph test | WP01 | [P] |
-| T004 | Ambient types for Platform.RootlistAPI + LibraryAPI | WP01 | [P] |
+| T001 | Install `zustand` runtime dep | WP01 | | [D] |
+| T002 | Add `@vitest/coverage-v8` + configure thresholds | WP01 | [D] |
+| T003 | Architecture import-graph test | WP01 | [D] |
+| T004 | Ambient types for Platform.RootlistAPI + LibraryAPI | WP01 | [D] |
 | T005 | TDD load-state FSM types + transition fn | WP02 | |
 | T006 | Boundary tests for FSM (items.length 0/1/N) | WP02 | |
 | T007 | TDD PlaylistsLoaderError class + classifier | WP02 | [P] |
@@ -78,10 +78,10 @@ Parallel opportunities: WP02 + WP03 after WP01; WP07 + WP08 after WP06.
 
 **Included subtasks**:
 
-- [ ] T001 Install `zustand` as a runtime dependency
-- [ ] T002 Add `@vitest/coverage-v8` and configure 100 % thresholds in `vitest.config.ts`
-- [ ] T003 Write architecture import-graph test at `test/architecture.test.ts`
-- [ ] T004 Create ambient typings for `Spicetify.Platform.RootlistAPI` + `LibraryAPI` at `src/types/spicetify-platform.d.ts`
+- [x] T001 Install `zustand` as a runtime dependency
+- [x] T002 Add `@vitest/coverage-v8` and configure 100 % thresholds in `vitest.config.ts`
+- [x] T003 Write architecture import-graph test at `test/architecture.test.ts`
+- [x] T004 Create ambient typings for `Spicetify.Platform.RootlistAPI` + `LibraryAPI` at `src/types/spicetify-platform.d.ts`
 
 **Prompt**: [`tasks/WP01-scaffolding-and-gates.md`](tasks/WP01-scaffolding-and-gates.md)
 

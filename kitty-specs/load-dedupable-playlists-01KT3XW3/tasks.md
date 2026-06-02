@@ -46,10 +46,10 @@ Parallel opportunities: WP02 + WP03 after WP01; WP07 + WP08 after WP06.
 | T021 | TDD SpicetifyPlaylistsLoader (validation + normalization) | WP05 | | [D] |
 | T022 | Test every PlaylistsLoaderError reason via stubGlobal | WP05 | | [D] |
 | T023 | Verify production adapter passes contract suite | WP05 | | [D] |
-| T024 | TDD createPlaylistsStore factory (initial state) | WP06 | |
-| T025 | Test triggerLoad happy path (idle → loading → loaded) | WP06 | |
-| T026 | Test triggerLoad empty/failure + wrapping | WP06 | |
-| T027 | Test retry from failed re-enters loading | WP06 | |
+| T024 | TDD createPlaylistsStore factory (initial state) | WP06 | | [D] |
+| T025 | Test triggerLoad happy path (idle → loading → loaded) | WP06 | | [D] |
+| T026 | Test triggerLoad empty/failure + wrapping | WP06 | | [D] |
+| T027 | Test retry from failed re-enters loading | WP06 | | [D] |
 | T028 | TDD IdleView (trigger button) | WP07 | [P] |
 | T029 | TDD LoadingView (non-blocking indicator) | WP07 | [P] |
 | T030 | TDD EmptyView (distinct empty copy) | WP07 | [P] |
@@ -212,10 +212,10 @@ Parallel opportunities: WP02 + WP03 after WP01; WP07 + WP08 after WP06.
 
 **Included subtasks**:
 
-- [ ] T024 TDD `src/store/playlists-store.ts` — `createPlaylistsStore(loader)` factory; initial state `{ loadState: { kind: 'idle' } }`; no port calls before `triggerLoad`
-- [ ] T025 Test `triggerLoad` happy path: `idle → loading → loaded` with non-empty items
-- [ ] T026 Test `triggerLoad` empty path (zero eligible) and failure path; non-`PlaylistsLoaderError` is wrapped into `'rootlist-fetch-failed'` with `cause`
-- [ ] T027 Test `retry` from `failed` re-enters `loading` and dispatches the next outcome
+- [x] T024 TDD `src/store/playlists-store.ts` — `createPlaylistsStore(loader)` factory; initial state `{ loadState: { kind: 'idle' } }`; no port calls before `triggerLoad`
+- [x] T025 Test `triggerLoad` happy path: `idle → loading → loaded` with non-empty items
+- [x] T026 Test `triggerLoad` empty path (zero eligible) and failure path; non-`PlaylistsLoaderError` is wrapped into `'rootlist-fetch-failed'` with `cause`
+- [x] T027 Test `retry` from `failed` re-enters `loading` and dispatches the next outcome
 
 **Prompt**: [`tasks/WP06-zustand-load-state-store.md`](tasks/WP06-zustand-load-state-store.md)
 

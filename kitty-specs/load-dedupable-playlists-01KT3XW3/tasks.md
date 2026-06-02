@@ -37,10 +37,10 @@ Parallel opportunities: WP02 + WP03 after WP01; WP07 + WP08 after WP06.
 | T012 | TDD toViewModels happy path | WP03 | | [D] |
 | T013 | Test view-model edge cases (placeholder, long names, owner variants) | WP03 | | [D] |
 | T014 | TDD isRawCollection classifier predicate | WP03 | [D] |
-| T015 | Define PlaylistsLoader port interface | WP04 | |
-| T016 | Implement FakePlaylistsLoader | WP04 | |
-| T017 | Write cross-implementation contract test | WP04 | |
-| T018 | Verify fake adapter passes contract suite | WP04 | |
+| T015 | Define PlaylistsLoader port interface | WP04 | | [D] |
+| T016 | Implement FakePlaylistsLoader | WP04 | | [D] |
+| T017 | Write cross-implementation contract test | WP04 | | [D] |
+| T018 | Verify fake adapter passes contract suite | WP04 | | [D] |
 | T019 | Capture Platform.RootlistAPI live fixture | WP05 | |
 | T020 | Capture Platform.LibraryAPI Liked Songs fixture | WP05 | |
 | T021 | TDD SpicetifyPlaylistsLoader (validation + normalization) | WP05 | |
@@ -159,10 +159,10 @@ Parallel opportunities: WP02 + WP03 after WP01; WP07 + WP08 after WP06.
 
 **Included subtasks**:
 
-- [ ] T015 Define `PlaylistsLoader` interface in `src/ports/playlists-loader.ts`
-- [ ] T016 Implement `FakePlaylistsLoader` in `src/adapters/fake-playlists-loader.ts` (in-memory; success and `throws` variants)
-- [ ] T017 Write `test/ports/playlists-loader-contract.test.ts` — shared test suite parameterized over any `PlaylistsLoader`
-- [ ] T018 Run the contract suite against the fake; cover every `PlaylistsLoaderError` reason via failure-mode fixtures
+- [x] T015 Define `PlaylistsLoader` interface in `src/ports/playlists-loader.ts`
+- [x] T016 Implement `FakePlaylistsLoader` in `src/adapters/fake-playlists-loader.ts` (in-memory; success and `throws` variants)
+- [x] T017 Write `test/ports/playlists-loader-contract.test.ts` — shared test suite parameterized over any `PlaylistsLoader`
+- [x] T018 Run the contract suite against the fake; cover every `PlaylistsLoaderError` reason via failure-mode fixtures
 
 **Prompt**: [`tasks/WP04-port-fake-adapter-contract-test.md`](tasks/WP04-port-fake-adapter-contract-test.md)
 

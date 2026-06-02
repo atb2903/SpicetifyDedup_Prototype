@@ -1,4 +1,7 @@
+### AI Assistant data and cache directories
 .claude/
+.kittify/
+.claudeignore
 
 # Build output (spicetify-creator --out=dist)
 dist/
@@ -147,3 +150,31 @@ out
 .svelte-kit
 
 # End of https://www.toptal.com/developers/gitignore/api/node
+
+# Added by Spec Kitty CLI (auto-managed)
+.codex/
+.vibe/
+.opencode/
+.windsurf/
+.gemini/
+.cursor/
+.qwen/
+.kilocode/
+.augment/
+.roo/
+.amazonq/
+.kiro/
+.agent/
+.github/copilot/
+.kittify/.dashboard
+.kittify/charter/context-state.json
+.kittify/charter/directives.yaml
+.kittify/charter/governance.yaml
+.kittify/charter/metadata.yaml
+.kittify/charter/references.yaml
+.kittify/dossiers/
+.kittify/events/
+.kittify/merge-state.json
+.kittify/missions/__pycache__/
+.kittify/runtime/
+.kittify/workspaces/

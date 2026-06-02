@@ -12,7 +12,7 @@ requirement_refs:
 - NFR-003
 planning_base_branch: get_library
 merge_target_branch: get_library
-branch_strategy: Planning base = merge target = `get_library`. Each WP's execution worktree is allocated by `spec-kitty agent action implement WP09 --agent <name>`; the lane and workspace path are resolved from `lanes.json` after `finalize-tasks`.
+branch_strategy: Planning artifacts for this feature were generated on get_library. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into get_library unless the human explicitly redirects the landing branch.
 subtasks:
 - T035
 - T036

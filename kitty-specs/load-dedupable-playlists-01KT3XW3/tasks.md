@@ -31,12 +31,12 @@ Parallel opportunities: WP02 + WP03 after WP01; WP07 + WP08 after WP06.
 | T006 | Boundary tests for FSM (items.length 0/1/N) | WP02 | | [D] |
 | T007 | TDD PlaylistsLoaderError class + classifier | WP02 | [D] |
 | T008 | Test every PlaylistsLoaderErrorReason value | WP02 | | [D] |
-| T009 | TDD eligibility predicate | WP03 | [P] |
-| T010 | TDD ordering rule (identity, extensible) | WP03 | [P] |
-| T011 | Define domain types in view-models module | WP03 | |
-| T012 | TDD toViewModels happy path | WP03 | |
-| T013 | Test view-model edge cases (placeholder, long names, owner variants) | WP03 | |
-| T014 | TDD isRawCollection classifier predicate | WP03 | [P] |
+| T009 | TDD eligibility predicate | WP03 | [D] |
+| T010 | TDD ordering rule (identity, extensible) | WP03 | [D] |
+| T011 | Define domain types in view-models module | WP03 | | [D] |
+| T012 | TDD toViewModels happy path | WP03 | | [D] |
+| T013 | Test view-model edge cases (placeholder, long names, owner variants) | WP03 | | [D] |
+| T014 | TDD isRawCollection classifier predicate | WP03 | [D] |
 | T015 | Define PlaylistsLoader port interface | WP04 | |
 | T016 | Implement FakePlaylistsLoader | WP04 | |
 | T017 | Write cross-implementation contract test | WP04 | |
@@ -130,12 +130,12 @@ Parallel opportunities: WP02 + WP03 after WP01; WP07 + WP08 after WP06.
 
 **Included subtasks**:
 
-- [ ] T009 TDD `src/domain/eligibility.ts` — truth table over (`isOwnedByMe`, `isCollaborative`, `canEdit`)
-- [ ] T010 TDD `src/domain/ordering.ts` — order-preserving function with extension point for future iterations
-- [ ] T011 Define domain types in `src/domain/view-models.ts` (`RawCollection`, `LikedSongsSummary`, `OwnerIdentity`, `CollectionViewModel`, `CollectionKind`)
-- [ ] T012 TDD `toViewModels(eligible, likedSongs)` — happy path with Liked Songs pinned
-- [ ] T013 Test view-model edge cases — placeholder image when `imageUrl === null`, very long names, owner identity variants (`'self'` / `'other'` / `'system-library'`)
-- [ ] T014 TDD `isRawCollection(x): x is RawCollection` classifier predicate
+- [x] T009 TDD `src/domain/eligibility.ts` — truth table over (`isOwnedByMe`, `isCollaborative`, `canEdit`)
+- [x] T010 TDD `src/domain/ordering.ts` — order-preserving function with extension point for future iterations
+- [x] T011 Define domain types in `src/domain/view-models.ts` (`RawCollection`, `LikedSongsSummary`, `OwnerIdentity`, `CollectionViewModel`, `CollectionKind`)
+- [x] T012 TDD `toViewModels(eligible, likedSongs)` — happy path with Liked Songs pinned
+- [x] T013 Test view-model edge cases — placeholder image when `imageUrl === null`, very long names, owner identity variants (`'self'` / `'other'` / `'system-library'`)
+- [x] T014 TDD `isRawCollection(x): x is RawCollection` classifier predicate
 
 **Prompt**: [`tasks/WP03-domain-eligibility-ordering-view-models.md`](tasks/WP03-domain-eligibility-ordering-view-models.md)
 

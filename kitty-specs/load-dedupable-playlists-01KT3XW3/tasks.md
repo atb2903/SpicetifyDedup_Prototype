@@ -41,11 +41,11 @@ Parallel opportunities: WP02 + WP03 after WP01; WP07 + WP08 after WP06.
 | T016 | Implement FakePlaylistsLoader | WP04 | | [D] |
 | T017 | Write cross-implementation contract test | WP04 | | [D] |
 | T018 | Verify fake adapter passes contract suite | WP04 | | [D] |
-| T019 | Capture Platform.RootlistAPI live fixture | WP05 | |
-| T020 | Capture Platform.LibraryAPI Liked Songs fixture | WP05 | |
-| T021 | TDD SpicetifyPlaylistsLoader (validation + normalization) | WP05 | |
-| T022 | Test every PlaylistsLoaderError reason via stubGlobal | WP05 | |
-| T023 | Verify production adapter passes contract suite | WP05 | |
+| T019 | Capture Platform.RootlistAPI live fixture | WP05 | | [D] |
+| T020 | Capture Platform.LibraryAPI Liked Songs fixture | WP05 | | [D] |
+| T021 | TDD SpicetifyPlaylistsLoader (validation + normalization) | WP05 | | [D] |
+| T022 | Test every PlaylistsLoaderError reason via stubGlobal | WP05 | | [D] |
+| T023 | Verify production adapter passes contract suite | WP05 | | [D] |
 | T024 | TDD createPlaylistsStore factory (initial state) | WP06 | |
 | T025 | Test triggerLoad happy path (idle → loading → loaded) | WP06 | |
 | T026 | Test triggerLoad empty/failure + wrapping | WP06 | |
@@ -184,11 +184,11 @@ Parallel opportunities: WP02 + WP03 after WP01; WP07 + WP08 after WP06.
 
 **Included subtasks**:
 
-- [ ] T019 Open the running Spotify client; capture `Platform.RootlistAPI` response shape into `test/adapters/fixtures/rootlist-response.sample.json`
-- [ ] T020 Capture `Platform.LibraryAPI` Liked Songs summary shape into `test/adapters/fixtures/liked-songs-response.sample.json`
-- [ ] T021 TDD `src/adapters/spicetify-playlists-loader.ts` — host-availability checks, shape validation, normalization to domain types
-- [ ] T022 Test every `PlaylistsLoaderError` reason via `vi.stubGlobal`-driven fixture variants
-- [ ] T023 Re-run the contract suite from WP04 against the production adapter; verify mutation APIs (`.add`, `.remove`) are stubbed and asserted zero-call
+- [x] T019 Open the running Spotify client; capture `Platform.RootlistAPI` response shape into `test/adapters/fixtures/rootlist-response.sample.json`
+- [x] T020 Capture `Platform.LibraryAPI` Liked Songs summary shape into `test/adapters/fixtures/liked-songs-response.sample.json`
+- [x] T021 TDD `src/adapters/spicetify-playlists-loader.ts` — host-availability checks, shape validation, normalization to domain types
+- [x] T022 Test every `PlaylistsLoaderError` reason via `vi.stubGlobal`-driven fixture variants
+- [x] T023 Re-run the contract suite from WP04 against the production adapter; verify mutation APIs (`.add`, `.remove`) are stubbed and asserted zero-call
 
 **Prompt**: [`tasks/WP05-spicetify-production-adapter.md`](tasks/WP05-spicetify-production-adapter.md)
 

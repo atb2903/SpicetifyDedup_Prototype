@@ -432,3 +432,4 @@ Cover every reason: `host-unavailable`, `host-auth-expired`, `rootlist-fetch-fai
 ## Activity Log
 
 - 2026-06-02T22:25:41Z – claude – shell_pid=85546 – Started implementation via action command
+- 2026-06-02T22:53:43Z – claude – shell_pid=85546 – Production SpicetifyPlaylistsLoader complete: live rootlist + liked-songs fixtures captured & redacted (augmented with synthetic collaborative + nested folder per brief authorization), adapter implemented test-first against the captured shapes, all 10 PlaylistsLoaderErrorReason values exercised, no-mutation invariant tested, shared runPlaylistsLoaderContract from WP04 passes against the production adapter via a stub factory. npm run test:run 255/255 green; tsc --noEmit clean; v8 coverage 100% lines/branches/functions/statements. host-auth-expired branch covered via stubbed 401/token-expired/token-invalid rejections; the empirical detector may need refinement once a real auth-expiry signal is observed in the live client.

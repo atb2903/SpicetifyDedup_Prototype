@@ -13,6 +13,8 @@ subtasks:
 - T016
 - T017
 - T018
+agent: "claude"
+shell_pid: "83814"
 history:
 - timestamp: '2026-06-02T11:11:28Z'
   action: created
@@ -326,3 +328,7 @@ Black-box per DIRECTIVE_036. The contract test treats the loader as an opaque ob
 - Open `src/adapters/fake-playlists-loader.ts`. Verify it implements `PlaylistsLoader` (the interface is in the `implements` clause). Confirm `callCount` semantics.
 - Open `test/ports/playlists-loader-contract.test.ts`. Verify `runPlaylistsLoaderContract` is exported. Verify all 10 reason values from the union are exercised. Confirm at least one test for the empty-library path.
 - Confirm the architecture test still passes. The new test file under `test/ports/` does not violate any rule.
+
+## Activity Log
+
+- 2026-06-02T22:20:40Z – claude – shell_pid=83814 – Started implementation via action command

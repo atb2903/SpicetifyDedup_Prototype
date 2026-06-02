@@ -464,3 +464,7 @@ For non-`PlaylistsLoaderError` wrapping, construct an ad-hoc `PlaylistsLoader` i
 - Confirm `triggerLoad`'s dispatch decision matches the spec: empty state ONLY when both `playlists` (filtered to eligible) is empty AND `likedSongs.trackCount === 0`.
 - Confirm `retry` gates on the prior state being `failed`.
 - Architecture test green.
+
+## Activity Log
+
+- 2026-06-02T23:01:05Z – unknown – Ready for review

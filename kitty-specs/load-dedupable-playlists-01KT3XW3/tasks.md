@@ -27,10 +27,10 @@ Parallel opportunities: WP02 + WP03 after WP01; WP07 + WP08 after WP06.
 | T002 | Add `@vitest/coverage-v8` + configure thresholds | WP01 | [D] |
 | T003 | Architecture import-graph test | WP01 | [D] |
 | T004 | Ambient types for Platform.RootlistAPI + LibraryAPI | WP01 | [D] |
-| T005 | TDD load-state FSM types + transition fn | WP02 | |
-| T006 | Boundary tests for FSM (items.length 0/1/N) | WP02 | |
-| T007 | TDD PlaylistsLoaderError class + classifier | WP02 | [P] |
-| T008 | Test every PlaylistsLoaderErrorReason value | WP02 | |
+| T005 | TDD load-state FSM types + transition fn | WP02 | | [D] |
+| T006 | Boundary tests for FSM (items.length 0/1/N) | WP02 | | [D] |
+| T007 | TDD PlaylistsLoaderError class + classifier | WP02 | [D] |
+| T008 | Test every PlaylistsLoaderErrorReason value | WP02 | | [D] |
 | T009 | TDD eligibility predicate | WP03 | [P] |
 | T010 | TDD ordering rule (identity, extensible) | WP03 | [P] |
 | T011 | Define domain types in view-models module | WP03 | |
@@ -105,10 +105,10 @@ Parallel opportunities: WP02 + WP03 after WP01; WP07 + WP08 after WP06.
 
 **Included subtasks**:
 
-- [ ] T005 TDD `src/domain/load-state.ts` — types + pure `transition(state, action)` fn
-- [ ] T006 Boundary tests for FSM: items.length at 0, 1, 2, and 1,000
-- [ ] T007 TDD `src/domain/errors.ts` — `PlaylistsLoaderError` class + `isPlaylistsLoaderError` classifier
-- [ ] T008 Test error construction for every `PlaylistsLoaderErrorReason` union member
+- [x] T005 TDD `src/domain/load-state.ts` — types + pure `transition(state, action)` fn
+- [x] T006 Boundary tests for FSM: items.length at 0, 1, 2, and 1,000
+- [x] T007 TDD `src/domain/errors.ts` — `PlaylistsLoaderError` class + `isPlaylistsLoaderError` classifier
+- [x] T008 Test error construction for every `PlaylistsLoaderErrorReason` union member
 
 **Prompt**: [`tasks/WP02-domain-load-state-and-errors.md`](tasks/WP02-domain-load-state-and-errors.md)
 

@@ -1,0 +1,11 @@
+vcs:
+  type: git
+agents:
+  available:
+  - claude
+  auto_commit: true
+project:
+  uuid: 24531aaf-c5f9-4a3d-8be9-425fc613bdb7
+  slug: spicetifydedup-prototype
+  node_id: 464db0becd91
+  build_id: d36e1ce3-8b69-4d7e-99da-83ff10855435

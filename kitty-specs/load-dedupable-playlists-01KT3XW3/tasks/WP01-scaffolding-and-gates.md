@@ -7,11 +7,15 @@ requirement_refs:
 planning_base_branch: get_library
 merge_target_branch: get_library
 branch_strategy: Planning artifacts for this feature were generated on get_library. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into get_library unless the human explicitly redirects the landing branch.
+base_branch: kitty/mission-load-dedupable-playlists-01KT3XW3
+base_commit: 44c4ede6fc0218c40912e338565efaceb61b0eec
+created_at: '2026-06-02T15:17:19.249630+00:00'
 subtasks:
 - T001
 - T002
 - T003
 - T004
+shell_pid: '45850'
 history:
 - timestamp: '2026-06-02T11:11:28Z'
   action: created

@@ -1,7 +1,7 @@
 {
-  "event_count": 9,
-  "last_event_id": "01KT4DWMHFKAWK8X4H9SAWGHXS",
-  "materialized_at": "2026-06-02T15:05:31.951431+00:00",
+  "event_count": 11,
+  "last_event_id": "01KT4EJ7C1RVG8V3V5995V4S7C",
+  "materialized_at": "2026-06-02T15:17:19.361995+00:00",
   "mission_number": "",
   "mission_slug": "load-dedupable-playlists-01KT3XW3",
   "mission_type": "software-dev",
@@ -12,17 +12,17 @@
     "claimed": 0,
     "done": 0,
     "for_review": 0,
-    "in_progress": 0,
+    "in_progress": 1,
     "in_review": 0,
-    "planned": 9
+    "planned": 8
   },
   "work_packages": {
     "WP01": {
-      "actor": "finalize-tasks",
+      "actor": "implement-command",
       "force_count": 1,
-      "lane": "planned",
-      "last_event_id": "01KT4DWMC3VT1E7E8W2BK3TSKB",
-      "last_transition_at": "2026-06-02T15:05:31.779395+00:00"
+      "lane": "in_progress",
+      "last_event_id": "01KT4EJ7C1RVG8V3V5995V4S7C",
+      "last_transition_at": "2026-06-02T15:17:19.361995+00:00"
     },
     "WP02": {
       "actor": "finalize-tasks",

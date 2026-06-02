@@ -350,3 +350,4 @@ Per the charter, every numeric bound has boundary tests; the only numeric bound 
 ## Activity Log
 
 - 2026-06-02T16:35:26Z – claude – shell_pid=43064 – Started implementation via action command
+- 2026-06-02T21:05:13Z – claude – shell_pid=43064 – Ready for review: load-state FSM + PlaylistsLoaderError, 72 tests, 100% coverage, tsc clean

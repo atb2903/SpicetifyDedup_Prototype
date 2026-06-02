@@ -15,7 +15,8 @@ subtasks:
 - T002
 - T003
 - T004
-shell_pid: '43064'
+shell_pid: "43064"
+agent: "claude"
 history:
 - timestamp: '2026-06-02T11:11:28Z'
   action: created
@@ -274,3 +275,7 @@ This WP is mostly configuration; the only test introduced is the architecture te
 - Open `test/architecture.test.ts`. Verify the rules table matches ADR-0001. Trace each regex back to a forbidden import the ADR forbids.
 - Open `src/types/spicetify-platform.d.ts`. Verify it augments the namespace (does not re-declare; no `export {}` if not needed) and that the methods declared are only the ones the adapter will actually use. Anything more is over-typed for this WP.
 - Confirm no `src/` files were created in the `domain/`, `ports/`, `adapters/`, `store/`, or `ui/` directories — those belong to later WPs.
+
+## Activity Log
+
+- 2026-06-02T16:03:56Z – claude – shell_pid=43064 – Assigned agent via action command

@@ -20,6 +20,8 @@ subtasks:
 - T012
 - T013
 - T014
+agent: "claude"
+shell_pid: "73248"
 history:
 - timestamp: '2026-06-02T11:11:28Z'
   action: created
@@ -536,3 +538,7 @@ Per the charter's boundary-testing rule: covered numeric bounds are `trackCount`
 - Confirm `src/domain/view-models.ts` matches `data-model.md` §2–§5 exactly. Types must agree letter-for-letter.
 - Confirm `eligibility.ts` is the boolean predicate, nothing more. No host-shape checks in here — those belong in the adapter.
 - Confirm `ordering.ts` returns a shallow copy of its input (callers shouldn't accidentally mutate the original).
+
+## Activity Log
+
+- 2026-06-02T21:00:16Z – claude – shell_pid=73248 – Started implementation via action command

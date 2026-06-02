@@ -1,10 +1,12 @@
 {
   "created_at": "2026-06-02T10:25:37.131713+00:00",
-  "friendly_name": "load dedupable playlists",
+  "friendly_name": "Load Dedup-able Playlists",
   "mission_id": "01KT3XW3AWY8W0YJKCE9TYNQKX",
   "mission_number": null,
   "mission_slug": "load-dedupable-playlists-01KT3XW3",
   "mission_type": "software-dev",
   "slug": "load-dedupable-playlists-01KT3XW3",
-  "target_branch": "get_library"
+  "source_description": "Replace the Dedup page's Hello World placeholder with a list of the user's dedup-able playlists: playlists they own, collaborative playlists they can edit, and Liked Songs. Playlist-level metadata only; no track enumeration in this iteration; simple vertical list with no selection affordances.",
+  "target_branch": "get_library",
+  "vcs": "git"
 }

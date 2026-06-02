@@ -15,6 +15,8 @@ subtasks:
 - T021
 - T022
 - T023
+agent: "claude"
+shell_pid: "85546"
 history:
 - timestamp: '2026-06-02T11:11:28Z'
   action: created
@@ -426,3 +428,7 @@ Cover every reason: `host-unavailable`, `host-auth-expired`, `rootlist-fetch-fai
 - Confirm the architecture test still passes — no imports from `store/` or `ui/` in this file.
 - Run the test suite. Coverage at 100 %.
 - Spot-check one of the error-reason tests by deliberately corrupting a single rootlist item in the fixture; confirm the right reason is thrown. Revert.
+
+## Activity Log
+
+- 2026-06-02T22:25:41Z – claude – shell_pid=85546 – Started implementation via action command

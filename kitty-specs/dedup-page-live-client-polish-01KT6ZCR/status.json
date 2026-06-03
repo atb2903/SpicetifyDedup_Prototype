@@ -1,0 +1,56 @@
+{
+  "event_count": 5,
+  "last_event_id": "01KT7EHMS2J1VDZX7YWCVJ3F51",
+  "materialized_at": "2026-06-03T19:14:43.618572+00:00",
+  "mission_number": "",
+  "mission_slug": "dedup-page-live-client-polish-01KT6ZCR",
+  "mission_type": "software-dev",
+  "summary": {
+    "approved": 0,
+    "blocked": 0,
+    "canceled": 0,
+    "claimed": 0,
+    "done": 0,
+    "for_review": 0,
+    "in_progress": 0,
+    "in_review": 0,
+    "planned": 5
+  },
+  "work_packages": {
+    "WP01": {
+      "actor": "finalize-tasks",
+      "force_count": 1,
+      "lane": "planned",
+      "last_event_id": "01KT7EHMKRSQSKK02Q4K9184F4",
+      "last_transition_at": "2026-06-03T19:14:43.448137+00:00"
+    },
+    "WP02": {
+      "actor": "finalize-tasks",
+      "force_count": 1,
+      "lane": "planned",
+      "last_event_id": "01KT7EHMR56F8QKS731P3JK9B8",
+      "last_transition_at": "2026-06-03T19:14:43.589941+00:00"
+    },
+    "WP03": {
+      "actor": "finalize-tasks",
+      "force_count": 1,
+      "lane": "planned",
+      "last_event_id": "01KT7EHMRG1BWGW1PMFNBKNH50",
+      "last_transition_at": "2026-06-03T19:14:43.600287+00:00"
+    },
+    "WP04": {
+      "actor": "finalize-tasks",
+      "force_count": 1,
+      "lane": "planned",
+      "last_event_id": "01KT7EHMRT0065P34J7HKCWC6Q",
+      "last_transition_at": "2026-06-03T19:14:43.610245+00:00"
+    },
+    "WP05": {
+      "actor": "finalize-tasks",
+      "force_count": 1,
+      "lane": "planned",
+      "last_event_id": "01KT7EHMS2J1VDZX7YWCVJ3F51",
+      "last_transition_at": "2026-06-03T19:14:43.618572+00:00"
+    }
+  }
+}

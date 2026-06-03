@@ -1,0 +1,136 @@
+{
+  "version": 1,
+  "mission_slug": "dedup-page-live-client-polish-01KT6ZCR",
+  "mission_id": "01KT6ZCR2FHBG8FBB61HA41QC3",
+  "mission_branch": "kitty/mission-dedup-page-live-client-polish-01KT6ZCR",
+  "target_branch": "get_library",
+  "lanes": [
+    {
+      "lane_id": "lane-a",
+      "wp_ids": [
+        "WP01"
+      ],
+      "write_scope": [
+        "README.md",
+        "src/ui/DedupPage.module.scss",
+        "src/ui/DedupPage.tsx",
+        "test/app.test.tsx",
+        "test/ui/DedupPage.test.tsx"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "app-shell",
+        "artifact-rendering",
+        "workspace"
+      ],
+      "depends_on_lanes": [],
+      "parallel_group": 0
+    },
+    {
+      "lane_id": "lane-b",
+      "wp_ids": [
+        "WP02"
+      ],
+      "write_scope": [
+        "src/styles/_tokens.module.scss",
+        "src/ui/EmptyView.module.scss",
+        "src/ui/EmptyView.tsx",
+        "src/ui/FailedView.module.scss",
+        "src/ui/FailedView.tsx",
+        "src/ui/IdleView.module.scss",
+        "src/ui/IdleView.tsx",
+        "src/ui/LikedSongsRow.module.scss",
+        "src/ui/LikedSongsRow.tsx",
+        "src/ui/LoadedView.module.scss",
+        "src/ui/LoadedView.tsx",
+        "src/ui/LoadingView.module.scss",
+        "src/ui/LoadingView.tsx",
+        "src/ui/PlaylistRow.module.scss",
+        "src/ui/PlaylistRow.tsx",
+        "test/ui/EmptyView.test.tsx",
+        "test/ui/FailedView.test.tsx",
+        "test/ui/IdleView.test.tsx",
+        "test/ui/LikedSongsRow.test.tsx",
+        "test/ui/LoadedView.test.tsx",
+        "test/ui/LoadingView.test.tsx",
+        "test/ui/PlaylistRow.test.tsx"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "app-shell",
+        "artifact-rendering",
+        "workspace"
+      ],
+      "depends_on_lanes": [],
+      "parallel_group": 0
+    },
+    {
+      "lane_id": "lane-c",
+      "wp_ids": [
+        "WP03"
+      ],
+      "write_scope": [
+        ".claude/adr/0004-navigation-port.md",
+        "src/adapters/spicetify-navigation.ts",
+        "src/app.tsx",
+        "src/ports/navigation.ts",
+        "src/store/NavigationContext.tsx",
+        "test/adapters/fake-navigation.ts",
+        "test/adapters/spicetify-navigation.test.ts",
+        "test/ports/navigation-port-contract.test.ts",
+        "test/store/NavigationContext.test.tsx"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "app-shell",
+        "artifact-rendering",
+        "legacy-cleanup",
+        "tests",
+        "tracker-integration",
+        "workspace"
+      ],
+      "depends_on_lanes": [],
+      "parallel_group": 0
+    },
+    {
+      "lane_id": "lane-d",
+      "wp_ids": [
+        "WP04"
+      ],
+      "write_scope": [
+        "src/adapters/spicetify-playlists-loader.ts",
+        "test/adapters/fixtures/rootlist-response.sample.json",
+        "test/adapters/spicetify-playlists-loader.test.ts"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "artifact-rendering",
+        "legacy-cleanup",
+        "workspace"
+      ],
+      "depends_on_lanes": [],
+      "parallel_group": 0
+    },
+    {
+      "lane_id": "lane-e",
+      "wp_ids": [
+        "WP05"
+      ],
+      "write_scope": [
+        "src/store/playlists-store.ts",
+        "test/store/playlists-store.test.ts"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "app-shell",
+        "tracker-integration",
+        "workspace"
+      ],
+      "depends_on_lanes": [],
+      "parallel_group": 0
+    }
+  ],
+  "computed_at": "2026-06-03T19:14:43.631275+00:00",
+  "computed_from": "dependency_graph+ownership",
+  "planning_artifact_wps": []
+}

@@ -9,7 +9,7 @@ requirement_refs:
 - FR-013
 planning_base_branch: get_library
 merge_target_branch: get_library
-branch_strategy: Per-lane worktree off get_library; merge back to get_library on done. WP-03 depends on this lane.
+branch_strategy: Planning artifacts for this feature were generated on get_library. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into get_library unless the human explicitly redirects the landing branch.
 subtasks:
 - T027
 - T028

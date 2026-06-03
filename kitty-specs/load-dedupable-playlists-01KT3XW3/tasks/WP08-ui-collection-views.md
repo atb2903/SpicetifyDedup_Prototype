@@ -420,3 +420,7 @@ Per the charter boundary-testing rule: covered numeric bounds in this WP are `tr
 - Confirm `PlaylistRow` and `LikedSongsRow` accept their row as a prop (testable in isolation).
 - Confirm `LoadedView` dispatches by `kind` field, not by index — pinning is a domain-layer responsibility, not a UI responsibility.
 - Architecture test green.
+
+## Activity Log
+
+- 2026-06-03T09:13:38Z – unknown – Ready for review

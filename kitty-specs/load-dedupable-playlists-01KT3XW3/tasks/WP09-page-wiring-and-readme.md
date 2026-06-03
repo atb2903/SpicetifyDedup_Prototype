@@ -377,3 +377,4 @@ The live verification step (T038) requires a working dev environment: Spotify in
 ## Activity Log
 
 - 2026-06-03T09:14:58Z – claude – shell_pid=154091 – Started implementation via action command
+- 2026-06-03T09:19:44Z – claude – shell_pid=154091 – Live verification (T038 step 2) deferred: requires interactive Spotify desktop session + DevTools driving. README updated; automated tests + 100% coverage all green. Reviewer/user should run npm run build + spicetify apply, then exercise the four DevTools assertions before merge.

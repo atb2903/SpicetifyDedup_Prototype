@@ -471,3 +471,4 @@ For non-`PlaylistsLoaderError` wrapping, construct an ad-hoc `PlaylistsLoader` i
 
 - 2026-06-02T23:01:05Z – unknown – Ready for review
 - 2026-06-03T12:07:18Z – claude – shell_pid=172066 – Started review via action command
+- 2026-06-03T12:07:52Z – claude – shell_pid=172066 – Review passed: factory + FSM dispatch correct (empty iff eligible=[] AND likedSongs.trackCount=0); non-PlaylistsLoaderError throws wrapped as rootlist-fetch-failed with cause preserved; retry gated on prior state=failed (no-op from idle/loaded/empty all tested); imports PlaylistsLoader from ports/; 100% coverage on full suite (358 tests); tsc clean; architecture test green

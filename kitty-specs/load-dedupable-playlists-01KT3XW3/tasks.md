@@ -57,10 +57,10 @@ Parallel opportunities: WP02 + WP03 after WP01; WP07 + WP08 after WP06.
 | T032 | TDD PlaylistRow (owner labels, placeholder cover) | WP08 | [D] |
 | T033 | TDD LikedSongsRow (system row) | WP08 | [D] |
 | T034 | TDD LoadedView (iterates view models, pins Liked Songs) | WP08 | | [D] |
-| T035 | Wire singleton store + replace Hello World in app.tsx | WP09 | |
-| T036 | TDD DedupPage routing (LoadState.kind → view) | WP09 | |
-| T037 | Delete Hello World smoke test; verify 100 % coverage | WP09 | |
-| T038 | Update README + manual verification in live Spotify client | WP09 | |
+| T035 | Wire singleton store + replace Hello World in app.tsx | WP09 | | [D] |
+| T036 | TDD DedupPage routing (LoadState.kind → view) | WP09 | | [D] |
+| T037 | Delete Hello World smoke test; verify 100 % coverage | WP09 | | [D] |
+| T038 | Update README + manual verification in live Spotify client | WP09 | | [D] |
 
 ---
 
@@ -290,10 +290,10 @@ Parallel opportunities: WP02 + WP03 after WP01; WP07 + WP08 after WP06.
 
 **Included subtasks**:
 
-- [ ] T035 Wire singleton store with production adapter; replace `src/app.tsx` Hello World with `<DedupPage />`
-- [ ] T036 TDD `src/ui/DedupPage.tsx` + test — routes `LoadState.kind` to the right view (Idle/Loading/Loaded/Empty/Failed)
-- [ ] T037 Delete `test/app.test.tsx` (Hello World smoke test, superseded by DedupPage test); confirm coverage still 100 %
-- [ ] T038 Update `README.md` + perform manual verification in a running Spotify client (zero pre-trigger fetches, happy path, failure path, retry)
+- [x] T035 Wire singleton store with production adapter; replace `src/app.tsx` Hello World with `<DedupPage />`
+- [x] T036 TDD `src/ui/DedupPage.tsx` + test — routes `LoadState.kind` to the right view (Idle/Loading/Loaded/Empty/Failed)
+- [x] T037 Delete `test/app.test.tsx` (Hello World smoke test, superseded by DedupPage test); confirm coverage still 100 %
+- [x] T038 Update `README.md` + perform manual verification in a running Spotify client (zero pre-trigger fetches, happy path, failure path, retry)
 
 **Prompt**: [`tasks/WP09-page-wiring-and-readme.md`](tasks/WP09-page-wiring-and-readme.md)
 

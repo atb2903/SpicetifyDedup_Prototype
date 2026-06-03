@@ -411,3 +411,7 @@ For this prompt, assume the provider/hook live in `src/store/playlists-store.ts`
   - `FailedView` reads only `loadState` and `retry` from the store, not other fields.
 - Run the architecture test. Should be green.
 - Check the `EXPLANATIONS` table — every reason maps to a unique, user-friendly explanation. Push back on any "TODO" or "internal-error" strings — they should be replaced with concrete user-facing copy.
+
+## Activity Log
+
+- 2026-06-03T09:01:00Z – unknown – Start WP07 implementation

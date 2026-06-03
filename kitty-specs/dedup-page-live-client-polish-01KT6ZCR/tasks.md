@@ -69,11 +69,11 @@ The index is a reference table; `mark-status` does NOT operate on it (see per-WP
 | T019 | TDD `NavigationProvider` (`src/store/NavigationContext.tsx`) — navigation-aware reset hook | WP-03 | — |
 | T020 | Wire `src/app.tsx` — wrap with `<NavigationProvider>` + construct `SpicetifyNavigation` | WP-03 | — |
 | T021 | Live probe — confirm History.listen fires across navigate-away/back | WP-03 | — |
-| T022 | Live probe — observed rootlist `type` distribution (informational) | WP-04 | — |
-| T023 | TDD failing fixture test — `playlist-v2` node appears in adapter output (F-1, F-2) | WP-04 | — |
-| T024 | Extend `rootlist-response.sample.json` with `playlist-v2` node | WP-04 | — |
-| T025 | Adapter — widen `walkItems` branch to accept `playlist-v2` | WP-04 | — |
-| T026 | TDD boundary tests F-3, F-4, F-5 (`playlist-v3` skipped, folder recursion, show/episode skipped) | WP-04 | [P] |
+| T022 | Live probe — observed rootlist `type` distribution (informational) | WP-04 | — | [D] |
+| T023 | TDD failing fixture test — `playlist-v2` node appears in adapter output (F-1, F-2) | WP-04 | — | [D] |
+| T024 | Extend `rootlist-response.sample.json` with `playlist-v2` node | WP-04 | — | [D] |
+| T025 | Adapter — widen `walkItems` branch to accept `playlist-v2` | WP-04 | — | [D] |
+| T026 | TDD boundary tests F-3, F-4, F-5 (`playlist-v3` skipped, folder recursion, show/episode skipped) | WP-04 | [D] |
 | T027 | TDD reset() R-1..R-5 (one failing test per source FSM state) | WP-05 | — |
 | T028 | Implement `reset()` in store; declare in `PlaylistsState` type | WP-05 | — |
 | T029 | TDD R-6 concurrency test — late `load-succeeded` after `reset` stays idle | WP-05 | [P] |
@@ -200,11 +200,11 @@ Live probes (T001, T021, T022) are captured into the WP's working notes during i
 
 **Subtasks (tracking)**:
 
-- [ ] T022 Live probe — observed rootlist `type` distribution (informational) (WP-04)
-- [ ] T023 TDD failing fixture test — `playlist-v2` node appears in adapter output (F-1, F-2) (WP-04)
-- [ ] T024 Extend `rootlist-response.sample.json` with `playlist-v2` node (WP-04)
-- [ ] T025 Adapter — widen `walkItems` branch to accept `playlist-v2` (WP-04)
-- [ ] T026 TDD boundary tests F-3, F-4, F-5 (`playlist-v3` skipped, folder recursion, show/episode skipped) (WP-04)
+- [x] T022 Live probe — observed rootlist `type` distribution (informational) (WP-04)
+- [x] T023 TDD failing fixture test — `playlist-v2` node appears in adapter output (F-1, F-2) (WP-04)
+- [x] T024 Extend `rootlist-response.sample.json` with `playlist-v2` node (WP-04)
+- [x] T025 Adapter — widen `walkItems` branch to accept `playlist-v2` (WP-04)
+- [x] T026 TDD boundary tests F-3, F-4, F-5 (`playlist-v3` skipped, folder recursion, show/episode skipped) (WP-04)
 
 **Implementation sketch**:
 1. T022 — paste research.md §5 snippet in DevTools, record output. Inform fixture choice (synthetic node sufficient if zero observed; capture real node if any).

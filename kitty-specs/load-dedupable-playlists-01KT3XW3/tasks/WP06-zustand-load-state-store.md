@@ -20,6 +20,8 @@ subtasks:
 - T025
 - T026
 - T027
+agent: "claude"
+shell_pid: "172066"
 history:
 - timestamp: '2026-06-02T11:11:28Z'
   action: created
@@ -468,3 +470,4 @@ For non-`PlaylistsLoaderError` wrapping, construct an ad-hoc `PlaylistsLoader` i
 ## Activity Log
 
 - 2026-06-02T23:01:05Z – unknown – Ready for review
+- 2026-06-03T12:07:18Z – claude – shell_pid=172066 – Started review via action command

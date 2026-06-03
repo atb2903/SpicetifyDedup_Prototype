@@ -159,7 +159,7 @@ Live probes (T001, T021, T022) are captured into the WP's working notes during i
 **Defect closed**: spec §1 P3, FR-008 wiring.
 **Requirements**: FR-008. Also introduces ADR-0004 (DIRECTIVE_003).
 **Independent test**: navigate-away + return → page lands on idle state. Verified via the navigation port contract test + an integration test against the `FakeNavigation` adapter.
-**Dependencies**: **WP-05** (`NavigationProvider` calls `s.reset` from the store; that action must exist).
+**Dependencies**: WP05 (`NavigationProvider` calls `s.reset` from the store; that action must exist). Depends on WP05.
 **Estimated prompt size**: ~470 lines.
 
 **Subtasks (tracking)**:

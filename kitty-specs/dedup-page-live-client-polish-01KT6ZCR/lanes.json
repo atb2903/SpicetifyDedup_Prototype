@@ -67,6 +67,7 @@
     {
       "lane_id": "lane-c",
       "wp_ids": [
+        "WP05",
         "WP03"
       ],
       "write_scope": [
@@ -75,10 +76,12 @@
         "src/app.tsx",
         "src/ports/navigation.ts",
         "src/store/NavigationContext.tsx",
+        "src/store/playlists-store.ts",
         "test/adapters/fake-navigation.ts",
         "test/adapters/spicetify-navigation.test.ts",
         "test/ports/navigation-port-contract.test.ts",
-        "test/store/NavigationContext.test.tsx"
+        "test/store/NavigationContext.test.tsx",
+        "test/store/playlists-store.test.ts"
       ],
       "predicted_surfaces": [
         "api",
@@ -110,27 +113,24 @@
       ],
       "depends_on_lanes": [],
       "parallel_group": 0
-    },
-    {
-      "lane_id": "lane-e",
-      "wp_ids": [
-        "WP05"
-      ],
-      "write_scope": [
-        "src/store/playlists-store.ts",
-        "test/store/playlists-store.test.ts"
-      ],
-      "predicted_surfaces": [
-        "api",
-        "app-shell",
-        "tracker-integration",
-        "workspace"
-      ],
-      "depends_on_lanes": [],
-      "parallel_group": 0
     }
   ],
-  "computed_at": "2026-06-03T19:14:43.631275+00:00",
+  "computed_at": "2026-06-03T19:15:38.478621+00:00",
   "computed_from": "dependency_graph+ownership",
-  "planning_artifact_wps": []
+  "planning_artifact_wps": [],
+  "collapse_report": {
+    "events": [
+      {
+        "wp_a": "WP03",
+        "wp_b": "WP05",
+        "rule": "dependency",
+        "evidence": "WP03 depends on WP05"
+      }
+    ],
+    "total_merges": 1,
+    "independent_wps_collapsed": 0,
+    "by_rule": {
+      "dependency": 1
+    }
+  }
 }

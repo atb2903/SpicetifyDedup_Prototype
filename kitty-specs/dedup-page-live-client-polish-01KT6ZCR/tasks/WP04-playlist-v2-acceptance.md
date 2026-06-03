@@ -18,7 +18,8 @@ subtasks:
 - T024
 - T025
 - T026
-shell_pid: '221378'
+shell_pid: "221378"
+agent: "claude:opus-4-7:implementer:implementer"
 history:
 - timestamp: '2026-06-03T19:01:12Z'
   actor: tasks-generator
@@ -246,3 +247,7 @@ A reviewer should check:
 - Changing `toRawCollection`'s field mapping (unless T022/T023 reveal divergent fields — escalates the WP scope).
 - Amending the prior mission's `data-model.md` (NFR-010 forbids the half-done shape).
 - Changes to `fake-playlists-loader.ts` (it's a port-level fake; its fixture is independent).
+
+## Activity Log
+
+- 2026-06-03T20:34:10Z – claude:opus-4-7:implementer:implementer – shell_pid=221378 – Assigned agent via action command

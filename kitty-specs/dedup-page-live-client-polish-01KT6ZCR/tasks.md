@@ -74,12 +74,12 @@ The index is a reference table; `mark-status` does NOT operate on it (see per-WP
 | T024 | Extend `rootlist-response.sample.json` with `playlist-v2` node | WP-04 | — | [D] |
 | T025 | Adapter — widen `walkItems` branch to accept `playlist-v2` | WP-04 | — | [D] |
 | T026 | TDD boundary tests F-3, F-4, F-5 (`playlist-v3` skipped, folder recursion, show/episode skipped) | WP-04 | [D] |
-| T027 | TDD reset() R-1..R-5 (one failing test per source FSM state) | WP-05 | — |
-| T028 | Implement `reset()` in store; declare in `PlaylistsState` type | WP-05 | — |
-| T029 | TDD R-6 concurrency test — late `load-succeeded` after `reset` stays idle | WP-05 | [P] |
-| T030 | TDD triggerLoad T-1..T-4 (one failing test per non-`idle` source state) | WP-05 | — |
-| T031 | Implement `triggerLoad` idle-gate (narrowed precondition mirroring `retry`) | WP-05 | — |
-| T032 | T-5 regression assertion — `triggerLoad` from idle still loads | WP-05 | [P] |
+| T027 | TDD reset() R-1..R-5 (one failing test per source FSM state) | WP-05 | — | [D] |
+| T028 | Implement `reset()` in store; declare in `PlaylistsState` type | WP-05 | — | [D] |
+| T029 | TDD R-6 concurrency test — late `load-succeeded` after `reset` stays idle | WP-05 | [D] |
+| T030 | TDD triggerLoad T-1..T-4 (one failing test per non-`idle` source state) | WP-05 | — | [D] |
+| T031 | Implement `triggerLoad` idle-gate (narrowed precondition mirroring `retry`) | WP-05 | — | [D] |
+| T032 | T-5 regression assertion — `triggerLoad` from idle still loads | WP-05 | [D] |
 
 Live probes (T001, T021, T022) are captured into the WP's working notes during implementation; their output may inform the consolidated mission-DoD artefact (`live-verification.<YYYY-MM-DD>.md`) referenced by NFR-005.
 
@@ -231,12 +231,12 @@ Live probes (T001, T021, T022) are captured into the WP's working notes during i
 
 **Subtasks (tracking)**:
 
-- [ ] T027 TDD reset() R-1..R-5 (one failing test per source FSM state) (WP-05)
-- [ ] T028 Implement `reset()` in store; declare in `PlaylistsState` type (WP-05)
-- [ ] T029 TDD R-6 concurrency test — late `load-succeeded` after `reset` stays idle (WP-05)
-- [ ] T030 TDD triggerLoad T-1..T-4 (one failing test per non-`idle` source state) (WP-05)
-- [ ] T031 Implement `triggerLoad` idle-gate (narrowed precondition mirroring `retry`) (WP-05)
-- [ ] T032 T-5 regression assertion — `triggerLoad` from idle still loads (WP-05)
+- [x] T027 TDD reset() R-1..R-5 (one failing test per source FSM state) (WP-05)
+- [x] T028 Implement `reset()` in store; declare in `PlaylistsState` type (WP-05)
+- [x] T029 TDD R-6 concurrency test — late `load-succeeded` after `reset` stays idle (WP-05)
+- [x] T030 TDD triggerLoad T-1..T-4 (one failing test per non-`idle` source state) (WP-05)
+- [x] T031 Implement `triggerLoad` idle-gate (narrowed precondition mirroring `retry`) (WP-05)
+- [x] T032 T-5 regression assertion — `triggerLoad` from idle still loads (WP-05)
 
 **Implementation sketch**:
 1. T027 — five failing tests in `test/store/playlists-store.test.ts`, one per `loadState.kind` (idle/loading/loaded/empty/failed); each calls `reset()` and asserts state === `{ kind: 'idle' }` + `loader.callCount` unchanged.

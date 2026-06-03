@@ -20,7 +20,8 @@ subtasks:
 - T030
 - T031
 - T032
-shell_pid: '221262'
+shell_pid: "221262"
+agent: "claude:opus-4-7:implementer:implementer"
 history:
 - timestamp: '2026-06-03T19:01:12Z'
   actor: tasks-generator
@@ -280,3 +281,7 @@ A reviewer should check:
 - Modifying the FSM `transition` function (research §6 confirmed the bug is in store wiring, not the FSM).
 - Adding cross-action concurrency guards beyond what R-6 verifies (the FSM's existing ignore-from-wrong-state behavior is sufficient).
 - Exposing `window._dedupStore` for live probes — only for ad-hoc DevTools work, NEVER committed.
+
+## Activity Log
+
+- 2026-06-03T20:34:02Z – claude:opus-4-7:implementer:implementer – shell_pid=221262 – Assigned agent via action command

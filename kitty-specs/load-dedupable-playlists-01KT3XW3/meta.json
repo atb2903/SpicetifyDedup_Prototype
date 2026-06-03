@@ -1,8 +1,22 @@
 {
+  "accept_commit": "490b193520115b79a55cb92f151c1238db5af6cc",
+  "acceptance_history": [
+    {
+      "accept_commit": "490b193520115b79a55cb92f151c1238db5af6cc",
+      "acceptance_mode": "pr",
+      "accepted_at": "2026-06-03T13:53:48.191783+00:00",
+      "accepted_by": "alex",
+      "accepted_from_commit": "f3239889de2b3e9bdaab10649d909c7399d6f07a"
+    }
+  ],
+  "acceptance_mode": "pr",
+  "accepted_at": "2026-06-03T13:53:48.191783+00:00",
+  "accepted_by": "alex",
+  "accepted_from_commit": "f3239889de2b3e9bdaab10649d909c7399d6f07a",
   "created_at": "2026-06-02T10:25:37.131713+00:00",
   "friendly_name": "Load Dedup-able Playlists",
   "mission_id": "01KT3XW3AWY8W0YJKCE9TYNQKX",
-  "mission_number": null,
+  "mission_number": 1,
   "mission_slug": "load-dedupable-playlists-01KT3XW3",
   "mission_type": "software-dev",
   "slug": "load-dedupable-playlists-01KT3XW3",

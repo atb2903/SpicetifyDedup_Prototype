@@ -2,7 +2,25 @@
 
 A Spicetify Custom App that will (eventually) deduplicate your Spotify saved tracks from inside the Spotify desktop client — avoiding the `502 Bad Gateway` that the public `GET /v1/me/tracks` endpoint returns for large libraries.
 
-**Current iteration:** the app renders the literal text `Hello World` on a sidebar page named `Dedup`. The dedup logic itself lands in a later iteration; this iteration exists to prove the build, install, and sidebar-registration loop end-to-end.
+## Current state
+
+The Dedup page (registered in the Spotify sidebar as **Dedup**) renders an
+idle landing surface with a single **Load** button. Clicking the button
+fetches the user's library and lists their dedup-eligible collections:
+
+- Playlists the user owns
+- Collaborative playlists the user can edit
+- Liked Songs (always pinned first)
+
+Followed playlists, Spotify-curated playlists, and other users' playlists
+the user cannot mutate are excluded.
+
+The page is **idle until the user clicks Load** — no Spotify Platform
+calls are issued before the click. A failure during load surfaces a
+typed error explanation and a Retry button.
+
+This iteration is strictly read-only. Track enumeration, duplicate
+detection, and library mutation arrive in later iterations.
 
 ## Prerequisites
 
@@ -24,7 +42,7 @@ npm test          # watch mode
 npm run test:run  # one-shot
 ```
 
-The test suite uses Vitest + happy-dom + React Testing Library. There's currently one smoke test that renders the app component and asserts `Hello World` is in the DOM.
+The test suite uses Vitest + happy-dom + React Testing Library. `npm run test:coverage` enforces 100 % line, branch, function, and statement coverage across `src/`.
 
 ## Build and install into the Spicetify config dir
 
@@ -51,7 +69,7 @@ spicetify config custom_apps spicetify-dedup
 spicetify apply
 ```
 
-Then (re)open Spotify. A new entry labelled `Dedup` will appear in the left sidebar; clicking it opens the page and shows `Hello World`.
+Then (re)open Spotify. A new entry labelled `Dedup` will appear in the left sidebar; clicking it opens the idle landing page with the Load button.
 
 For an active dev loop that keeps the Spotify client in sync as you edit code, use:
 

@@ -1,0 +1,43 @@
+{
+  "items": [
+    {
+      "type": "track",
+      "uri": "spotify:track:6mHuF9xC7kdUfKbcWseHS0",
+      "name": "Dragostea din tei - K3YN0T3 & Acko Techno Remix",
+      "duration": { "milliseconds": 156000 },
+      "album": {
+        "type": "album",
+        "uri": "spotify:album:0RDTmRHS8NznoBrq99Me2Y",
+        "name": "Dragostea din tei (K3YN0T3 & Acko Techno Remix)",
+        "artist": { "type": "artist", "uri": "", "name": "" },
+        "images": [
+          { "url": "spotify:image:ab67616d00001e02dd09a40cc6c35923153a5671", "label": "standard" },
+          { "url": "spotify:image:ab67616d00004851dd09a40cc6c35923153a5671", "label": "small" },
+          { "url": "spotify:image:ab67616d0000b273dd09a40cc6c35923153a5671", "label": "large" },
+          { "url": "spotify:image:ab67616d0000b273dd09a40cc6c35923153a5671", "label": "xlarge" }
+        ],
+        "year": 0,
+        "albumType": "UNKNOWN"
+      },
+      "artists": [
+        { "type": "artist", "uri": "spotify:artist:5M5PjPSiKeXynM6Ohu350r", "name": "O-Zone" },
+        { "type": "artist", "uri": "spotify:artist:6FJVj6JOHaEU7onQS9jH2u", "name": "K3YN0T3" },
+        { "type": "artist", "uri": "spotify:artist:4jiOvEyAn2AHCd4wJuRsBi", "name": "Acko" }
+      ],
+      "discNumber": 1,
+      "trackNumber": 1,
+      "isExplicit": false,
+      "isPlayable": true,
+      "isLocal": false,
+      "is19PlusOnly": false,
+      "addedAt": "2026-06-02T14:53:20.000Z",
+      "hasAssociatedVideo": false,
+      "hasAssociatedAudio": false,
+      "isBanned": false
+    }
+  ],
+  "offset": 0,
+  "limit": 1,
+  "totalLength": 73020,
+  "unfilteredTotalLength": 73020
+}

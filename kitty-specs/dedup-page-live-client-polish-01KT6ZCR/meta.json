@@ -1,10 +1,13 @@
 {
   "created_at": "2026-06-03T14:49:55.138282+00:00",
-  "friendly_name": "dedup page live client polish",
+  "friendly_name": "Dedup Page Live-Client Polish",
   "mission_id": "01KT6ZCR2FHBG8FBB61HA41QC3",
   "mission_number": null,
   "mission_slug": "dedup-page-live-client-polish-01KT6ZCR",
   "mission_type": "software-dev",
   "slug": "dedup-page-live-client-polish-01KT6ZCR",
-  "target_branch": "get_library"
+  "target_branch": "get_library",
+  "vcs": "git",
+  "change_mode": "feature",
+  "source_description": "Follow-up bugfix mission for load-dedupable-playlists-01KT3XW3. Inputs: mission-review.md from the prior mission and the 2026-06-03 live-client diagnostic session. Brief at .claude/load-dedupable-playlists-followup-brief.md. Five defects: P1 topbar overlay blocking Load button (HIGH), P2 missing CSS for all state views and rows (MEDIUM), P3 navigate-away does not reset to idle (MEDIUM), P4 data-model declares playlist-v2 supported but adapter drops it (LOW), P5 triggerLoad is not gated on the idle state (LOW)."
 }

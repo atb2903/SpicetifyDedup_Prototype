@@ -2,7 +2,7 @@
   "event_count": 60,
   "last_event_id": "01KT6PRVF6PPMY9CEXMDVZ2PXM",
   "materialized_at": "2026-06-03T12:19:14.022535+00:00",
-  "mission_number": "",
+  "mission_number": "1",
   "mission_slug": "load-dedupable-playlists-01KT3XW3",
   "mission_type": "software-dev",
   "summary": {

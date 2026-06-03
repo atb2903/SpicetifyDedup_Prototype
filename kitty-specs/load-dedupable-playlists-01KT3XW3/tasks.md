@@ -50,10 +50,10 @@ Parallel opportunities: WP02 + WP03 after WP01; WP07 + WP08 after WP06.
 | T025 | Test triggerLoad happy path (idle → loading → loaded) | WP06 | | [D] |
 | T026 | Test triggerLoad empty/failure + wrapping | WP06 | | [D] |
 | T027 | Test retry from failed re-enters loading | WP06 | | [D] |
-| T028 | TDD IdleView (trigger button) | WP07 | [P] |
-| T029 | TDD LoadingView (non-blocking indicator) | WP07 | [P] |
-| T030 | TDD EmptyView (distinct empty copy) | WP07 | [P] |
-| T031 | TDD FailedView (reason explanation + retry) | WP07 | [P] |
+| T028 | TDD IdleView (trigger button) | WP07 | [D] |
+| T029 | TDD LoadingView (non-blocking indicator) | WP07 | [D] |
+| T030 | TDD EmptyView (distinct empty copy) | WP07 | [D] |
+| T031 | TDD FailedView (reason explanation + retry) | WP07 | [D] |
 | T032 | TDD PlaylistRow (owner labels, placeholder cover) | WP08 | [P] |
 | T033 | TDD LikedSongsRow (system row) | WP08 | [P] |
 | T034 | TDD LoadedView (iterates view models, pins Liked Songs) | WP08 | |
@@ -239,10 +239,10 @@ Parallel opportunities: WP02 + WP03 after WP01; WP07 + WP08 after WP06.
 
 **Included subtasks**:
 
-- [ ] T028 TDD `src/ui/IdleView.tsx` + test — Load button dispatches `triggerLoad`; no port calls before click; ARIA labels present
-- [ ] T029 TDD `src/ui/LoadingView.tsx` + test — non-blocking indicator with `role="status"` and an accessible label
-- [ ] T030 TDD `src/ui/EmptyView.tsx` + test — distinct empty-state copy ("No dedup-eligible collections in your library"); not a spinner, not a failure
-- [ ] T031 TDD `src/ui/FailedView.tsx` + test — explanation derived from `PlaylistsLoaderError.reason` via a small lookup table; retry button dispatches `retry`
+- [x] T028 TDD `src/ui/IdleView.tsx` + test — Load button dispatches `triggerLoad`; no port calls before click; ARIA labels present
+- [x] T029 TDD `src/ui/LoadingView.tsx` + test — non-blocking indicator with `role="status"` and an accessible label
+- [x] T030 TDD `src/ui/EmptyView.tsx` + test — distinct empty-state copy ("No dedup-eligible collections in your library"); not a spinner, not a failure
+- [x] T031 TDD `src/ui/FailedView.tsx` + test — explanation derived from `PlaylistsLoaderError.reason` via a small lookup table; retry button dispatches `retry`
 
 **Prompt**: [`tasks/WP07-ui-state-views.md`](tasks/WP07-ui-state-views.md)
 

@@ -251,3 +251,4 @@ A reviewer should check:
 ## Activity Log
 
 - 2026-06-03T20:34:10Z – claude:opus-4-7:implementer:implementer – shell_pid=221378 – Assigned agent via action command
+- 2026-06-03T20:39:22Z – claude:opus-4-7:implementer:implementer – shell_pid=221378 – Ready for review: adapter widened to accept playlist-v2; F-1..F-5 tests added, 100/100 coverage, full suite green

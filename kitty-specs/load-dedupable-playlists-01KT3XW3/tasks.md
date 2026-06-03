@@ -54,9 +54,9 @@ Parallel opportunities: WP02 + WP03 after WP01; WP07 + WP08 after WP06.
 | T029 | TDD LoadingView (non-blocking indicator) | WP07 | [D] |
 | T030 | TDD EmptyView (distinct empty copy) | WP07 | [D] |
 | T031 | TDD FailedView (reason explanation + retry) | WP07 | [D] |
-| T032 | TDD PlaylistRow (owner labels, placeholder cover) | WP08 | [P] |
-| T033 | TDD LikedSongsRow (system row) | WP08 | [P] |
-| T034 | TDD LoadedView (iterates view models, pins Liked Songs) | WP08 | |
+| T032 | TDD PlaylistRow (owner labels, placeholder cover) | WP08 | [D] |
+| T033 | TDD LikedSongsRow (system row) | WP08 | [D] |
+| T034 | TDD LoadedView (iterates view models, pins Liked Songs) | WP08 | | [D] |
 | T035 | Wire singleton store + replace Hello World in app.tsx | WP09 | |
 | T036 | TDD DedupPage routing (LoadState.kind → view) | WP09 | |
 | T037 | Delete Hello World smoke test; verify 100 % coverage | WP09 | |
@@ -264,9 +264,9 @@ Parallel opportunities: WP02 + WP03 after WP01; WP07 + WP08 after WP06.
 
 **Included subtasks**:
 
-- [ ] T032 TDD `src/ui/PlaylistRow.tsx` + test — name, owner labels (`self` / `other`), track count, cover with placeholder, long-name handling
-- [ ] T033 TDD `src/ui/LikedSongsRow.tsx` + test — fixed "Liked Songs" / "Your Library" copy, distinct styling from playlist rows
-- [ ] T034 TDD `src/ui/LoadedView.tsx` + test — iterates view models; dispatches to row variant by `kind`; preserves order; pins Liked Songs first
+- [x] T032 TDD `src/ui/PlaylistRow.tsx` + test — name, owner labels (`self` / `other`), track count, cover with placeholder, long-name handling
+- [x] T033 TDD `src/ui/LikedSongsRow.tsx` + test — fixed "Liked Songs" / "Your Library" copy, distinct styling from playlist rows
+- [x] T034 TDD `src/ui/LoadedView.tsx` + test — iterates view models; dispatches to row variant by `kind`; preserves order; pins Liked Songs first
 
 **Prompt**: [`tasks/WP08-ui-collection-views.md`](tasks/WP08-ui-collection-views.md)
 

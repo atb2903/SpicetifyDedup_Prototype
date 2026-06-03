@@ -17,6 +17,8 @@ subtasks:
 - T029
 - T030
 - T031
+agent: "claude"
+shell_pid: "172602"
 history:
 - timestamp: '2026-06-02T11:11:28Z'
   action: created
@@ -416,3 +418,4 @@ For this prompt, assume the provider/hook live in `src/store/playlists-store.ts`
 
 - 2026-06-03T09:01:00Z – unknown – Start WP07 implementation
 - 2026-06-03T09:01:42Z – unknown – Ready for review
+- 2026-06-03T12:09:50Z – claude – shell_pid=172602 – Started review via action command

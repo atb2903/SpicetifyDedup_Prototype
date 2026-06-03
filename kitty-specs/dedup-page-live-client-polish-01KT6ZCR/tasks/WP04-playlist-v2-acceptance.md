@@ -9,12 +9,16 @@ requirement_refs:
 planning_base_branch: get_library
 merge_target_branch: get_library
 branch_strategy: Planning artifacts for this feature were generated on get_library. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into get_library unless the human explicitly redirects the landing branch.
+base_branch: kitty/mission-dedup-page-live-client-polish-01KT6ZCR
+base_commit: 497a812dcfef5739a052f84728f45ae753c10d29
+created_at: '2026-06-03T20:34:09.585956+00:00'
 subtasks:
 - T022
 - T023
 - T024
 - T025
 - T026
+shell_pid: '221378'
 history:
 - timestamp: '2026-06-03T19:01:12Z'
   actor: tasks-generator

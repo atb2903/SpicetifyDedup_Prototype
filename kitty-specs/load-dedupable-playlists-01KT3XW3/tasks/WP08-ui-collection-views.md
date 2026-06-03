@@ -424,3 +424,4 @@ Per the charter boundary-testing rule: covered numeric bounds in this WP are `tr
 ## Activity Log
 
 - 2026-06-03T09:13:38Z – unknown – Ready for review
+- 2026-06-03T12:14:56Z – unknown – Review passed: PlaylistRow / LikedSongsRow / LoadedView implemented per spec. JSDoc on every export; full test suite green (358 tests, 100% line/branch/function/statement coverage); architecture test enforces no ui->adapters/ports imports; LoadedView dispatches by row.kind (pinning stays in WP03's domain transform); boundary coverage on trackCount (0/1/nominal/large) and items.length (idle/1/1001 for NFR-002 headroom); tsc --noEmit clean.

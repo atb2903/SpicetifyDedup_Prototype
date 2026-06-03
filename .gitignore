@@ -3,6 +3,9 @@
 .kittify/
 .claudeignore
 
+# spec-kitty mission lane worktrees (Python-managed; never tracked)
+.worktrees/
+
 # Build output (spicetify-creator --out=dist)
 dist/
 

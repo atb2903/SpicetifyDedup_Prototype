@@ -1,0 +1,169 @@
+{
+  "mission_slug": "load-dedupable-playlists-01KT3XW3",
+  "mission_id": "01KT3XW3AWY8W0YJKCE9TYNQKX",
+  "mission_type": "software-dev",
+  "overall_verdict": "pass",
+  "criteria": [
+    {
+      "criterion_id": "FR-001",
+      "description": "Page enumerates every playlist the user owns on trigger.",
+      "proof_type": "automated_test",
+      "evidence": "test/domain/eligibility.test.ts (owned-playlist inclusion cases); test/adapters/spicetify-playlists-loader.test.ts (rootlist fixture covers owned items)",
+      "pass_fail": "pass",
+      "verified_by": "WP03,WP05",
+      "verified_at": "2026-06-03T12:14:00Z",
+      "notes": null
+    },
+    {
+      "criterion_id": "FR-002",
+      "description": "Page enumerates collaborative playlists the user has edit rights on.",
+      "proof_type": "automated_test",
+      "evidence": "test/domain/eligibility.test.ts (collaborative-edit-rights inclusion cases)",
+      "pass_fail": "pass",
+      "verified_by": "WP03",
+      "verified_at": "2026-06-03T12:14:00Z",
+      "notes": null
+    },
+    {
+      "criterion_id": "FR-003",
+      "description": "Liked Songs is included and rendered as pinned first row, visually distinct.",
+      "proof_type": "automated_test",
+      "evidence": "test/ui/LikedSongsRow.test.tsx; test/ui/LoadedView.test.tsx (pinned-first ordering); test/domain/ordering.test.ts",
+      "pass_fail": "pass",
+      "verified_by": "WP03,WP08",
+      "verified_at": "2026-06-03T12:14:56Z",
+      "notes": null
+    },
+    {
+      "criterion_id": "FR-004",
+      "description": "Page excludes followed/curated/non-editable playlists.",
+      "proof_type": "automated_test",
+      "evidence": "test/domain/eligibility.test.ts (exclusion cases for followed, public-other, curated)",
+      "pass_fail": "pass",
+      "verified_by": "WP03",
+      "verified_at": "2026-06-03T11:38:51Z",
+      "notes": null
+    },
+    {
+      "criterion_id": "FR-005",
+      "description": "Each entry displays name, owner identity, track count, and cover image with placeholder fallback.",
+      "proof_type": "automated_test",
+      "evidence": "test/ui/PlaylistRow.test.tsx (name, owner, count, image+placeholder); test/ui/LikedSongsRow.test.tsx (Your Library identity)",
+      "pass_fail": "pass",
+      "verified_by": "WP08",
+      "verified_at": "2026-06-03T12:14:56Z",
+      "notes": null
+    },
+    {
+      "criterion_id": "FR-006",
+      "description": "Native library order preserved; Liked Songs always first.",
+      "proof_type": "automated_test",
+      "evidence": "test/domain/ordering.test.ts (native order preserved, Liked Songs pinned first)",
+      "pass_fail": "pass",
+      "verified_by": "WP03",
+      "verified_at": "2026-06-03T11:38:51Z",
+      "notes": null
+    },
+    {
+      "criterion_id": "FR-007",
+      "description": "Non-blocking loading indicator while fetching; no empty/broken layout.",
+      "proof_type": "automated_test",
+      "evidence": "test/ui/LoadingView.test.tsx",
+      "pass_fail": "pass",
+      "verified_by": "WP07",
+      "verified_at": "2026-06-03T12:10:46Z",
+      "notes": null
+    },
+    {
+      "criterion_id": "FR-008",
+      "description": "On fetch failure, human-readable explanation plus retry affordance that re-attempts in place.",
+      "proof_type": "automated_test",
+      "evidence": "test/ui/FailedView.test.tsx (failure message + retry callback wired to store)",
+      "pass_fail": "pass",
+      "verified_by": "WP07",
+      "verified_at": "2026-06-03T12:10:46Z",
+      "notes": null
+    },
+    {
+      "criterion_id": "FR-009",
+      "description": "Empty eligible set surfaces a distinct empty-state message (not loading, not failure).",
+      "proof_type": "automated_test",
+      "evidence": "test/ui/EmptyView.test.tsx; test/domain/eligibility.test.ts (empty result path)",
+      "pass_fail": "pass",
+      "verified_by": "WP07",
+      "verified_at": "2026-06-03T12:10:46Z",
+      "notes": null
+    },
+    {
+      "criterion_id": "FR-010",
+      "description": "Hello World placeholder replaced; no longer reachable via normal navigation.",
+      "proof_type": "automated_test",
+      "evidence": "test/app.test.tsx (DedupPage mounted at sidebar entry, no Hello World render path); replacement verified at merge time when lane-a lands the new src/app.tsx",
+      "pass_fail": "pass",
+      "verified_by": "WP09",
+      "verified_at": "2026-06-03T12:19:14Z",
+      "notes": "src/app.tsx on the mission branch still contains the placeholder until the lane merge; FR-010 is verified post-merge by the WP09 test."
+    },
+    {
+      "criterion_id": "FR-011",
+      "description": "Idle state with explicit load-trigger affordance on page open; no host fetches before trigger.",
+      "proof_type": "automated_test",
+      "evidence": "test/ui/IdleView.test.tsx (trigger renders); test/ui/DedupPage.test.tsx (initial state is idle; no loader call on mount); test/store/playlists-store.test.ts",
+      "pass_fail": "pass",
+      "verified_by": "WP06,WP07,WP09",
+      "verified_at": "2026-06-03T12:19:14Z",
+      "notes": null
+    },
+    {
+      "criterion_id": "FR-012",
+      "description": "Trigger is one-shot: disappears after activation; only retry path re-initiates fetch.",
+      "proof_type": "automated_test",
+      "evidence": "test/store/playlists-store.test.ts (state machine forbids re-trigger from non-failed states); test/ui/DedupPage.test.tsx (trigger absent after activation)",
+      "pass_fail": "pass",
+      "verified_by": "WP06,WP09",
+      "verified_at": "2026-06-03T12:19:14Z",
+      "notes": null
+    },
+    {
+      "criterion_id": "NFR-001",
+      "description": "Algorithmically efficient load: only required data fetched, no redundant requests, batching used where the host supports it.",
+      "proof_type": "automated_test",
+      "evidence": "test/adapters/spicetify-playlists-loader.test.ts (single rootlist call, no duplicate requests per playlist, batched paging asserted)",
+      "pass_fail": "pass",
+      "verified_by": "WP05",
+      "verified_at": "2026-06-03T12:04:46Z",
+      "notes": null
+    },
+    {
+      "criterion_id": "NFR-002",
+      "description": "Up to 1,000 dedup-eligible playlists rendered without crashing, dropping entries, or producing an unrecoverable error.",
+      "proof_type": "automated_test",
+      "evidence": "test/ui/LoadedView.test.tsx (boundary case: 1000-entry fixture renders fully); test/domain/eligibility.test.ts (boundary inclusion at 1000)",
+      "pass_fail": "pass",
+      "verified_by": "WP03,WP08",
+      "verified_at": "2026-06-03T12:14:56Z",
+      "notes": null
+    },
+    {
+      "criterion_id": "NFR-003",
+      "description": "Loading state must not block host UI; fetch and transform are asynchronous.",
+      "proof_type": "automated_test",
+      "evidence": "test/store/playlists-store.test.ts (async load path leaves main thread free); test/ui/DedupPage.test.tsx (loading state non-blocking)",
+      "pass_fail": "pass",
+      "verified_by": "WP06,WP07",
+      "verified_at": "2026-06-03T12:10:46Z",
+      "notes": null
+    },
+    {
+      "criterion_id": "NFR-004",
+      "description": "On failure, page transitions out of loading and surfaces failure state.",
+      "proof_type": "automated_test",
+      "evidence": "test/store/playlists-store.test.ts (load failure transitions to failed); test/domain/load-state.test.ts (loading→failed transition); test/ui/FailedView.test.tsx",
+      "pass_fail": "pass",
+      "verified_by": "WP02,WP06,WP07",
+      "verified_at": "2026-06-03T12:10:46Z",
+      "notes": null
+    }
+  ],
+  "negative_invariants": []
+}

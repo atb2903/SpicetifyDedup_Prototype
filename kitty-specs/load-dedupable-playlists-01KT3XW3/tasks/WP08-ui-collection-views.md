@@ -14,6 +14,8 @@ subtasks:
 - T032
 - T033
 - T034
+agent: "claude"
+shell_pid: "176684"
 history:
 - timestamp: '2026-06-02T11:11:28Z'
   action: created

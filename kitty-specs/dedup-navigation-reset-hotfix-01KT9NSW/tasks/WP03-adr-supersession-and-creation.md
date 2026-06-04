@@ -12,6 +12,8 @@ subtasks:
 - T012
 - T013
 - T014
+agent: "claude:opus-4-7:implementer:implementer"
+shell_pid: "361914"
 history:
 - timestamp: '2026-06-04T20:07:25Z'
   actor: tasks
@@ -190,3 +192,7 @@ A reviewer of WP03 should:
 
 1. From inside the WP03 worktree: `spec-kitty agent action mark-done WP03 --agent <name> --mission dedup-navigation-reset-hotfix-01KT9NSW`.
 2. Trigger review per the project's mission flow.
+
+## Activity Log
+
+- 2026-06-04T20:26:39Z – claude:opus-4-7:implementer:implementer – shell_pid=361914 – Started implementation via action command

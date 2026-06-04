@@ -47,8 +47,8 @@ Close DEFECT-1 from the prior mission: replace the broken navigation-port listen
 | T014 | Verify WP03 — `contracts/adr-supersession.md` §3 checks: status header on 0004, ADR-0005 exists with `Status: Accepted`, supersession chain readable end-to-end | WP03 | [P] |
 | T015 | Edit `src/ui/LoadingView.module.scss`: `.spinner` width/height `32px` → `64px`; border thickness `3px` → `5px` (tune to `6px` only if live-verification dictates) | WP04 | [P] |
 | T016 | Verify WP04 — existing `test/ui/LoadingView.test.tsx` stays green without modification; full test suite, coverage gate, typecheck all green | WP04 | [P] |
-| T017 | Edit `README.md` (FR-009): in the Dedup-page description paragraph, add a sentence noting the five state views (idle / loading / list / empty / failed) ship with intentional visual styling that distinguishes them at a glance | WP05 | [P] |
-| T018 | Edit `README.md` (FR-010): document the `--dedup-topbar-offset` CSS custom property override hook for users whose Spicetify build's topbar height differs from the 110px default | WP05 | [P] |
+| T017 | Edit `README.md` (FR-009): in the Dedup-page description paragraph, add a sentence noting the five state views (idle / loading / list / empty / failed) ship with intentional visual styling that distinguishes them at a glance | WP05 | [D] |
+| T018 | Edit `README.md` (FR-010): document the `--dedup-topbar-offset` CSS custom property override hook for users whose Spicetify build's topbar height differs from the 110px default | WP05 | [D] |
 
 The `[P]` marker in this index is informational only; per-WP progress tracks via the checkbox rows under each WP heading below.
 
@@ -151,8 +151,8 @@ Depends on WP01.
 
 **Included subtasks**:
 
-- [ ] T017 README FR-009 — styled-state-views note
-- [ ] T018 README FR-010 — `--dedup-topbar-offset` override documentation
+- [x] T017 README FR-009 — styled-state-views note
+- [x] T018 README FR-010 — `--dedup-topbar-offset` override documentation
 
 **Estimated prompt size**: ~160 lines.
 **Implementation sketch**: Two surgical edits. Read the current README first to locate the Dedup-page description paragraph (FR-009 placement) and the existing styling section (FR-010 placement). The sentences should be grammatical drop-ins that match the surrounding tone.

@@ -14,8 +14,8 @@ created_at: '2026-06-04T20:26:56.306375+00:00'
 subtasks:
 - T015
 - T016
-shell_pid: "362042"
-agent: "claude:opus-4-7:implementer:implementer"
+shell_pid: "366054"
+agent: "claude:opus-4-7:reviewer:reviewer"
 history:
 - timestamp: '2026-06-04T20:07:25Z'
   actor: tasks
@@ -142,3 +142,4 @@ A reviewer of WP04 should:
 
 - 2026-06-04T20:26:57Z – claude:opus-4-7:implementer:implementer – shell_pid=362042 – Assigned agent via action command
 - 2026-06-04T20:32:16Z – claude:opus-4-7:implementer:implementer – shell_pid=362042 – Ready for review: spinner enlarged 32->64 px, border 3->5 px; full test suite + coverage + build green
+- 2026-06-04T20:32:32Z – claude:opus-4-7:reviewer:reviewer – shell_pid=366054 – Started review via action command

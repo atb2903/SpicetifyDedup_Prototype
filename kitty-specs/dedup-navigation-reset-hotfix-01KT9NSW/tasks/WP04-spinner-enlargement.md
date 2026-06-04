@@ -14,7 +14,8 @@ created_at: '2026-06-04T20:26:56.306375+00:00'
 subtasks:
 - T015
 - T016
-shell_pid: '362042'
+shell_pid: "362042"
+agent: "claude:opus-4-7:implementer:implementer"
 history:
 - timestamp: '2026-06-04T20:07:25Z'
   actor: tasks
@@ -136,3 +137,7 @@ A reviewer of WP04 should:
 
 1. From inside the WP04 worktree: `spec-kitty agent action mark-done WP04 --agent <name> --mission dedup-navigation-reset-hotfix-01KT9NSW`.
 2. Trigger review per the project's mission flow.
+
+## Activity Log
+
+- 2026-06-04T20:26:57Z – claude:opus-4-7:implementer:implementer – shell_pid=362042 – Assigned agent via action command

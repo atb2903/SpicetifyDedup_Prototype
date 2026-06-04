@@ -61,14 +61,14 @@ The index is a reference table; `mark-status` does NOT operate on it (see per-WP
 | T011 | TDD EmptyView distinct-styling + module.scss + className swap | WP-02 | [D] |
 | T012 | TDD FailedView (retry affordance visible per FR-006) + module.scss + className swap | WP-02 | [D] |
 | T013 | README — note styled state views (NFR-007 portion) | WP-02 | [D] |
-| T014 | Author ADR-0004 (`.claude/adr/0004-navigation-port.md`) | WP-03 | [P] |
-| T015 | Create `src/ports/navigation.ts` (`NavigationPort` interface + JSDoc) | WP-03 | — |
-| T016 | Create `test/adapters/fake-navigation.ts` (`FakeNavigation`) | WP-03 | [P] |
-| T017 | Create `test/ports/navigation-port-contract.test.ts` (parameterized C-1..C-7) | WP-03 | — |
-| T018 | TDD `SpicetifyNavigation` adapter — `test/adapters/spicetify-navigation.test.ts` then `src/adapters/spicetify-navigation.ts` | WP-03 | — |
-| T019 | TDD `NavigationProvider` (`src/store/NavigationContext.tsx`) — navigation-aware reset hook | WP-03 | — |
-| T020 | Wire `src/app.tsx` — wrap with `<NavigationProvider>` + construct `SpicetifyNavigation` | WP-03 | — |
-| T021 | Live probe — confirm History.listen fires across navigate-away/back | WP-03 | — |
+| T014 | Author ADR-0004 (`.claude/adr/0004-navigation-port.md`) | WP-03 | [D] |
+| T015 | Create `src/ports/navigation.ts` (`NavigationPort` interface + JSDoc) | WP-03 | — | [D] |
+| T016 | Create `test/adapters/fake-navigation.ts` (`FakeNavigation`) | WP-03 | [D] |
+| T017 | Create `test/ports/navigation-port-contract.test.ts` (parameterized C-1..C-7) | WP-03 | — | [D] |
+| T018 | TDD `SpicetifyNavigation` adapter — `test/adapters/spicetify-navigation.test.ts` then `src/adapters/spicetify-navigation.ts` | WP-03 | — | [D] |
+| T019 | TDD `NavigationProvider` (`src/store/NavigationContext.tsx`) — navigation-aware reset hook | WP-03 | — | [D] |
+| T020 | Wire `src/app.tsx` — wrap with `<NavigationProvider>` + construct `SpicetifyNavigation` | WP-03 | — | [D] |
+| T021 | Live probe — confirm History.listen fires across navigate-away/back | WP-03 | — | [D] |
 | T022 | Live probe — observed rootlist `type` distribution (informational) | WP-04 | — | [D] |
 | T023 | TDD failing fixture test — `playlist-v2` node appears in adapter output (F-1, F-2) | WP-04 | — | [D] |
 | T024 | Extend `rootlist-response.sample.json` with `playlist-v2` node | WP-04 | — | [D] |
@@ -164,14 +164,14 @@ Live probes (T001, T021, T022) are captured into the WP's working notes during i
 
 **Subtasks (tracking)**:
 
-- [ ] T014 Author ADR-0004 (`.claude/adr/0004-navigation-port.md`) (WP-03)
-- [ ] T015 Create `src/ports/navigation.ts` (`NavigationPort` interface + JSDoc) (WP-03)
-- [ ] T016 Create `test/adapters/fake-navigation.ts` (`FakeNavigation`) (WP-03)
-- [ ] T017 Create `test/ports/navigation-port-contract.test.ts` (parameterized C-1..C-7) (WP-03)
-- [ ] T018 TDD `SpicetifyNavigation` adapter — `test/adapters/spicetify-navigation.test.ts` then `src/adapters/spicetify-navigation.ts` (WP-03)
-- [ ] T019 TDD `NavigationProvider` (`src/store/NavigationContext.tsx`) — navigation-aware reset hook (WP-03)
-- [ ] T020 Wire `src/app.tsx` — wrap with `<NavigationProvider>` + construct `SpicetifyNavigation` (WP-03)
-- [ ] T021 Live probe — confirm History.listen fires across navigate-away/back (WP-03)
+- [x] T014 Author ADR-0004 (`.claude/adr/0004-navigation-port.md`) (WP-03)
+- [x] T015 Create `src/ports/navigation.ts` (`NavigationPort` interface + JSDoc) (WP-03)
+- [x] T016 Create `test/adapters/fake-navigation.ts` (`FakeNavigation`) (WP-03)
+- [x] T017 Create `test/ports/navigation-port-contract.test.ts` (parameterized C-1..C-7) (WP-03)
+- [x] T018 TDD `SpicetifyNavigation` adapter — `test/adapters/spicetify-navigation.test.ts` then `src/adapters/spicetify-navigation.ts` (WP-03)
+- [x] T019 TDD `NavigationProvider` (`src/store/NavigationContext.tsx`) — navigation-aware reset hook (WP-03)
+- [x] T020 Wire `src/app.tsx` — wrap with `<NavigationProvider>` + construct `SpicetifyNavigation` (WP-03)
+- [x] T021 Live probe — confirm History.listen fires across navigate-away/back (WP-03)
 
 **Implementation sketch**:
 1. T014 — author ADR-0004 (decision: navigation port + adapter + provider).

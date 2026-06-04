@@ -54,13 +54,13 @@ The index is a reference table; `mark-status` does NOT operate on it (see per-WP
 | T004 | Create `src/ui/DedupPage.module.scss` with scroll surface + padding-top | WP-01 | — | [D] |
 | T005 | Wire `DedupPage.tsx` to use module class on root wrapper | WP-01 | — | [D] |
 | T006 | Update README — clickable Load button reflected in user-visible copy | WP-01 | [D] |
-| T007 | Create `src/styles/_tokens.module.scss` (--spice-* aliases) | WP-02 | — |
-| T008 | TDD IdleView distinct-styling + module.scss + className swap | WP-02 | [P] |
-| T009 | TDD LoadingView (spinner visible per FR-006) + module.scss + className swap | WP-02 | [P] |
-| T010 | TDD LoadedView + PlaylistRow + LikedSongsRow (row separation FR-004 + placeholder FR-005) + 3 module.scss + className swaps | WP-02 | — |
-| T011 | TDD EmptyView distinct-styling + module.scss + className swap | WP-02 | [P] |
-| T012 | TDD FailedView (retry affordance visible per FR-006) + module.scss + className swap | WP-02 | [P] |
-| T013 | README — note styled state views (NFR-007 portion) | WP-02 | [P] |
+| T007 | Create `src/styles/_tokens.module.scss` (--spice-* aliases) | WP-02 | — | [D] |
+| T008 | TDD IdleView distinct-styling + module.scss + className swap | WP-02 | [D] |
+| T009 | TDD LoadingView (spinner visible per FR-006) + module.scss + className swap | WP-02 | [D] |
+| T010 | TDD LoadedView + PlaylistRow + LikedSongsRow (row separation FR-004 + placeholder FR-005) + 3 module.scss + className swaps | WP-02 | — | [D] |
+| T011 | TDD EmptyView distinct-styling + module.scss + className swap | WP-02 | [D] |
+| T012 | TDD FailedView (retry affordance visible per FR-006) + module.scss + className swap | WP-02 | [D] |
+| T013 | README — note styled state views (NFR-007 portion) | WP-02 | [D] |
 | T014 | Author ADR-0004 (`.claude/adr/0004-navigation-port.md`) | WP-03 | [P] |
 | T015 | Create `src/ports/navigation.ts` (`NavigationPort` interface + JSDoc) | WP-03 | — |
 | T016 | Create `test/adapters/fake-navigation.ts` (`FakeNavigation`) | WP-03 | [P] |
@@ -132,13 +132,13 @@ Live probes (T001, T021, T022) are captured into the WP's working notes during i
 
 **Subtasks (tracking)**:
 
-- [ ] T007 Create `src/styles/_tokens.module.scss` (--spice-* aliases) (WP-02)
-- [ ] T008 TDD IdleView distinct-styling + module.scss + className swap (WP-02)
-- [ ] T009 TDD LoadingView (spinner visible per FR-006) + module.scss + className swap (WP-02)
-- [ ] T010 TDD LoadedView + PlaylistRow + LikedSongsRow (row separation FR-004 + placeholder FR-005) + 3 module.scss + className swaps (WP-02)
-- [ ] T011 TDD EmptyView distinct-styling + module.scss + className swap (WP-02)
-- [ ] T012 TDD FailedView (retry affordance visible per FR-006) + module.scss + className swap (WP-02)
-- [ ] T013 README — note styled state views (NFR-007 portion) (WP-02)
+- [x] T007 Create `src/styles/_tokens.module.scss` (--spice-* aliases) (WP-02)
+- [x] T008 TDD IdleView distinct-styling + module.scss + className swap (WP-02)
+- [x] T009 TDD LoadingView (spinner visible per FR-006) + module.scss + className swap (WP-02)
+- [x] T010 TDD LoadedView + PlaylistRow + LikedSongsRow (row separation FR-004 + placeholder FR-005) + 3 module.scss + className swaps (WP-02)
+- [x] T011 TDD EmptyView distinct-styling + module.scss + className swap (WP-02)
+- [x] T012 TDD FailedView (retry affordance visible per FR-006) + module.scss + className swap (WP-02)
+- [x] T013 README — note styled state views (NFR-007 portion) (WP-02)
 
 **Implementation sketch**:
 1. T007 — write `_tokens.module.scss` aliasing `--spice-text`, `--spice-button`, `--spice-main`, `--spice-card`, `--spice-sidebar` for use by the 7 view modules.

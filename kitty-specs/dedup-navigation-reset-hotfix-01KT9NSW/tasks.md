@@ -31,12 +31,12 @@ Close DEFECT-1 from the prior mission: replace the broken navigation-port listen
 
 | ID | Description | WP | Parallel |
 |----|-------------|----|----------|
-| T001 | RED — Failing test T-new-1 (production-lifecycle mount-time reset, parametrised over `idle`/`loading`/`loaded`/`empty`/`failed`) in new `test/store/RouteResetContext.test.tsx` | WP01 | — |
-| T002 | RED — Failing test T-new-2 (mount/unmount cycle each resets; loader call count exact) | WP01 | — |
-| T003 | RED — Failing test T-new-3 (mount-time reset is synchronous; no `await`/`act()` needed) | WP01 | — |
-| T004 | RED — Port-forward surviving tests T-survive-1..4 to the new file/mechanism (no FakeNavigation, no setPath) | WP01 | — |
-| T005 | GREEN — Implement `src/store/RouteResetContext.tsx` per `contracts/route-reset-provider.md` §1 (JSDoc per §5) | WP01 | — |
-| T006 | Verify WP01 — `npm run test:run -- test/store/RouteResetContext.test.tsx` green; coverage 100/100/100/100 on the new file; typecheck clean | WP01 | — |
+| T001 | RED — Failing test T-new-1 (production-lifecycle mount-time reset, parametrised over `idle`/`loading`/`loaded`/`empty`/`failed`) in new `test/store/RouteResetContext.test.tsx` | WP01 | — | [D] |
+| T002 | RED — Failing test T-new-2 (mount/unmount cycle each resets; loader call count exact) | WP01 | — | [D] |
+| T003 | RED — Failing test T-new-3 (mount-time reset is synchronous; no `await`/`act()` needed) | WP01 | — | [D] |
+| T004 | RED — Port-forward surviving tests T-survive-1..4 to the new file/mechanism (no FakeNavigation, no setPath) | WP01 | — | [D] |
+| T005 | GREEN — Implement `src/store/RouteResetContext.tsx` per `contracts/route-reset-provider.md` §1 (JSDoc per §5) | WP01 | — | [D] |
+| T006 | Verify WP01 — `npm run test:run -- test/store/RouteResetContext.test.tsx` green; coverage 100/100/100/100 on the new file; typecheck clean | WP01 | — | [D] |
 | T007 | Edit `src/app.tsx`: replace `NavigationProvider` import with `RouteResetProvider`, drop `SpicetifyNavigation` construction, drop `navigation` prop on the JSX element | WP02 | — |
 | T008 | Edit `test/app.test.tsx`: drop `NavigationProvider`/`SpicetifyNavigation` stubbing; assert `RouteResetProvider` is mounted | WP02 | — |
 | T009 | Delete the five retired files (`src/ports/navigation.ts`, `src/adapters/spicetify-navigation.ts`, `src/store/NavigationContext.tsx`, `test/adapters/spicetify-navigation.test.ts`, `test/adapters/fake-navigation.ts`, `test/ports/navigation-port-contract.test.ts`, `test/store/NavigationContext.test.tsx`) | WP02 | — |
@@ -62,12 +62,12 @@ The `[P]` marker in this index is informational only; per-WP progress tracks via
 
 **Included subtasks**:
 
-- [ ] T001 RED — Failing test T-new-1 (production-lifecycle mount-time reset, parametrised)
-- [ ] T002 RED — Failing test T-new-2 (mount/unmount cycles each reset; loader call count exact)
-- [ ] T003 RED — Failing test T-new-3 (synchronous mount-time reset)
-- [ ] T004 RED — Port-forward T-survive-1..4 to the new mechanism (no FakeNavigation, no setPath)
-- [ ] T005 GREEN — Implement `src/store/RouteResetContext.tsx`
-- [ ] T006 Verify — test suite + coverage + typecheck clean on the new file
+- [x] T001 RED — Failing test T-new-1 (production-lifecycle mount-time reset, parametrised)
+- [x] T002 RED — Failing test T-new-2 (mount/unmount cycles each reset; loader call count exact)
+- [x] T003 RED — Failing test T-new-3 (synchronous mount-time reset)
+- [x] T004 RED — Port-forward T-survive-1..4 to the new mechanism (no FakeNavigation, no setPath)
+- [x] T005 GREEN — Implement `src/store/RouteResetContext.tsx`
+- [x] T006 Verify — test suite + coverage + typecheck clean on the new file
 
 **Estimated prompt size**: ~380 lines.
 **Implementation sketch**: Write all failing tests first (T001-T004) and commit them as a single RED commit so the TDD discipline is observable in `git log` (NFR-001). Then implement the provider (T005) and commit as GREEN. Verify (T006).

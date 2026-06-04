@@ -42,9 +42,9 @@ Close DEFECT-1 from the prior mission: replace the broken navigation-port listen
 | T009 | Delete the five retired files (`src/ports/navigation.ts`, `src/adapters/spicetify-navigation.ts`, `src/store/NavigationContext.tsx`, `test/adapters/spicetify-navigation.test.ts`, `test/adapters/fake-navigation.ts`, `test/ports/navigation-port-contract.test.ts`, `test/store/NavigationContext.test.tsx`) | WP02 | — |
 | T010 | Verify WP02 — full `npm run test:run`, `npm run test:coverage` (100/100/100/100), `npm run typecheck`, architecture test all green | WP02 | — |
 | T011 | SC-3 grep verification — `grep -r -nE "NavigationPort\|SpicetifyNavigation\|FakeNavigation\|navigation-port-contract" src test` returns zero hits | WP02 | — |
-| T012 | Edit `.claude/adr/0004-navigation-port.md` per `contracts/adr-supersession.md` §1: status flip + appended `## Supersession` section | WP03 | [P] |
-| T013 | Create `.claude/adr/0005-react-lifecycle-reset.md` per `contracts/adr-supersession.md` §2 (Status: Accepted, Context cites diagnostic evidence, Decision shows `useEffect` snippet, Alternatives considered enumerated, Implementation notes reference `RouteResetContext.tsx`) | WP03 | [P] |
-| T014 | Verify WP03 — `contracts/adr-supersession.md` §3 checks: status header on 0004, ADR-0005 exists with `Status: Accepted`, supersession chain readable end-to-end | WP03 | [P] |
+| T012 | Edit `.claude/adr/0004-navigation-port.md` per `contracts/adr-supersession.md` §1: status flip + appended `## Supersession` section | WP03 | [D] |
+| T013 | Create `.claude/adr/0005-react-lifecycle-reset.md` per `contracts/adr-supersession.md` §2 (Status: Accepted, Context cites diagnostic evidence, Decision shows `useEffect` snippet, Alternatives considered enumerated, Implementation notes reference `RouteResetContext.tsx`) | WP03 | [D] |
+| T014 | Verify WP03 — `contracts/adr-supersession.md` §3 checks: status header on 0004, ADR-0005 exists with `Status: Accepted`, supersession chain readable end-to-end | WP03 | [D] |
 | T015 | Edit `src/ui/LoadingView.module.scss`: `.spinner` width/height `32px` → `64px`; border thickness `3px` → `5px` (tune to `6px` only if live-verification dictates) | WP04 | [D] |
 | T016 | Verify WP04 — existing `test/ui/LoadingView.test.tsx` stays green without modification; full test suite, coverage gate, typecheck all green | WP04 | [D] |
 | T017 | Edit `README.md` (FR-009): in the Dedup-page description paragraph, add a sentence noting the five state views (idle / loading / list / empty / failed) ship with intentional visual styling that distinguishes them at a glance | WP05 | [D] |
@@ -110,9 +110,9 @@ Depends on WP01.
 
 **Included subtasks**:
 
-- [ ] T012 ADR-0004 status flip + append `## Supersession` section
-- [ ] T013 Create ADR-0005 per the contract template
-- [ ] T014 Verify per `contracts/adr-supersession.md` §3 (greps + manual end-to-end read)
+- [x] T012 ADR-0004 status flip + append `## Supersession` section
+- [x] T013 Create ADR-0005 per the contract template
+- [x] T014 Verify per `contracts/adr-supersession.md` §3 (greps + manual end-to-end read)
 
 **Estimated prompt size**: ~260 lines.
 **Implementation sketch**: ADR-0004's body is preserved word-for-word (C-007 mandates "reversed not amended" — only the status header and an appended section change). ADR-0005 follows the contract template literally; the Context section cites mission-review.md DEFECT-1 + live-verification.2026-06-04.md §C.1 by absolute path.

@@ -45,8 +45,8 @@ Close DEFECT-1 from the prior mission: replace the broken navigation-port listen
 | T012 | Edit `.claude/adr/0004-navigation-port.md` per `contracts/adr-supersession.md` §1: status flip + appended `## Supersession` section | WP03 | [P] |
 | T013 | Create `.claude/adr/0005-react-lifecycle-reset.md` per `contracts/adr-supersession.md` §2 (Status: Accepted, Context cites diagnostic evidence, Decision shows `useEffect` snippet, Alternatives considered enumerated, Implementation notes reference `RouteResetContext.tsx`) | WP03 | [P] |
 | T014 | Verify WP03 — `contracts/adr-supersession.md` §3 checks: status header on 0004, ADR-0005 exists with `Status: Accepted`, supersession chain readable end-to-end | WP03 | [P] |
-| T015 | Edit `src/ui/LoadingView.module.scss`: `.spinner` width/height `32px` → `64px`; border thickness `3px` → `5px` (tune to `6px` only if live-verification dictates) | WP04 | [P] |
-| T016 | Verify WP04 — existing `test/ui/LoadingView.test.tsx` stays green without modification; full test suite, coverage gate, typecheck all green | WP04 | [P] |
+| T015 | Edit `src/ui/LoadingView.module.scss`: `.spinner` width/height `32px` → `64px`; border thickness `3px` → `5px` (tune to `6px` only if live-verification dictates) | WP04 | [D] |
+| T016 | Verify WP04 — existing `test/ui/LoadingView.test.tsx` stays green without modification; full test suite, coverage gate, typecheck all green | WP04 | [D] |
 | T017 | Edit `README.md` (FR-009): in the Dedup-page description paragraph, add a sentence noting the five state views (idle / loading / list / empty / failed) ship with intentional visual styling that distinguishes them at a glance | WP05 | [D] |
 | T018 | Edit `README.md` (FR-010): document the `--dedup-topbar-offset` CSS custom property override hook for users whose Spicetify build's topbar height differs from the 110px default | WP05 | [D] |
 
@@ -131,8 +131,8 @@ Depends on WP01.
 
 **Included subtasks**:
 
-- [ ] T015 Edit `src/ui/LoadingView.module.scss`: `.spinner` 32→64, border 3→5
-- [ ] T016 Verify — LoadingView test stays green; full suite, coverage gate, typecheck pass
+- [x] T015 Edit `src/ui/LoadingView.module.scss`: `.spinner` 32→64, border 3→5
+- [x] T016 Verify — LoadingView test stays green; full suite, coverage gate, typecheck pass
 
 **Estimated prompt size**: ~180 lines.
 **Implementation sketch**: A single CSS module change. Two numeric edits in one block. The live-verification screenshot capture (NFR-006) happens *outside* this WP — it's mission-DoD work using the post-merge build per `quickstart.md` §2.

@@ -48,12 +48,12 @@ The index is a reference table; `mark-status` does NOT operate on it (see per-WP
 
 | Subtask | Description | WP | Parallel |
 |---|---|---|---|
-| T001 | Live probe — measure topbar bottom + button hit-target (WP-01) | WP-01 | — |
-| T002 | TDD failing test — faux topbar occludes Load button center | WP-01 | — |
-| T003 | Add app.test.tsx smoke regression for clickable Load button | WP-01 | [P] |
-| T004 | Create `src/ui/DedupPage.module.scss` with scroll surface + padding-top | WP-01 | — |
-| T005 | Wire `DedupPage.tsx` to use module class on root wrapper | WP-01 | — |
-| T006 | Update README — clickable Load button reflected in user-visible copy | WP-01 | [P] |
+| T001 | Live probe — measure topbar bottom + button hit-target (WP-01) | WP-01 | — | [D] |
+| T002 | TDD failing test — faux topbar occludes Load button center | WP-01 | — | [D] |
+| T003 | Add app.test.tsx smoke regression for clickable Load button | WP-01 | [D] |
+| T004 | Create `src/ui/DedupPage.module.scss` with scroll surface + padding-top | WP-01 | — | [D] |
+| T005 | Wire `DedupPage.tsx` to use module class on root wrapper | WP-01 | — | [D] |
+| T006 | Update README — clickable Load button reflected in user-visible copy | WP-01 | [D] |
 | T007 | Create `src/styles/_tokens.module.scss` (--spice-* aliases) | WP-02 | — |
 | T008 | TDD IdleView distinct-styling + module.scss + className swap | WP-02 | [P] |
 | T009 | TDD LoadingView (spinner visible per FR-006) + module.scss + className swap | WP-02 | [P] |
@@ -99,12 +99,12 @@ Live probes (T001, T021, T022) are captured into the WP's working notes during i
 
 **Subtasks (tracking — checkbox rows below feed `mark-status`)**:
 
-- [ ] T001 Live probe — measure topbar bottom + button hit-target (WP-01)
-- [ ] T002 TDD failing test — faux topbar occludes Load button center (WP-01)
-- [ ] T003 Add app.test.tsx smoke regression for clickable Load button (WP-01)
-- [ ] T004 Create `src/ui/DedupPage.module.scss` with scroll surface + padding-top (WP-01)
-- [ ] T005 Wire `DedupPage.tsx` to use module class on root wrapper (WP-01)
-- [ ] T006 Update README — clickable Load button reflected in user-visible copy (WP-01)
+- [x] T001 Live probe — measure topbar bottom + button hit-target (WP-01)
+- [x] T002 TDD failing test — faux topbar occludes Load button center (WP-01)
+- [x] T003 Add app.test.tsx smoke regression for clickable Load button (WP-01)
+- [x] T004 Create `src/ui/DedupPage.module.scss` with scroll surface + padding-top (WP-01)
+- [x] T005 Wire `DedupPage.tsx` to use module class on root wrapper (WP-01)
+- [x] T006 Update README — clickable Load button reflected in user-visible copy (WP-01)
 
 **Implementation sketch**:
 1. Probe live: paste research.md §1 snippet in DevTools, record topbar bottom value.

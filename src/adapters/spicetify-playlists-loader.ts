@@ -121,6 +121,27 @@ export class SpicetifyPlaylistsLoader implements PlaylistsLoader {
     return out;
   }
 
+  /**
+   * Recursively walks a rootlist `items[]` array and appends one
+   * `RawCollection` per accepted playlist node to `out`.
+   *
+   * Per-node decisions (kept in sync with the contract in
+   * `kitty-specs/dedup-page-live-client-polish-01KT6ZCR/contracts/adapter-uri-type-acceptance.md` §1):
+   *
+   * - `type === 'folder'` — recurses into `node.items` if present.
+   * - `type === 'playlist'` or `type === 'playlist-v2'` — converted via
+   *   `toRawCollection(node)` and appended to `out`. The `'playlist-v2'`
+   *   acceptance is the FR-010 widening: the data model declares both
+   *   variants valid, and prior to this change only `'playlist'` was
+   *   honored. The widening is by *exact match* on two named types —
+   *   a hypothetical `'playlist-v3'` is NOT accepted.
+   * - any other string (`'show'`, `'episode'`, separators, future kinds)
+   *   — silently skipped.
+   * - non-object entries — throws `PlaylistsLoaderError('rootlist-item-unsupported-shape', …)`.
+   *
+   * @param items - the raw `items[]` array from a rootlist node.
+   * @param out   - accumulator the caller passes in; mutated in place.
+   */
   private walkItems(items: unknown[], out: RawCollection[]): void {
     for (const item of items) {
       if (typeof item !== 'object' || item === null) {
@@ -138,11 +159,12 @@ export class SpicetifyPlaylistsLoader implements PlaylistsLoader {
         }
         continue;
       }
-      if (type === 'playlist') {
+      if (type === 'playlist' || type === 'playlist-v2') {
         out.push(this.toRawCollection(node));
         continue;
       }
-      // Unknown node types (separators, future kinds) are silently skipped.
+      // Unknown node types (separators, future kinds, e.g. a hypothetical
+      // 'playlist-v3', as well as 'show'/'episode') are silently skipped.
     }
   }
 

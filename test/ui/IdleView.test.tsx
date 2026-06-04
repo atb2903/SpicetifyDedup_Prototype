@@ -75,4 +75,37 @@ describe('IdleView', () => {
       screen.getByText(/load your dedup-able playlists/i),
     ).toBeInTheDocument();
   });
+
+  // WP02 / T008 / FR-003 / FR-006: the Load button must read as the page's
+  // visual primary action — non-transparent background, pointer cursor.
+  // Asserts via getComputedStyle (post-CSS-module cascade) rather than by
+  // classname (the CSS-module hash is unstable).
+  it('FR-006 — Load button is visually styled as the primary call to action', () => {
+    const { store } = makeStore();
+    render(
+      <PlaylistsStoreProvider store={store}>
+        <IdleView />
+      </PlaylistsStoreProvider>,
+    );
+    const button = screen.getByRole('button', { name: /load/i });
+    const cs = getComputedStyle(button);
+    expect(cs.backgroundColor).not.toBe('');
+    expect(cs.backgroundColor).not.toBe('rgba(0, 0, 0, 0)');
+    expect(cs.backgroundColor).not.toBe('transparent');
+    expect(cs.cursor).toBe('pointer');
+  });
+
+  // FR-003: the idle view's container has its own layout treatment so the
+  // call to action is centred/distinct from the other state views.
+  it('FR-003 — Idle view container has a non-default flex layout', () => {
+    const { store } = makeStore();
+    const { container } = render(
+      <PlaylistsStoreProvider store={store}>
+        <IdleView />
+      </PlaylistsStoreProvider>,
+    );
+    const root = container.firstChild as HTMLElement;
+    expect(root).not.toBeNull();
+    expect(getComputedStyle(root).display).toBe('flex');
+  });
 });

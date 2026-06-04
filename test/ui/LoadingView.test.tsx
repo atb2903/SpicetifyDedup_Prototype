@@ -33,4 +33,29 @@ describe('LoadingView', () => {
       screen.getByText(/loading your dedup-able playlists/i),
     ).toBeInTheDocument();
   });
+
+  // WP02 / T009 / FR-006: the spinner must be visually recognizable as a
+  // spinner — a CSS animation shorthand is present on the spinner span.
+  // Assert via getComputedStyle on the spinner element (queried by
+  // aria-hidden); we cannot rely on classnames (CSS-module hash is
+  // unstable). happy-dom does not expand the `animation` shorthand into
+  // its longhand `animation-name`, so we assert on the shorthand string.
+  it('FR-006 — Loading view renders a recognisable spinner element with an animation', () => {
+    const { container } = render(<LoadingView />);
+    const spinner = container.querySelector('[aria-hidden="true"]');
+    expect(spinner).not.toBeNull();
+    const cs = getComputedStyle(spinner as Element);
+    expect(cs.animation).not.toBe('');
+    expect(cs.animation).toMatch(/infinite/);
+  });
+
+  // FR-003: the loading container has its own layout (centred flex)
+  // distinguishing it from the idle view's centred layout via the
+  // presence of a spinner element above the copy.
+  it('FR-003 — Loading view container has a non-default flex layout', () => {
+    const { container } = render(<LoadingView />);
+    const root = container.firstChild as HTMLElement;
+    expect(root).not.toBeNull();
+    expect(getComputedStyle(root).display).toBe('flex');
+  });
 });

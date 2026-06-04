@@ -1,0 +1,31 @@
+// Shared theming tokens for the Dedup page (WP02).
+//
+// Aliases the host's `--spice-*` CSS custom properties to `--dedup-*` so
+// the seven view modules pull theming through one indirection. If a
+// Spicetify theme does not declare a given `--spice-*` variable, the
+// fallback colors (Spotify defaults: green primary on near-black) keep
+// the page legible.
+//
+// Each view module references `var(--dedup-*)`, never `var(--spice-*)`
+// directly — a single point of theme contract for the page.
+//
+// Usage: SCSS partial (filename starts with `_`). View modules `@use`
+// it and call `@include tokens.declare();` once at the top level. The
+// mixin emits a `:root` block that declares every `--dedup-*` variable
+// global to the document. Multiple includes emit duplicate rules, which
+// is harmless; the Vite CSS bundler deduplicates identical declarations.
+
+@mixin declare {
+  :root {
+    --dedup-text: var(--spice-text, #fff);
+    --dedup-subtext: var(--spice-subtext, #b3b3b3);
+    --dedup-button: var(--spice-button, #1db954);
+    --dedup-button-hover: var(--spice-button-active, #1ed760);
+    --dedup-button-disabled: var(--spice-button-disabled, #535353);
+    --dedup-card: var(--spice-card, #181818);
+    --dedup-card-hover: var(--spice-card-hover, #282828);
+    --dedup-main: var(--spice-main, #121212);
+    --dedup-sidebar: var(--spice-sidebar, #000);
+    --dedup-error: var(--spice-notification-error, #e22134);
+  }
+}

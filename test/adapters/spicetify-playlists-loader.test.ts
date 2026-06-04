@@ -31,7 +31,9 @@ import likedFixture from './fixtures/liked-songs-response.sample.json';
 /** Minimal host shape for a single playlist node. Fields omitted from the
  * partial are intentionally absent; tests use this to drive missing-field
  * error branches. */
-type HostPlaylist = Record<string, unknown> & { type: 'playlist' };
+type HostPlaylist = Record<string, unknown> & {
+  type: 'playlist' | 'playlist-v2';
+};
 
 function validPlaylist(overrides: Partial<HostPlaylist> = {}): HostPlaylist {
   return {
@@ -149,12 +151,14 @@ describe('SpicetifyPlaylistsLoader — happy path against captured fixture', () 
     });
     const { playlists, likedSongs } = await new SpicetifyPlaylistsLoader().load();
     // Captured fixture: DJ, current batch, new releases, synthetic-collab,
-    // and one nested playlist inside the synthetic folder = 5 playlists.
+    // one synthetic playlist-v2 entry (FR-010 / FR-011), and one nested
+    // playlist inside the synthetic folder = 6 playlists.
     expect(playlists.map((p) => p.uri)).toEqual([
       'spotify:playlist:37i9dQZF1EYkqdzj48dyYq',
       'spotify:playlist:1R399C4c5ojsn96b1xVag3',
       'spotify:playlist:5uXCgEG0Ogjz6mOzuFXWOO',
       'spotify:playlist:SYNTHETICcollab0000000',
+      'spotify:playlist:v2-fixture-1',
       'spotify:playlist:SYNTHETICnested000000',
     ]);
     expect(likedSongs).toEqual<LikedSongsSummary>({ trackCount: 73020 });
@@ -477,6 +481,104 @@ describe('SpicetifyPlaylistsLoader — rootlist normalization', () => {
     });
     const { playlists } = await new SpicetifyPlaylistsLoader().load();
     expect(playlists[0]?.imageUrl).toBeNull();
+  });
+});
+
+// --- playlist-v2 URI-type acceptance (FR-010 / FR-011) ---------------------
+
+describe('SpicetifyPlaylistsLoader — playlist-v2 URI-type acceptance', () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  it('FR-010 / F-1 — adapter emits a RawCollection for playlist-v2 rootlist nodes (fixture)', async () => {
+    stubSpicetify({
+      getContents: async () => rootlistFixture,
+      getTracks: async () => likedFixture,
+    });
+    const { playlists } = await new SpicetifyPlaylistsLoader().load();
+    const v2 = playlists.find(
+      (p) => p.uri === 'spotify:playlist:v2-fixture-1',
+    );
+    expect(v2).toBeDefined();
+    expect(v2?.name).toBe('Future-rollout Playlist');
+    expect(v2?.trackCount).toBe(7);
+  });
+
+  it('FR-010 / F-2 — RawCollection for playlist-v2 has structurally identical fields to playlist', async () => {
+    // Two synthetic nodes with identical fields except for `type` and `uri`.
+    const base = {
+      name: 'Twin Playlist',
+      owner: { displayName: 'Test User' },
+      totalLength: 5,
+      isOwnedBySelf: true,
+      canAdd: true,
+      canRemove: true,
+      collaborators: { count: 0 },
+      images: [{ url: 'https://example.com/twin.png' }],
+    };
+    stubSpicetify({
+      getContents: async () =>
+        rootlistOf([
+          { ...base, type: 'playlist', uri: 'spotify:playlist:TWINv1' },
+          { ...base, type: 'playlist-v2', uri: 'spotify:playlist:TWINv2' },
+        ]),
+    });
+    const { playlists } = await new SpicetifyPlaylistsLoader().load();
+    expect(playlists).toHaveLength(2);
+    const [v1, v2] = playlists;
+    const stripUri = (p: typeof v1): Omit<typeof v1, 'uri'> => {
+      const { uri: _uri, ...rest } = p;
+      void _uri;
+      return rest;
+    };
+    expect(stripUri(v2)).toEqual(stripUri(v1));
+    expect(v1.uri).toBe('spotify:playlist:TWINv1');
+    expect(v2.uri).toBe('spotify:playlist:TWINv2');
+  });
+
+  it('F-3 — playlist-v3 (hypothetical) is still silently skipped', async () => {
+    stubSpicetify({
+      getContents: async () =>
+        rootlistOf([
+          { ...validPlaylist(), type: 'playlist-v3', uri: 'spotify:playlist:V3SKIP' },
+          validPlaylist({ uri: 'spotify:playlist:KEEP' }),
+        ]),
+    });
+    const { playlists } = await new SpicetifyPlaylistsLoader().load();
+    expect(playlists.map((p) => p.uri)).toEqual(['spotify:playlist:KEEP']);
+  });
+
+  it('F-4 — show and episode nodes are still silently skipped', async () => {
+    stubSpicetify({
+      getContents: async () =>
+        rootlistOf([
+          { ...validPlaylist(), type: 'show', uri: 'spotify:show:SKIP' },
+          { ...validPlaylist(), type: 'episode', uri: 'spotify:episode:SKIP' },
+          validPlaylist({ uri: 'spotify:playlist:KEEP' }),
+        ]),
+    });
+    const { playlists } = await new SpicetifyPlaylistsLoader().load();
+    expect(playlists.map((p) => p.uri)).toEqual(['spotify:playlist:KEEP']);
+  });
+
+  it('F-5 — folder containing a playlist-v2 child surfaces the child in the flattened result', async () => {
+    stubSpicetify({
+      getContents: async () =>
+        rootlistOf([
+          {
+            type: 'folder',
+            name: 'nested-folder',
+            items: [
+              {
+                ...validPlaylist(),
+                type: 'playlist-v2',
+                uri: 'spotify:playlist:NESTEDv2',
+              },
+            ],
+          },
+        ]),
+    });
+    const { playlists } = await new SpicetifyPlaylistsLoader().load();
+    expect(playlists.map((p) => p.uri)).toEqual(['spotify:playlist:NESTEDv2']);
   });
 });
 

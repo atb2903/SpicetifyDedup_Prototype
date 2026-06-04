@@ -42,17 +42,26 @@ import { orderRootlist } from '../domain/ordering';
  * - `loadState` — current FSM state, specialised on
  *   `CollectionViewModel` for the page's rendered rows.
  * - `triggerLoad` — bound to the initial "Load library" affordance
- *   (FR-011/FR-012). From any state, dispatches `trigger` to the FSM
- *   and runs the loader; the FSM itself decides whether the action
- *   applies (ignored cells leave the state unchanged).
+ *   (FR-011). Gated on the FSM being in `idle`; from any other state
+ *   it is a documented no-op that neither mutates `loadState` nor
+ *   calls the loader (FR-012/FR-013). Defense-in-depth that mirrors
+ *   `retry`'s precondition — the UI today only renders the Load button
+ *   from `idle`, but the store enforces the invariant unconditionally.
  * - `retry` — bound to the in-line retry affordance on the failed
  *   screen (FR-008). Documented no-op unless the prior state is
  *   `failed`.
+ * - `reset` — lifecycle override that returns the FSM to `idle` from
+ *   any state without calling the loader (FR-007/FR-009). Wired by
+ *   the navigation layer (WP-03) to the route-back transition so that
+ *   navigating away from the Dedup page and returning lands the user
+ *   on an idle, ready-to-load surface. Synchronous; idempotent from
+ *   `idle`.
  */
 export type PlaylistsState = {
   loadState: LoadState<CollectionViewModel>;
   triggerLoad: () => Promise<void>;
   retry: () => Promise<void>;
+  reset: () => void;
 };
 
 /**
@@ -107,8 +116,17 @@ export function createPlaylistsStore(
 
     return {
       loadState: { kind: 'idle' },
+      /**
+       * Dispatch the FSM `trigger` action and run the loader. Gated on
+       * the prior state being `idle` (FR-012): from any other state the
+       * call returns immediately without mutating `loadState` and
+       * without invoking `loader.load()`. Mirrors `retry`'s gate; the
+       * gate is unit-tested for every non-idle source state (FR-013).
+       */
       async triggerLoad() {
-        set({ loadState: transition(get().loadState, { type: 'trigger' }) });
+        const before = get().loadState;
+        if (before.kind !== 'idle') return;
+        set({ loadState: transition(before, { type: 'trigger' }) });
         await runLoad();
       },
       async retry() {
@@ -116,6 +134,23 @@ export function createPlaylistsStore(
         if (before.kind !== 'failed') return;
         set({ loadState: transition(before, { type: 'retry' }) });
         await runLoad();
+      },
+      /**
+       * Lifecycle override — forces `loadState` to `{ kind: 'idle' }`
+       * from any state without invoking the loader (FR-007/FR-009).
+       * Does NOT flow through the FSM `transition` function because it
+       * is a system-driven override, not a user-driven move through the
+       * state graph; modeling it as a transition cell would yield
+       * `idle` from every source state, a weak fit. Idempotent from
+       * `idle`. Synchronous — there is nothing to await.
+       *
+       * A late `load-succeeded` from an in-flight `runLoad()` that
+       * resolves after `reset()` is a no-op because the FSM's
+       * `transition` already ignores `load-succeeded` from `idle`; no
+       * extra concurrency guard is needed in this layer.
+       */
+      reset() {
+        set({ loadState: { kind: 'idle' } });
       },
     };
   });

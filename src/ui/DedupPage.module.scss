@@ -1,0 +1,29 @@
+// DedupPage scroll surface + topbar offset (WP01 / FR-001).
+//
+// Owns the page-level layout chrome the Spicetify Custom App slot does
+// not provide: a scroll surface for overflowing content and a
+// topbar-aware `padding-top` so the page's first interactive element
+// (the Load button in idle) renders below Spotify's fixed-position
+// topbar header chrome.
+//
+// The topbar height is read from `--dedup-topbar-offset` with a
+// hardcoded fallback derived from the 2026-06-03 live measurement
+// (`y ≈ 110`, captured in spec §1 and the WP01 working notes). Future
+// tuning re-assigns the variable at the host (or `:root`) level; the
+// fallback keeps the page safe if nothing writes the variable.
+//
+// Guardrails (research §1):
+// - No selectors against Spotify's chrome class names. Those are
+//   hashed/rotating per build, so the rule is self-contained on the
+//   wrapper class below.
+// - The rule has one selector, one responsibility (strict file-level
+//   SRP per the charter).
+
+.page {
+  height: 100%;
+  overflow-y: auto;
+  padding-top: var(--dedup-topbar-offset, 110px);
+  padding-inline: 24px;
+  padding-bottom: 24px;
+  box-sizing: border-box;
+}

@@ -68,9 +68,14 @@ describe('LoadedView', () => {
         <LoadedView />
       </PlaylistsStoreProvider>,
     );
+    // Stable structural query: each row is a `<li>` carrying a stable
+    // `data-row-kind` attribute. The row's text content includes the
+    // displayName in DOM order; we extract it via a fixed test asserting
+    // that one of the visible texts matches each input name. To preserve
+    // ordering we look up each row's `data-row-name` test hook.
     const names = Array.from(
-      container.querySelectorAll('.dedup-row__name'),
-    ).map((el) => el.textContent);
+      container.querySelectorAll('li'),
+    ).map((el) => el.getAttribute('data-row-name'));
     expect(names).toEqual(['Liked Songs', 'A', 'B', 'C']);
   });
 
@@ -87,8 +92,8 @@ describe('LoadedView', () => {
         <LoadedView />
       </PlaylistsStoreProvider>,
     );
-    const firstRow = container.querySelector('.dedup-row');
-    expect(firstRow?.classList.contains('dedup-row--liked-songs')).toBe(true);
+    const firstRow = container.querySelector('li');
+    expect(firstRow?.getAttribute('data-row-kind')).toBe('liked-songs');
   });
 
   it('uses the PlaylistRow component for non-liked-songs rows', async () => {
@@ -104,12 +109,12 @@ describe('LoadedView', () => {
         <LoadedView />
       </PlaylistsStoreProvider>,
     );
-    const rows = container.querySelectorAll('.dedup-row');
+    const rows = container.querySelectorAll('li');
     expect(rows.length).toBe(2);
-    expect(rows[1].classList.contains('dedup-row--playlist')).toBe(true);
+    expect(rows[1].getAttribute('data-row-kind')).toBe('playlist');
   });
 
-  it('wraps rows in a single ul.dedup-list container', async () => {
+  it('wraps rows in a single ul container', async () => {
     const loader = new FakePlaylistsLoader({
       kind: 'success',
       playlists: [pl('spotify:playlist:a', 'A')],
@@ -122,7 +127,7 @@ describe('LoadedView', () => {
         <LoadedView />
       </PlaylistsStoreProvider>,
     );
-    const lists = container.querySelectorAll('ul.dedup-list');
+    const lists = container.querySelectorAll('ul');
     expect(lists.length).toBe(1);
   });
 
@@ -139,9 +144,9 @@ describe('LoadedView', () => {
         <LoadedView />
       </PlaylistsStoreProvider>,
     );
-    const rows = container.querySelectorAll('.dedup-row');
+    const rows = container.querySelectorAll('li');
     expect(rows.length).toBe(1);
-    expect(rows[0].classList.contains('dedup-row--liked-songs')).toBe(true);
+    expect(rows[0].getAttribute('data-row-kind')).toBe('liked-songs');
   });
 
   it('renders 1001 rows (1000 playlists + Liked Songs) without crashing (NFR-002 headroom)', async () => {
@@ -160,6 +165,33 @@ describe('LoadedView', () => {
         <LoadedView />
       </PlaylistsStoreProvider>,
     );
-    expect(container.querySelectorAll('.dedup-row').length).toBe(1001);
+    expect(container.querySelectorAll('li').length).toBe(1001);
+  });
+
+  // WP02 / T010 / FR-003: the loaded view's `<ul>` container has its own
+  // styling (no default browser bullet markers, a max-width or padding
+  // treatment) so it reads visually distinct from the four other state
+  // views. Asserts the `list-style` shorthand is `none` and the list is
+  // width-constrained — happy-dom does not expand to the `listStyleType`
+  // longhand, so we use the shorthand string the CSS module sets.
+  it('FR-003 — Loaded view list container has list-style: none (styled list)', async () => {
+    const loader = new FakePlaylistsLoader({
+      kind: 'success',
+      playlists: [pl('spotify:playlist:a', 'A')],
+      likedSongs: { trackCount: 1 },
+    });
+    const store = createPlaylistsStore(loader);
+    await store.getState().triggerLoad();
+    const { container } = render(
+      <PlaylistsStoreProvider store={store}>
+        <LoadedView />
+      </PlaylistsStoreProvider>,
+    );
+    const list = container.querySelector('ul') as HTMLElement;
+    expect(list).not.toBeNull();
+    const cs = getComputedStyle(list);
+    expect(cs.listStyle).toBe('none');
+    expect(cs.maxWidth).not.toBe('');
+    expect(cs.maxWidth).not.toBe('none');
   });
 });

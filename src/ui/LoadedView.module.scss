@@ -1,0 +1,16 @@
+// LoadedView styling (WP02 / T010 / FR-003).
+//
+// The `<ul>` container removes the default browser bullet markers (rows
+// own their own iconography) and constrains the list to a readable
+// max-width so very long playlist counts do not stretch the entire page
+// width. Padding/margin reset puts the rows flush with the page chrome.
+
+@use '../styles/tokens.module' as tokens;
+@include tokens.declare;
+
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-width: 900px;
+}

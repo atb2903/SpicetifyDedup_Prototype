@@ -13,9 +13,12 @@
  */
 
 import React from 'react';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { describe, it, expect } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { DedupPage } from '../../src/ui/DedupPage';
+import styles from '../../src/ui/DedupPage.module.scss';
 import { PlaylistsStoreProvider } from '../../src/store/PlaylistsStoreContext';
 import { createPlaylistsStore } from '../../src/store/playlists-store';
 import { FakePlaylistsLoader } from '../../src/adapters/fake-playlists-loader';
@@ -102,6 +105,63 @@ describe('DedupPage', () => {
     expect(
       screen.getByRole('button', { name: /retry/i }),
     ).toBeInTheDocument();
+  });
+
+  it('FR-001 — root wraps view in a scroll-surface element carrying the page CSS-module class', () => {
+    // The fix's contract: DedupPage owns its scroll surface. The wrapper
+    // element exposes the CSS-module `page` class (a real, non-empty
+    // string emitted by Vite's CSS-module resolver). Without the wrapper
+    // the view renders flush to the host body and the Load button center
+    // falls inside `.main-topBar-container`'s bounding box, which is the
+    // live-client defect captured in spec §1 P1.
+    const { store } = makeStore('success');
+    const { container } = render(
+      <PlaylistsStoreProvider store={store}>
+        <DedupPage />
+      </PlaylistsStoreProvider>,
+    );
+    const pageClass = (styles as { page?: string }).page;
+    expect(typeof pageClass).toBe('string');
+    expect(pageClass).not.toBe('');
+    // The first rendered element (root of DedupPage) must carry the class.
+    const root = container.firstElementChild as HTMLElement | null;
+    expect(root).not.toBeNull();
+    expect(root!.className).toContain(pageClass!);
+    // And the Load button must live inside that wrapper, so any
+    // offset/scroll behavior owned by the wrapper applies to it.
+    const btn = screen.getByRole('button', { name: /load/i });
+    expect(root!.contains(btn)).toBe(true);
+  });
+
+  it('FR-001 — DedupPage.module.scss declares a scroll surface with topbar-aware padding-top', () => {
+    // happy-dom does not run a layout engine, so we cannot probe
+    // getBoundingClientRect / elementFromPoint with the fidelity needed
+    // to assert geometric non-occlusion (research §4 fallback). Instead,
+    // assert the CSS rule that produces the geometry — read the SCSS
+    // source from disk and confirm both load-bearing declarations are
+    // present. The shape is encoded as plain text so a future edit that
+    // removes either declaration breaks this test.
+    const scssPath = join(
+      __dirname,
+      '..',
+      '..',
+      'src',
+      'ui',
+      'DedupPage.module.scss',
+    );
+    const src = readFileSync(scssPath, 'utf8');
+    // Scroll surface: the page must scroll on overflow, not the host body.
+    expect(src).toMatch(/overflow-y\s*:\s*auto/);
+    // Topbar-aware offset: a CSS custom property + a non-zero fallback
+    // value derived from the 2026-06-03 live probe (spec §1, notes
+    // §T001). Future tuning re-assigns the variable; the fallback keeps
+    // the page safe if nothing writes the variable.
+    expect(src).toMatch(
+      /padding-top\s*:\s*var\(\s*--dedup-topbar-offset\s*,\s*\d{2,3}px\s*\)/,
+    );
+    // And: no selectors against Spotify's hashed/rotating chrome classes
+    // (research §1 guardrail). The CSS rule must be self-contained.
+    expect(src).not.toMatch(/\.main-[a-z]/i);
   });
 
   it('end-to-end: idle → trigger → loaded transition is visible in the DOM', async () => {

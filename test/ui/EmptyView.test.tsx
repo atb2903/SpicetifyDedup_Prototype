@@ -33,4 +33,21 @@ describe('EmptyView', () => {
     render(<EmptyView />);
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
   });
+
+  // WP02 / T011 / FR-003: the empty view ships its own CSS module so it
+  // reads as a normal outcome — centred text, calm typography — distinct
+  // from Failed (which uses error styling). Assertion uses getComputedStyle
+  // rather than classnames (CSS-module hash is unstable).
+  it('FR-003 — Empty view container has a non-default flex layout', () => {
+    const { container } = render(<EmptyView />);
+    const root = container.firstChild as HTMLElement;
+    expect(root).not.toBeNull();
+    expect(getComputedStyle(root).display).toBe('flex');
+  });
+
+  it('FR-003 — Empty view copy uses centred text alignment (distinguishes from loaded list)', () => {
+    const { container } = render(<EmptyView />);
+    const root = container.firstChild as HTMLElement;
+    expect(getComputedStyle(root).textAlign).toBe('center');
+  });
 });

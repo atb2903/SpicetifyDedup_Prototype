@@ -1,0 +1,66 @@
+// LikedSongsRow styling (WP02 / T010 / FR-003 / FR-004).
+//
+// Mirrors PlaylistRow's grid (cover-slot | text | count) so the loaded
+// list reads as one consistent surface; differs visually by replacing
+// the cover with a heart glyph on a Spotify-purple tile so the pinned
+// Liked Songs row is recognisable at a glance.
+
+@use '../styles/tokens.module' as tokens;
+@include tokens.declare;
+
+.row {
+  display: grid;
+  grid-template-columns: 48px 1fr auto;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  color: var(--dedup-text);
+  list-style: none;
+  transition: background-color 120ms ease;
+
+  &:hover {
+    background-color: var(--dedup-card-hover);
+  }
+}
+
+.heart {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 4px;
+  font-size: 24px;
+  color: #fff;
+  background: linear-gradient(135deg, #450af5, #c4efd9);
+}
+
+.text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--dedup-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.owner {
+  font-size: 12px;
+  color: var(--dedup-subtext);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.count {
+  font-size: 12px;
+  color: var(--dedup-subtext);
+  white-space: nowrap;
+}

@@ -1,0 +1,52 @@
+// IdleView styling (WP02 / T008 / FR-003 / FR-006).
+//
+// The idle state is the page's first impression. The container centers
+// the Load affordance vertically and horizontally inside the page; the
+// button uses the theme's primary color so it reads as the visual primary
+// from a single glance (SC-2). The copy sits above the button with
+// generous spacing so the call-to-action does not feel cramped.
+
+@use '../styles/tokens.module' as tokens;
+@include tokens.declare;
+
+.container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+  padding: 64px 24px;
+  color: var(--dedup-text);
+  background-color: transparent;
+  text-align: center;
+}
+
+.copy {
+  margin: 0;
+  font-size: 16px;
+  color: var(--dedup-subtext);
+  max-width: 480px;
+}
+
+.button {
+  background-color: var(--dedup-button);
+  color: #000;
+  border: none;
+  border-radius: 500px;
+  padding: 12px 40px;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background-color 120ms ease, transform 120ms ease;
+
+  &:hover {
+    background-color: var(--dedup-button-hover);
+    transform: scale(1.02);
+  }
+
+  &:active {
+    transform: scale(0.98);
+  }
+}

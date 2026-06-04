@@ -15,12 +15,18 @@
  *
  * Architecture: imports the bound hook from `src/store/`, never from
  * `src/adapters/` or `src/ports/` (enforced by `test/architecture.test.ts`).
+ *
+ * Styling (WP02 / T010): ships its own CSS module so the `<ul>` container
+ * removes default bullet markers and constrains the list to a readable
+ * max-width. Row styling lives in the per-row modules (`PlaylistRow`,
+ * `LikedSongsRow`).
  */
 
 import React from 'react';
 import { usePlaylistsStore } from '../store/PlaylistsStoreContext';
 import { PlaylistRow } from './PlaylistRow';
 import { LikedSongsRow } from './LikedSongsRow';
+import styles from './LoadedView.module.scss';
 
 /**
  * Render the loaded list. Returns `null` while the FSM is not in
@@ -31,7 +37,7 @@ export function LoadedView() {
   const loadState = usePlaylistsStore((s) => s.loadState);
   if (loadState.kind !== 'loaded') return null;
   return (
-    <ul className="dedup-list">
+    <ul className={styles.list}>
       {loadState.items.map((row) =>
         row.kind === 'liked-songs' ? (
           <LikedSongsRow key={row.key} row={row} />

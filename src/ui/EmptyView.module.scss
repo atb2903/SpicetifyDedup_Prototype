@@ -1,0 +1,27 @@
+// EmptyView styling (WP02 / T011 / FR-003).
+//
+// The empty state reads as a normal outcome ("you simply have nothing to
+// dedup yet"), not as an error. Centred text on neutral colours, generous
+// padding, no alert affordances. Distinct from `FailedView` by the
+// absence of any red/error treatment and from `LoadedView` by the
+// absence of a list container.
+
+@use '../styles/tokens.module' as tokens;
+@include tokens.declare;
+
+.container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 64px 24px;
+  color: var(--dedup-subtext);
+  text-align: center;
+}
+
+.copy {
+  margin: 0;
+  font-size: 16px;
+  max-width: 480px;
+}

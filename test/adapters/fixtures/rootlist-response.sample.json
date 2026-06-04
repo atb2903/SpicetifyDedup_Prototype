@@ -180,6 +180,25 @@
       "availableSignals": []
     },
     {
+      "addedAt": "2024-03-10T11:45:00.000Z",
+      "type": "playlist-v2",
+      "uri": "spotify:playlist:v2-fixture-1",
+      "name": "Future-rollout Playlist",
+      "description": "Augmented: a rootlist node typed playlist-v2, to exercise FR-010 acceptance of the spec-declared variant. The 2026-06-03 live library contained zero such nodes; this entry is synthetic.",
+      "images": [{ "url": "https://example.com/cover.png" }],
+      "owner": {
+        "type": "user",
+        "uri": "spotify:user:test-user-1",
+        "username": "test-user-1",
+        "displayName": "me"
+      },
+      "totalLength": 7,
+      "isOwnedBySelf": true,
+      "canAdd": true,
+      "canRemove": true,
+      "collaborators": { "count": 0 }
+    },
+    {
       "addedAt": "2024-02-20T08:15:00.000Z",
       "type": "folder",
       "uri": "spotify:user:test-user-1:folder:1111111111111111",

@@ -9,6 +9,12 @@
  * `test/architecture.test.ts`. The view-model transform (WP03) has
  * already resolved everything this component needs, so rendering is a
  * pure function of `row`.
+ *
+ * Styling (WP02 / T010): ships its own CSS module with a three-column
+ * grid (cover | text | count) so adjacent spans cannot collapse into a
+ * single visual word (FR-004 — the P2 defect). Null `imageUrl` rows
+ * render a placeholder glyph instead of a broken `<img>` (FR-005). The
+ * row gets a low-opacity bottom border so siblings read as a list.
  */
 
 import React from 'react';
@@ -16,6 +22,7 @@ import type {
   CollectionViewModel,
   OwnerIdentity,
 } from '../domain/view-models';
+import styles from './PlaylistRow.module.scss';
 
 /** Props for the `PlaylistRow` component. */
 export type PlaylistRowProps = { row: CollectionViewModel };
@@ -31,13 +38,17 @@ export type PlaylistRowProps = { row: CollectionViewModel };
  */
 export function PlaylistRow({ row }: PlaylistRowProps) {
   return (
-    <li className="dedup-row dedup-row--playlist">
+    <li
+      className={styles.row}
+      data-row-kind="playlist"
+      data-row-name={row.displayName}
+    >
       <Cover imageUrl={row.imageUrl} />
-      <div className="dedup-row__text">
-        <span className="dedup-row__name">{row.displayName}</span>
-        <span className="dedup-row__owner">{ownerLabel(row.owner)}</span>
+      <div className={styles.text}>
+        <span className={styles.name}>{row.displayName}</span>
+        <span className={styles.owner}>{ownerLabel(row.owner)}</span>
       </div>
-      <span className="dedup-row__count">
+      <span className={styles.count}>
         {formatTrackCount(row.trackCount)}
       </span>
     </li>
@@ -56,11 +67,11 @@ function formatTrackCount(n: number): string {
 
 function Cover({ imageUrl }: { imageUrl: string | null }) {
   if (imageUrl !== null) {
-    return <img className="dedup-row__cover" src={imageUrl} alt="" />;
+    return <img className={styles.cover} src={imageUrl} alt="" />;
   }
   return (
     <div
-      className="dedup-row__cover dedup-row__cover--placeholder"
+      className={`${styles.cover} ${styles.placeholder}`}
       role="img"
       aria-label="No cover image"
     />

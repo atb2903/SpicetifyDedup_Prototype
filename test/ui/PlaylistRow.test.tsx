@@ -51,13 +51,15 @@ describe('PlaylistRow', () => {
 
   it('renders the cover image when imageUrl is provided', () => {
     // The cover img uses alt="" (correct ARIA for decorative imagery
-    // adjacent to descriptive text); query by tag, not by role.
+    // adjacent to descriptive text); query by tag, not by role. We query
+    // by `<img>` rather than by the CSS-module classname because the
+    // module hash rotates per build.
     const { container } = render(
       <PlaylistRow
         row={sample({ imageUrl: 'https://example.com/cover.jpg' })}
       />,
     );
-    const img = container.querySelector('img.dedup-row__cover');
+    const img = container.querySelector('img');
     expect(img).not.toBeNull();
     expect(img).toHaveAttribute('src', 'https://example.com/cover.jpg');
   });
@@ -119,5 +121,38 @@ describe('PlaylistRow', () => {
       <PlaylistRow row={sample({ owner: { kind: 'system-library' } })} />,
     );
     expect(screen.getByText('Your Library')).toBeInTheDocument();
+  });
+
+  // WP02 / T010 / FR-004: the row spans (cover, name, owner, count) must
+  // NOT collapse into a single visual word. Asserts the row uses a
+  // grid/flex layout so the spans are positioned, not inlined.
+  it('FR-004 — Row uses a grid or flex layout so spans do not collapse', () => {
+    render(
+      <ul>
+        <PlaylistRow row={sample()} />
+      </ul>,
+    );
+    const row = screen.getByRole('listitem');
+    const display = getComputedStyle(row).display;
+    expect(['grid', 'flex']).toContain(display);
+  });
+
+  // WP02 / T010 / FR-004: rows must have visible separation from siblings.
+  // Asserts a non-zero `border-bottom-width` (the styling approach the
+  // module uses) so adjacent rows do not visually run together.
+  it('FR-004 — Row has visible separation (non-zero border-bottom)', () => {
+    render(
+      <ul>
+        <PlaylistRow row={sample()} />
+      </ul>,
+    );
+    const row = screen.getByRole('listitem');
+    const cs = getComputedStyle(row);
+    // happy-dom returns the shorthand `border-bottom` or the longhand
+    // `border-bottom-width`; either signalling presence is acceptable.
+    const hasBorder =
+      (cs.borderBottomWidth !== '' && cs.borderBottomWidth !== '0px') ||
+      (cs.borderBottom !== '' && !cs.borderBottom.startsWith('0px'));
+    expect(hasBorder).toBe(true);
   });
 });

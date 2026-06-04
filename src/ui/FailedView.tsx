@@ -14,11 +14,17 @@
  *
  * If used outside the `failed` state (e.g. wiring bug in WP09) the
  * component renders nothing — a quiet noop rather than a crash.
+ *
+ * Styling (WP02 / T012): ships its own CSS module so the failed state
+ * reads visually as an error (FR-003 — left border in `var(--dedup-error)`)
+ * and the Retry button reads as a primary affordance (FR-006 — green
+ * pill, pointer cursor, hover transform).
  */
 
 import React from 'react';
 import { usePlaylistsStore } from '../store/PlaylistsStoreContext';
 import type { PlaylistsLoaderErrorReason } from '../domain/errors';
+import styles from './FailedView.module.scss';
 
 const EXPLANATIONS: Record<PlaylistsLoaderErrorReason, string> = {
   'host-unavailable':
@@ -53,15 +59,15 @@ export function FailedView() {
   const detail = loadState.reason.message;
 
   return (
-    <div className="dedup-failed" role="alert">
-      <p className="dedup-failed__explanation">{explanation}</p>
-      <details className="dedup-failed__detail">
+    <div className={styles.container} role="alert">
+      <p className={styles.explanation}>{explanation}</p>
+      <details className={styles.detail}>
         <summary>Technical details</summary>
         <code>{detail}</code>
       </details>
       <button
         type="button"
-        className="dedup-failed__retry"
+        className={styles.retry}
         onClick={() => {
           void retry();
         }}

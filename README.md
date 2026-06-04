@@ -19,6 +19,10 @@ The page is **idle until the user clicks Load** — no Spotify Platform
 calls are issued before the click. A failure during load surfaces a
 typed error explanation and a Retry button.
 
+The Dedup page now hosts its own scroll surface so the Load button
+stays below Spotify's topbar — click it with a real mouse to start a
+load.
+
 This iteration is strictly read-only. Track enumeration, duplicate
 detection, and library mutation arrive in later iterations.
 

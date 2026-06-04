@@ -1,0 +1,40 @@
+// LoadingView styling (WP02 / T009 / FR-003 / FR-006).
+//
+// A border-spinner rotates above the wait copy. The spinner is the only
+// motion design in this mission (C-003 — no other animations). Centred
+// flex layout with the spinner on top, copy below, sized for legibility
+// at the page's idle padding.
+
+@use '../styles/tokens.module' as tokens;
+@include tokens.declare;
+
+.container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 64px 24px;
+  color: var(--dedup-subtext);
+  text-align: center;
+}
+
+.spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid var(--dedup-card-hover);
+  border-top-color: var(--dedup-button);
+  border-radius: 50%;
+  animation: dedup-spin 800ms linear infinite;
+}
+
+.copy {
+  margin: 0;
+  font-size: 14px;
+}
+
+@keyframes dedup-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

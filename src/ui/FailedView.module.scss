@@ -1,0 +1,74 @@
+// FailedView styling (WP02 / T012 / FR-003 / FR-006).
+//
+// Centred container with an error accent — a left border in
+// `var(--dedup-error)` — so the view reads as an error from a single
+// glance without being a screaming red wall. The Retry button uses the
+// primary affordance treatment (same as IdleView's Load button) so it
+// reads as the clear next action.
+
+@use '../styles/tokens.module' as tokens;
+@include tokens.declare;
+
+.container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 48px 24px;
+  color: var(--dedup-text);
+  text-align: center;
+  border-left: 4px solid var(--dedup-error);
+  background-color: var(--dedup-card);
+  border-radius: 4px;
+  margin: 24px;
+}
+
+.explanation {
+  margin: 0;
+  font-size: 16px;
+  max-width: 480px;
+  color: var(--dedup-text);
+}
+
+.detail {
+  font-size: 12px;
+  color: var(--dedup-subtext);
+  max-width: 480px;
+  word-break: break-word;
+
+  & > summary {
+    cursor: pointer;
+  }
+
+  & > code {
+    display: block;
+    margin-top: 8px;
+    padding: 8px;
+    background-color: var(--dedup-main);
+    border-radius: 4px;
+  }
+}
+
+.retry {
+  background-color: var(--dedup-button);
+  color: #000;
+  border: none;
+  border-radius: 500px;
+  padding: 10px 32px;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background-color 120ms ease, transform 120ms ease;
+
+  &:hover {
+    background-color: var(--dedup-button-hover);
+    transform: scale(1.02);
+  }
+
+  &:active {
+    transform: scale(0.98);
+  }
+}

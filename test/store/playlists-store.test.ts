@@ -5,12 +5,56 @@
  * is involved here (the React hook binding is exercised by WP07/WP08).
  */
 
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { createPlaylistsStore } from '../../src/store/playlists-store';
 import { FakePlaylistsLoader } from '../../src/adapters/fake-playlists-loader';
 import { PlaylistsLoaderError } from '../../src/domain/errors';
 import type { PlaylistsLoader } from '../../src/ports/playlists-loader';
-import type { RawCollection } from '../../src/domain/view-models';
+import type {
+  RawCollection,
+  LikedSongsSummary,
+} from '../../src/domain/view-models';
+
+/**
+ * Test-local helper: builds a `PlaylistsLoader` whose `load()` returns
+ * a promise the test code controls via `resolve(...)` or `reject(...)`.
+ *
+ * Used by R-2, R-6, and T-1 to deterministically observe the FSM while
+ * the loader's promise is in flight. Mirrors the controllable-loader
+ * pattern referenced in WP-05's risk table; lives in test scope only
+ * so it never escapes into production code.
+ */
+function makeControllableLoader(): {
+  loader: PlaylistsLoader;
+  resolve: (payload: {
+    playlists: RawCollection[];
+    likedSongs: LikedSongsSummary;
+  }) => void;
+  reject: (err: unknown) => void;
+  callCount: () => number;
+} {
+  let resolveFn: (payload: {
+    playlists: RawCollection[];
+    likedSongs: LikedSongsSummary;
+  }) => void = () => {};
+  let rejectFn: (err: unknown) => void = () => {};
+  let calls = 0;
+  const loader: PlaylistsLoader = {
+    load() {
+      calls += 1;
+      return new Promise((res, rej) => {
+        resolveFn = res;
+        rejectFn = rej;
+      });
+    },
+  };
+  return {
+    loader,
+    resolve: (payload) => resolveFn(payload),
+    reject: (err) => rejectFn(err),
+    callCount: () => calls,
+  };
+}
 
 const PL_SELF: RawCollection = {
   uri: 'spotify:playlist:self',
@@ -277,5 +321,199 @@ describe('retry', () => {
     await store.getState().retry();
     expect(store.getState().loadState.kind).toBe('empty');
     expect(loader.callCount).toBe(callsAfterLoad);
+  });
+});
+
+describe('reset() (FR-007, FR-009)', () => {
+  it('R-1 — reset from idle leaves state at idle and does not call loader', () => {
+    const load = vi.fn(async () => ({
+      playlists: [] as RawCollection[],
+      likedSongs: { trackCount: 0 } as LikedSongsSummary,
+    }));
+    const loader: PlaylistsLoader = { load };
+    const store = createPlaylistsStore(loader);
+
+    expect(store.getState().loadState.kind).toBe('idle');
+    store.getState().reset();
+
+    expect(store.getState().loadState.kind).toBe('idle');
+    expect(load).toHaveBeenCalledTimes(0);
+  });
+
+  it('R-2 — reset from loading returns state to idle (in-flight load already counted)', async () => {
+    const controllable = makeControllableLoader();
+    const store = createPlaylistsStore(controllable.loader);
+
+    const inflight = store.getState().triggerLoad();
+    expect(store.getState().loadState.kind).toBe('loading');
+    expect(controllable.callCount()).toBe(1);
+
+    store.getState().reset();
+    expect(store.getState().loadState.kind).toBe('idle');
+    expect(controllable.callCount()).toBe(1);
+
+    // Resolve the in-flight load so the awaited promise settles cleanly.
+    controllable.resolve({ playlists: [], likedSongs: { trackCount: 0 } });
+    await inflight;
+  });
+
+  it('R-3 — reset from loaded returns state to idle and does not re-call loader', async () => {
+    const loader = new FakePlaylistsLoader({
+      kind: 'success',
+      playlists: [PL_SELF],
+      likedSongs: { trackCount: 3 },
+    });
+    const store = createPlaylistsStore(loader);
+    await store.getState().triggerLoad();
+    expect(store.getState().loadState.kind).toBe('loaded');
+    const callsAfterLoad = loader.callCount;
+
+    store.getState().reset();
+
+    expect(store.getState().loadState.kind).toBe('idle');
+    expect(loader.callCount).toBe(callsAfterLoad);
+  });
+
+  it('R-4 — reset from empty returns state to idle and does not re-call loader', async () => {
+    const loader = new FakePlaylistsLoader({
+      kind: 'success',
+      playlists: [],
+      likedSongs: { trackCount: 0 },
+    });
+    const store = createPlaylistsStore(loader);
+    await store.getState().triggerLoad();
+    expect(store.getState().loadState.kind).toBe('empty');
+    const callsAfterLoad = loader.callCount;
+
+    store.getState().reset();
+
+    expect(store.getState().loadState.kind).toBe('idle');
+    expect(loader.callCount).toBe(callsAfterLoad);
+  });
+
+  it('R-5 — reset from failed returns state to idle and does not call loader', async () => {
+    const err = new PlaylistsLoaderError('host-unavailable', 'no Platform');
+    const loader = new FakePlaylistsLoader({ kind: 'failure', throws: err });
+    const store = createPlaylistsStore(loader);
+    await store.getState().triggerLoad();
+    expect(store.getState().loadState.kind).toBe('failed');
+    const callsAfterLoad = loader.callCount;
+
+    store.getState().reset();
+
+    expect(store.getState().loadState.kind).toBe('idle');
+    expect(loader.callCount).toBe(callsAfterLoad);
+  });
+
+  it('R-6 — reset during an in-flight load results in idle after the load resolves', async () => {
+    const controllable = makeControllableLoader();
+    const store = createPlaylistsStore(controllable.loader);
+
+    const inflight = store.getState().triggerLoad();
+    expect(store.getState().loadState.kind).toBe('loading');
+
+    store.getState().reset();
+    expect(store.getState().loadState.kind).toBe('idle');
+
+    // Late load-succeeded must be a no-op because the FSM ignores
+    // load-succeeded from idle.
+    controllable.resolve({
+      playlists: [PL_SELF],
+      likedSongs: { trackCount: 1 },
+    });
+    await inflight;
+
+    expect(store.getState().loadState.kind).toBe('idle');
+    expect(controllable.callCount()).toBe(1);
+  });
+});
+
+describe('triggerLoad idle-gate (FR-012, FR-013)', () => {
+  it('T-1 — triggerLoad from loading is a no-op', async () => {
+    const controllable = makeControllableLoader();
+    const store = createPlaylistsStore(controllable.loader);
+
+    const inflight = store.getState().triggerLoad();
+    expect(store.getState().loadState.kind).toBe('loading');
+    expect(controllable.callCount()).toBe(1);
+
+    await store.getState().triggerLoad();
+
+    expect(store.getState().loadState.kind).toBe('loading');
+    expect(controllable.callCount()).toBe(1);
+
+    // Resolve the original in-flight load so the awaited promise settles.
+    controllable.resolve({ playlists: [], likedSongs: { trackCount: 1 } });
+    await inflight;
+  });
+
+  it('T-2 — triggerLoad from loaded is a no-op', async () => {
+    const loader = new FakePlaylistsLoader({
+      kind: 'success',
+      playlists: [PL_SELF],
+      likedSongs: { trackCount: 1 },
+    });
+    const store = createPlaylistsStore(loader);
+    await store.getState().triggerLoad();
+    expect(store.getState().loadState.kind).toBe('loaded');
+    const stateBefore = store.getState().loadState;
+    const callsAfterLoad = loader.callCount;
+
+    await store.getState().triggerLoad();
+
+    expect(store.getState().loadState).toBe(stateBefore);
+    expect(loader.callCount).toBe(callsAfterLoad);
+  });
+
+  it('T-3 — triggerLoad from empty is a no-op', async () => {
+    const loader = new FakePlaylistsLoader({
+      kind: 'success',
+      playlists: [],
+      likedSongs: { trackCount: 0 },
+    });
+    const store = createPlaylistsStore(loader);
+    await store.getState().triggerLoad();
+    expect(store.getState().loadState.kind).toBe('empty');
+    const stateBefore = store.getState().loadState;
+    const callsAfterLoad = loader.callCount;
+
+    await store.getState().triggerLoad();
+
+    expect(store.getState().loadState).toBe(stateBefore);
+    expect(loader.callCount).toBe(callsAfterLoad);
+  });
+
+  it('T-4 — triggerLoad from failed is a no-op', async () => {
+    const err = new PlaylistsLoaderError('host-unavailable', 'no Platform');
+    const loader = new FakePlaylistsLoader({ kind: 'failure', throws: err });
+    const store = createPlaylistsStore(loader);
+    await store.getState().triggerLoad();
+    expect(store.getState().loadState.kind).toBe('failed');
+    const stateBefore = store.getState().loadState;
+    const callsAfterLoad = loader.callCount;
+
+    await store.getState().triggerLoad();
+
+    expect(store.getState().loadState).toBe(stateBefore);
+    expect(loader.callCount).toBe(callsAfterLoad);
+  });
+
+  it('T-5 — triggerLoad from idle still calls loader and transitions to loaded', async () => {
+    const loader = new FakePlaylistsLoader({
+      kind: 'success',
+      playlists: [PL_SELF],
+      likedSongs: { trackCount: 1 },
+    });
+    const store = createPlaylistsStore(loader);
+    expect(store.getState().loadState.kind).toBe('idle');
+
+    const seen: string[] = [];
+    const unsub = store.subscribe((s) => seen.push(s.loadState.kind));
+    await store.getState().triggerLoad();
+    unsub();
+
+    expect(seen).toEqual(['loading', 'loaded']);
+    expect(store.getState().loadState.kind).toBe('loaded');
+    expect(loader.callCount).toBe(1);
   });
 });

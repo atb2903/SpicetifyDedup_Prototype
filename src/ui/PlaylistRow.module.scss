@@ -1,0 +1,78 @@
+// PlaylistRow styling (WP02 / T010 / FR-004 / FR-005).
+//
+// CSS-grid layout with four columns: cover | text (name + owner) |
+// trackcount. The text column wraps name + owner in a flex stack so
+// adjacent inline spans cannot collapse into a single visual word
+// (FR-004 — the defect P2 explicitly calls out). Adjacent rows are
+// separated by a 1px border-bottom in a low-opacity neutral so the list
+// reads as a list. Null `imageUrl` rows render a placeholder cover
+// (FR-005) — the same 48×48 footprint, with a music-note glyph centred
+// inside.
+
+@use '../styles/tokens.module' as tokens;
+@include tokens.declare;
+
+.row {
+  display: grid;
+  grid-template-columns: 48px 1fr auto;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  color: var(--dedup-text);
+  list-style: none;
+  transition: background-color 120ms ease;
+
+  &:hover {
+    background-color: var(--dedup-card-hover);
+  }
+}
+
+.cover {
+  width: 48px;
+  height: 48px;
+  border-radius: 4px;
+  object-fit: cover;
+  background-color: var(--dedup-card);
+}
+
+.placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  color: var(--dedup-subtext);
+
+  &::before {
+    content: '\266B'; // beamed eighth notes — universal music glyph
+  }
+}
+
+.text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--dedup-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.owner {
+  font-size: 12px;
+  color: var(--dedup-subtext);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.count {
+  font-size: 12px;
+  color: var(--dedup-subtext);
+  white-space: nowrap;
+}

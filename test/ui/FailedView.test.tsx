@@ -131,9 +131,46 @@ describe('FailedView', () => {
         </PlaylistsStoreProvider>,
       );
       const alert = screen.getByRole('alert');
-      const explanation = alert.querySelector('.dedup-failed__explanation');
+      // The alert container wraps the explanation `<p>` first, the
+      // <details> block, then the Retry button. The explanation is the
+      // first `<p>` descendant — stable across the CSS-module migration
+      // (classname hashes rotate per build but the tag does not).
+      const explanation = alert.querySelector('p');
       expect(explanation).not.toBeNull();
       expect(explanation!.textContent?.trim().length ?? 0).toBeGreaterThan(0);
     });
+  });
+
+  // WP02 / T012 / FR-006: the Retry button must read as an actionable
+  // control — non-transparent background, pointer cursor. Asserts via
+  // getComputedStyle (CSS-module hashes are unstable).
+  it('FR-006 — Retry button is visually styled as an actionable control', async () => {
+    const { store } = await makeFailedStore('host-unavailable');
+    render(
+      <PlaylistsStoreProvider store={store}>
+        <FailedView />
+      </PlaylistsStoreProvider>,
+    );
+    const button = screen.getByRole('button', { name: /retry/i });
+    const cs = getComputedStyle(button);
+    expect(cs.backgroundColor).not.toBe('');
+    expect(cs.backgroundColor).not.toBe('rgba(0, 0, 0, 0)');
+    expect(cs.backgroundColor).not.toBe('transparent');
+    expect(cs.cursor).toBe('pointer');
+  });
+
+  // FR-003: the failed view's container has its own layout so it reads
+  // visually distinct from the four other state views (centred flex, with
+  // an error accent rather than a calm neutral one).
+  it('FR-003 — Failed view container has a non-default flex layout', async () => {
+    const { store } = await makeFailedStore('host-unavailable');
+    const { container } = render(
+      <PlaylistsStoreProvider store={store}>
+        <FailedView />
+      </PlaylistsStoreProvider>,
+    );
+    const root = container.firstChild as HTMLElement;
+    expect(root).not.toBeNull();
+    expect(getComputedStyle(root).display).toBe('flex');
   });
 });

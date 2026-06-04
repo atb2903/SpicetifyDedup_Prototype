@@ -43,10 +43,14 @@ describe('LikedSongsRow', () => {
     expect(screen.getByLabelText(/liked songs icon/i)).toBeInTheDocument();
   });
 
-  it('carries the dedup-row--liked-songs class for distinct styling', () => {
+  it('carries a stable data-row-kind="liked-songs" hook for distinct styling', () => {
+    // We no longer query by classname (CSS-module hashes rotate per
+    // build). Instead the component exposes a stable `data-row-kind`
+    // attribute so the parent (LoadedView) and the suite can route to
+    // the row variant without depending on the styling layer.
     const { container } = render(<LikedSongsRow row={sample()} />);
     expect(
-      container.querySelector('.dedup-row--liked-songs'),
+      container.querySelector('[data-row-kind="liked-songs"]'),
     ).not.toBeNull();
   });
 
@@ -77,5 +81,33 @@ describe('LikedSongsRow', () => {
       </ul>,
     );
     expect(screen.getByRole('listitem')).toBeInTheDocument();
+  });
+
+  // WP02 / T010 / FR-004: row spans (heart, name, owner, count) must not
+  // collapse into a single visual word. Grid/flex layout is required.
+  it('FR-004 — Row uses a grid or flex layout so spans do not collapse', () => {
+    render(
+      <ul>
+        <LikedSongsRow row={sample()} />
+      </ul>,
+    );
+    const row = screen.getByRole('listitem');
+    const display = getComputedStyle(row).display;
+    expect(['grid', 'flex']).toContain(display);
+  });
+
+  // FR-004: rows have visible separation from siblings.
+  it('FR-004 — Row has visible separation (non-zero border-bottom)', () => {
+    render(
+      <ul>
+        <LikedSongsRow row={sample()} />
+      </ul>,
+    );
+    const row = screen.getByRole('listitem');
+    const cs = getComputedStyle(row);
+    const hasBorder =
+      (cs.borderBottomWidth !== '' && cs.borderBottomWidth !== '0px') ||
+      (cs.borderBottom !== '' && !cs.borderBottom.startsWith('0px'));
+    expect(hasBorder).toBe(true);
   });
 });

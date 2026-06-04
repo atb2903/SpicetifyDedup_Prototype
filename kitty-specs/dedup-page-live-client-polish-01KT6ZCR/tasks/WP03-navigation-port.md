@@ -17,6 +17,8 @@ subtasks:
 - T019
 - T020
 - T021
+agent: "claude:opus-4-7:implementer:implementer"
+shell_pid: "293398"
 history:
 - timestamp: '2026-06-03T19:01:12Z'
   actor: tasks-generator
@@ -327,3 +329,7 @@ A reviewer should check:
 - Adding `Spicetify.URI.fromString` usage (rejected by spec §7).
 - Polling navigation (rejected by research §3 alternatives).
 - Architecture test rule additions (research + contract confirmed not needed).
+
+## Activity Log
+
+- 2026-06-04T09:17:02Z – claude:opus-4-7:implementer:implementer – shell_pid=293398 – Started implementation via action command

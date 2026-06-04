@@ -8,10 +8,20 @@
     {
       "lane_id": "lane-a",
       "wp_ids": [
-        "WP01"
+        "WP01",
+        "WP02"
       ],
       "write_scope": [
+        "src/adapters/spicetify-navigation.ts",
+        "src/app.tsx",
+        "src/ports/navigation.ts",
+        "src/store/NavigationContext.tsx",
         "src/store/RouteResetContext.tsx",
+        "test/adapters/fake-navigation.ts",
+        "test/adapters/spicetify-navigation.test.ts",
+        "test/app.test.tsx",
+        "test/ports/navigation-port-contract.test.ts",
+        "test/store/NavigationContext.test.tsx",
         "test/store/RouteResetContext.test.tsx"
       ],
       "predicted_surfaces": [
@@ -27,31 +37,6 @@
     {
       "lane_id": "lane-b",
       "wp_ids": [
-        "WP02"
-      ],
-      "write_scope": [
-        "src/adapters/spicetify-navigation.ts",
-        "src/app.tsx",
-        "src/ports/navigation.ts",
-        "src/store/NavigationContext.tsx",
-        "test/adapters/fake-navigation.ts",
-        "test/adapters/spicetify-navigation.test.ts",
-        "test/app.test.tsx",
-        "test/ports/navigation-port-contract.test.ts",
-        "test/store/NavigationContext.test.tsx"
-      ],
-      "predicted_surfaces": [
-        "api",
-        "app-shell",
-        "artifact-rendering",
-        "legacy-cleanup"
-      ],
-      "depends_on_lanes": [],
-      "parallel_group": 0
-    },
-    {
-      "lane_id": "lane-c",
-      "wp_ids": [
         "WP04"
       ],
       "write_scope": [
@@ -65,7 +50,7 @@
       "parallel_group": 0
     },
     {
-      "lane_id": "lane-d",
+      "lane_id": "lane-c",
       "wp_ids": [
         "WP05"
       ],
@@ -96,9 +81,24 @@
       "parallel_group": 0
     }
   ],
-  "computed_at": "2026-06-04T20:16:13.186466+00:00",
+  "computed_at": "2026-06-04T20:17:25.248295+00:00",
   "computed_from": "dependency_graph+ownership",
   "planning_artifact_wps": [
     "WP03"
-  ]
+  ],
+  "collapse_report": {
+    "events": [
+      {
+        "wp_a": "WP02",
+        "wp_b": "WP01",
+        "rule": "dependency",
+        "evidence": "WP02 depends on WP01"
+      }
+    ],
+    "total_merges": 1,
+    "independent_wps_collapsed": 0,
+    "by_rule": {
+      "dependency": 1
+    }
+  }
 }

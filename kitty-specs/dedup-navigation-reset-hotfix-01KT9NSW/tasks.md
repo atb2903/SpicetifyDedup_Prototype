@@ -95,7 +95,8 @@ The `[P]` marker in this index is informational only; per-WP progress tracks via
 **Estimated prompt size**: ~320 lines.
 **Implementation sketch**: Single commit pattern works fine — the deletion + the app.tsx rewire have to land together to keep the typecheck green. The architecture-test rule table is unchanged (no edit required). Coverage stays 100/100/100/100 because the deleted files are deleted, not orphaned.
 **Parallel opportunities**: None within WP02 (the five deletions + the two edits are interlocked at typecheck).
-**Dependencies**: **WP01** (the new file must exist before app.tsx can import it).
+**Dependencies**: WP01 (the new file must exist before app.tsx can import it).
+Depends on WP01.
 **Risks**: Accidentally keeping an unused import in `app.tsx` that ESLint or the architecture test flags. Mitigated by T010's full verification sweep.
 **Requirements satisfied**: FR-005, FR-006 (consumed in app.tsx).
 

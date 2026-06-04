@@ -196,3 +196,4 @@ A reviewer of WP03 should:
 ## Activity Log
 
 - 2026-06-04T20:26:39Z – claude:opus-4-7:implementer:implementer – shell_pid=361914 – Started implementation via action command
+- 2026-06-04T20:32:54Z – claude:opus-4-7:implementer:implementer – shell_pid=361914 – Ready for review: ADR-0004 supersession block appended (status flipped, body byte-identical to pre-edit), ADR-0005 created with all required sections (Status: Accepted, Context with mission-review + live-verification §C.1 citations, Decision with verbatim useEffect snippet, Consequences, 4 alternatives, Implementation notes with RouteResetContext.tsx + test contract). Contract §3 verification: all 3 grep/test checks pass.

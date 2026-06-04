@@ -21,7 +21,8 @@ subtasks:
 - T004
 - T005
 - T006
-shell_pid: '361685'
+shell_pid: "361685"
+agent: "claude:opus-4-7:implementer:implementer"
 history:
 - timestamp: '2026-06-04T20:07:25Z'
   actor: tasks
@@ -276,3 +277,7 @@ A reviewer of WP01 should check:
 1. From inside the WP01 worktree: `spec-kitty agent action mark-done WP01 --agent <name> --mission dedup-navigation-reset-hotfix-01KT9NSW`.
 2. Verify status transition: `spec-kitty status --mission dedup-navigation-reset-hotfix-01KT9NSW --json`.
 3. Trigger review per the project's mission flow (the user or the implement-review skill drives this).
+
+## Activity Log
+
+- 2026-06-04T20:26:00Z – claude:opus-4-7:implementer:implementer – shell_pid=361685 – Assigned agent via action command

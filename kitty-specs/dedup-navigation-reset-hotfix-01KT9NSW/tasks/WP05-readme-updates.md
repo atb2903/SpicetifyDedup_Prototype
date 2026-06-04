@@ -14,8 +14,8 @@ created_at: '2026-06-04T20:27:03.475005+00:00'
 subtasks:
 - T017
 - T018
-shell_pid: "362146"
-agent: "claude:opus-4-7:implementer:implementer"
+shell_pid: "364104"
+agent: "claude:opus-4-7:reviewer:reviewer"
 history:
 - timestamp: '2026-06-04T20:07:25Z'
   actor: tasks
@@ -134,3 +134,4 @@ A reviewer of WP05 should:
 
 - 2026-06-04T20:27:04Z – claude:opus-4-7:implementer:implementer – shell_pid=362146 – Assigned agent via action command
 - 2026-06-04T20:30:33Z – claude:opus-4-7:implementer:implementer – shell_pid=362146 – Ready for review: README DRIFT-2 styled-state-views note + RISK-5 --dedup-topbar-offset override doc; npm run build succeeded
+- 2026-06-04T20:31:00Z – claude:opus-4-7:reviewer:reviewer – shell_pid=364104 – Started review via action command

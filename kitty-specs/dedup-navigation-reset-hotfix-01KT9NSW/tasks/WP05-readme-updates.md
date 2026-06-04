@@ -133,3 +133,4 @@ A reviewer of WP05 should:
 ## Activity Log
 
 - 2026-06-04T20:27:04Z – claude:opus-4-7:implementer:implementer – shell_pid=362146 – Assigned agent via action command
+- 2026-06-04T20:30:33Z – claude:opus-4-7:implementer:implementer – shell_pid=362146 – Ready for review: README DRIFT-2 styled-state-views note + RISK-5 --dedup-topbar-offset override doc; npm run build succeeded

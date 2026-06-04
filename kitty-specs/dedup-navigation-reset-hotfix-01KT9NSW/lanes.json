@@ -1,0 +1,104 @@
+{
+  "version": 1,
+  "mission_slug": "dedup-navigation-reset-hotfix-01KT9NSW",
+  "mission_id": "01KT9NSWY6YKMB66KGXG04ZZ92",
+  "mission_branch": "kitty/mission-dedup-navigation-reset-hotfix-01KT9NSW",
+  "target_branch": "get_library",
+  "lanes": [
+    {
+      "lane_id": "lane-a",
+      "wp_ids": [
+        "WP01"
+      ],
+      "write_scope": [
+        "src/store/RouteResetContext.tsx",
+        "test/store/RouteResetContext.test.tsx"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "app-shell",
+        "artifact-rendering",
+        "legacy-cleanup",
+        "tracker-integration"
+      ],
+      "depends_on_lanes": [],
+      "parallel_group": 0
+    },
+    {
+      "lane_id": "lane-b",
+      "wp_ids": [
+        "WP02"
+      ],
+      "write_scope": [
+        "src/adapters/spicetify-navigation.ts",
+        "src/app.tsx",
+        "src/ports/navigation.ts",
+        "src/store/NavigationContext.tsx",
+        "test/adapters/fake-navigation.ts",
+        "test/adapters/spicetify-navigation.test.ts",
+        "test/app.test.tsx",
+        "test/ports/navigation-port-contract.test.ts",
+        "test/store/NavigationContext.test.tsx"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "app-shell",
+        "artifact-rendering",
+        "legacy-cleanup"
+      ],
+      "depends_on_lanes": [],
+      "parallel_group": 0
+    },
+    {
+      "lane_id": "lane-c",
+      "wp_ids": [
+        "WP04"
+      ],
+      "write_scope": [
+        "src/ui/LoadingView.module.scss"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "app-shell"
+      ],
+      "depends_on_lanes": [],
+      "parallel_group": 0
+    },
+    {
+      "lane_id": "lane-d",
+      "wp_ids": [
+        "WP05"
+      ],
+      "write_scope": [
+        "README.md"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "app-shell",
+        "artifact-rendering"
+      ],
+      "depends_on_lanes": [],
+      "parallel_group": 0
+    },
+    {
+      "lane_id": "lane-planning",
+      "wp_ids": [
+        "WP03"
+      ],
+      "write_scope": [
+        ".claude/adr/0004-navigation-port.md",
+        ".claude/adr/0005-react-lifecycle-reset.md"
+      ],
+      "predicted_surfaces": [
+        "planning"
+      ],
+      "depends_on_lanes": [],
+      "parallel_group": 0
+    }
+  ],
+  "computed_at": "2026-06-04T20:16:13.186466+00:00",
+  "computed_from": "dependency_graph+ownership",
+  "planning_artifact_wps": [
+    "WP03"
+  ]
+}

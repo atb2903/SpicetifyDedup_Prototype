@@ -7,7 +7,7 @@ requirement_refs:
 - FR-008
 planning_base_branch: get_library
 merge_target_branch: get_library
-branch_strategy: Worktree per execution lane allocated by `finalize-tasks`; branches from `get_library`; merges back into `get_library`. Independent of WP01/WP02 — touches only `.claude/adr/`.
+branch_strategy: Planning artifacts for this feature were generated on get_library. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into get_library unless the human explicitly redirects the landing branch.
 subtasks:
 - T012
 - T013

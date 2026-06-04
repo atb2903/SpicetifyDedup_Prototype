@@ -7,7 +7,7 @@ requirement_refs:
 - FR-012
 planning_base_branch: get_library
 merge_target_branch: get_library
-branch_strategy: Worktree per execution lane allocated by `finalize-tasks`; branches from `get_library`; merges back into `get_library`. Independent of all other WPs — touches only `src/ui/LoadingView.module.scss`.
+branch_strategy: Planning artifacts for this feature were generated on get_library. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into get_library unless the human explicitly redirects the landing branch.
 subtasks:
 - T015
 - T016

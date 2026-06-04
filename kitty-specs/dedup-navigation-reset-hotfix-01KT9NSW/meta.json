@@ -1,0 +1,10 @@
+{
+  "created_at": "2026-06-04T16:00:03.585191+00:00",
+  "friendly_name": "dedup navigation reset hotfix",
+  "mission_id": "01KT9NSWY6YKMB66KGXG04ZZ92",
+  "mission_number": null,
+  "mission_slug": "dedup-navigation-reset-hotfix-01KT9NSW",
+  "mission_type": "software-dev",
+  "slug": "dedup-navigation-reset-hotfix-01KT9NSW",
+  "target_branch": "get_library"
+}

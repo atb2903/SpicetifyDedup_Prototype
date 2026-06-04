@@ -21,8 +21,8 @@ subtasks:
 - T004
 - T005
 - T006
-shell_pid: "361685"
-agent: "claude:opus-4-7:implementer:implementer"
+shell_pid: "366575"
+agent: "claude:opus-4-7:reviewer:reviewer"
 history:
 - timestamp: '2026-06-04T20:07:25Z'
   actor: tasks
@@ -282,3 +282,4 @@ A reviewer of WP01 should check:
 
 - 2026-06-04T20:26:00Z – claude:opus-4-7:implementer:implementer – shell_pid=361685 – Assigned agent via action command
 - 2026-06-04T20:32:39Z – claude:opus-4-7:implementer:implementer – shell_pid=361685 – Ready for review: RouteResetProvider implemented with mount+unmount reset; 9/9 tests pass (parametrised over 5 source states + cycle + sync + isolation + children); 100/100/100/100 coverage; full suite 453 tests green; typecheck clean; no cross-layer imports; RED→GREEN commits preserved.
+- 2026-06-04T20:33:16Z – claude:opus-4-7:reviewer:reviewer – shell_pid=366575 – Started review via action command

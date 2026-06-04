@@ -17,8 +17,8 @@ subtasks:
 - T019
 - T020
 - T021
-agent: "claude:opus-4-7:implementer:implementer"
-shell_pid: "293398"
+agent: "claude:opus-4-7:reviewer:reviewer"
+shell_pid: "303165"
 history:
 - timestamp: '2026-06-03T19:01:12Z'
   actor: tasks-generator
@@ -334,3 +334,4 @@ A reviewer should check:
 
 - 2026-06-04T09:17:02Z – claude:opus-4-7:implementer:implementer – shell_pid=293398 – Started implementation via action command
 - 2026-06-04T09:27:43Z – claude:opus-4-7:implementer:implementer – shell_pid=293398 – Ready for review: navigation port + adapter + provider land FR-008/FR-009. All 421 tests pass with 100% line/branch coverage; production build succeeds; ADR-0004 captured.
+- 2026-06-04T09:28:46Z – claude:opus-4-7:reviewer:reviewer – shell_pid=303165 – Started review via action command

@@ -11,6 +11,9 @@ requirement_refs:
 planning_base_branch: get_library
 merge_target_branch: get_library
 branch_strategy: Planning artifacts for this feature were generated on get_library. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into get_library unless the human explicitly redirects the landing branch.
+base_branch: kitty/mission-dedup-navigation-reset-hotfix-01KT9NSW
+base_commit: 4b5058001d8a299ad2e28c31452a4acd97f7bf57
+created_at: '2026-06-04T20:25:59.743288+00:00'
 subtasks:
 - T001
 - T002
@@ -18,6 +21,7 @@ subtasks:
 - T004
 - T005
 - T006
+shell_pid: '361685'
 history:
 - timestamp: '2026-06-04T20:07:25Z'
   actor: tasks

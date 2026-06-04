@@ -1,19 +1,19 @@
 {
-  "event_count": 18,
-  "last_event_id": "01KTA5D25H0QJ22EYRZB4ATEZR",
-  "materialized_at": "2026-06-04T20:32:39.601377+00:00",
+  "event_count": 19,
+  "last_event_id": "01KTA5D4F5QRQ6P59ZEQQ7MK3C",
+  "materialized_at": "2026-06-04T20:32:41.957617+00:00",
   "mission_number": "",
   "mission_slug": "dedup-navigation-reset-hotfix-01KT9NSW",
   "mission_type": "software-dev",
   "summary": {
-    "approved": 0,
+    "approved": 1,
     "blocked": 0,
     "canceled": 0,
     "claimed": 0,
     "done": 0,
     "for_review": 1,
     "in_progress": 1,
-    "in_review": 2,
+    "in_review": 1,
     "planned": 1
   },
   "work_packages": {
@@ -46,11 +46,11 @@
       "last_transition_at": "2026-06-04T20:32:32.624848+00:00"
     },
     "WP05": {
-      "actor": "claude:opus-4-7:reviewer:reviewer",
+      "actor": "user",
       "force_count": 1,
-      "lane": "in_review",
-      "last_event_id": "01KTA5A18JTK1FMHT7541CB5XX",
-      "last_transition_at": "2026-06-04T20:31:00.370139+00:00"
+      "lane": "approved",
+      "last_event_id": "01KTA5D4F5QRQ6P59ZEQQ7MK3C",
+      "last_transition_at": "2026-06-04T20:32:41.957617+00:00"
     }
   }
 }

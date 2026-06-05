@@ -15,8 +15,8 @@ subtasks:
 - T009
 - T010
 - T011
-agent: "claude:opus-4-7:implementer:implementer"
-shell_pid: "369622"
+agent: "claude:opus-4-7:reviewer:reviewer"
+shell_pid: "372168"
 history:
 - timestamp: '2026-06-04T20:07:25Z'
   actor: tasks
@@ -249,3 +249,4 @@ A reviewer of WP02 should check:
 
 - 2026-06-05T09:36:05Z – claude:opus-4-7:implementer:implementer – shell_pid=369622 – Started implementation via action command
 - 2026-06-05T09:41:31Z – claude:opus-4-7:implementer:implementer – shell_pid=369622 – Ready for review: app.tsx swap + 7-file retirement; SC-3 grep zero hits; gates green (402 tests, 100/100/100/100 coverage, tsc clean, build success); commit 38dfce9
+- 2026-06-05T09:42:10Z – claude:opus-4-7:reviewer:reviewer – shell_pid=372168 – Started review via action command

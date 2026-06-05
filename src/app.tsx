@@ -1,6 +1,6 @@
 /**
  * Spicetify Custom App entry. Mounts the Dedup page inside the
- * production store provider and the navigation-aware reset bridge.
+ * production store provider and the route-reset lifecycle bridge.
  *
  * `productionStore` is created exactly once at module load: this is the
  * only place authorised to instantiate `SpicetifyPlaylistsLoader`.
@@ -9,33 +9,32 @@
  * pre-trigger host calls) is preserved by the store's contract, not by
  * laziness here.
  *
- * `productionNavigation` is similarly constructed once. The
- * `SpicetifyNavigation` constructor performs no `Spicetify.*` access;
- * the host probe runs lazily inside `subscribe` and `currentPath`, both
- * driven by `NavigationProvider`'s `useEffect` (NFR-008 navigation
- * wiring, FR-008/FR-009).
+ * Provider order: `<PlaylistsStoreProvider>` wraps `<RouteResetProvider>`
+ * because the route-reset bridge calls `usePlaylistsStore((s) => s.reset)`
+ * on mount; the store hook must be available at that point.
  *
- * Provider order: `<PlaylistsStoreProvider>` wraps
- * `<NavigationProvider>` because the navigation bridge calls
- * `usePlaylistsStore((s) => s.reset)` on mount; the store hook must be
- * available at that point.
+ * `RouteResetProvider` is a React-lifecycle bridge (ADR-0005) that
+ * supersedes the prior navigation-port-based design. It resets the
+ * playlists store on mount and on unmount so the page lands on
+ * `{ kind: 'idle' }` every time the Dedup React tree boundaries the
+ * route — see `.claude/adr/0005-react-lifecycle-reset.md` for the full
+ * decision history and `src/store/RouteResetContext.tsx` for the
+ * implementation contract.
  */
 import React from 'react';
 import { DedupPage } from './ui/DedupPage';
 import { createPlaylistsStore } from './store/playlists-store';
 import { PlaylistsStoreProvider } from './store/PlaylistsStoreContext';
-import { NavigationProvider } from './store/NavigationContext';
+import { RouteResetProvider } from './store/RouteResetContext';
 import { SpicetifyPlaylistsLoader } from './adapters/spicetify-playlists-loader';
-import { SpicetifyNavigation } from './adapters/spicetify-navigation';
 
 const productionStore = createPlaylistsStore(new SpicetifyPlaylistsLoader());
-const productionNavigation = new SpicetifyNavigation();
 
 const App = () => (
   <PlaylistsStoreProvider store={productionStore}>
-    <NavigationProvider navigation={productionNavigation}>
+    <RouteResetProvider>
       <DedupPage />
-    </NavigationProvider>
+    </RouteResetProvider>
   </PlaylistsStoreProvider>
 );
 

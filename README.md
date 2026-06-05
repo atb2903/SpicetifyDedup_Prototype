@@ -21,7 +21,9 @@ typed error explanation and a Retry button.
 
 The Dedup page now hosts its own scroll surface so the Load button
 stays below Spotify's topbar — click it with a real mouse to start a
-load.
+load. The page renders five state views — idle, loading, list, empty,
+and failed — each with intentional visual styling so a reader can
+distinguish them at a glance.
 
 This iteration is strictly read-only. Track enumeration, duplicate
 detection, and library mutation arrive in later iterations.
@@ -82,3 +84,7 @@ spicetify watch -a -l
 ```
 
 (`-a` re-applies on change, `-l` tails logs.) With this running, you don't need to re-run `spicetify apply` for every edit — only the first-time `spicetify config custom_apps spicetify-dedup` registration step is one-off.
+
+## Customization
+
+Users whose Spotify build has a non-default topbar height (the default the page assumes is `110px`) can override the Load-button vertical offset by setting the `--dedup-topbar-offset` CSS custom property in their Spicetify `user.css` — for example, `:root { --dedup-topbar-offset: 128px; }`. This keeps the Load button clear of the topbar without rebuilding the app.

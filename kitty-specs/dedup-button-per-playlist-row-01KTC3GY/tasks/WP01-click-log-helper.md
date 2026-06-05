@@ -204,3 +204,4 @@ This signals review-ready. Do not stop short.
 ## Activity Log
 
 - 2026-06-05T20:04:42Z – claude:opus-4.7:implementer:implementer – shell_pid=441905 – Assigned agent via action command
+- 2026-06-05T20:11:12Z – claude:opus-4.7:implementer:implementer – shell_pid=441905 – Ready for review: logDedupClick helper + ADR-0006, coverage 100/100

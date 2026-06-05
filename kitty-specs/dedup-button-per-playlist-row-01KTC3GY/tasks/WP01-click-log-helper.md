@@ -15,7 +15,8 @@ subtasks:
 - T002
 - T003
 - T004
-shell_pid: '441905'
+shell_pid: "441905"
+agent: "claude:opus-4.7:implementer:implementer"
 history:
 - date: '2026-06-05'
   note: Drafted by /spec-kitty.tasks.
@@ -199,3 +200,7 @@ spec-kitty agent action implement-done WP01 --agent <name> --mission dedup-butto
 ```
 
 This signals review-ready. Do not stop short.
+
+## Activity Log
+
+- 2026-06-05T20:04:42Z – claude:opus-4.7:implementer:implementer – shell_pid=441905 – Assigned agent via action command

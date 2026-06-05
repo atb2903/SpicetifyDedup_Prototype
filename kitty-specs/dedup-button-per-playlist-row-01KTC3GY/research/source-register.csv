@@ -1,0 +1,30 @@
+id,kind,title,locator,relevance
+S001,in-repo:spec,Mission spec — Dedup Button Per Playlist Row,kitty-specs/dedup-button-per-playlist-row-01KTC3GY/spec.md,Authoritative requirements (FRs/NFRs/SCs/constraints) for this mission.
+S002,in-repo:adr,ADR-0001 — Hexagonal architecture for load-dedupable-playlists,.claude/adr/0001-hexagonal-load-dedupable-playlists.md,Establishes the named architectural pattern this mission extends.
+S003,in-repo:adr,ADR-0002 — Spicetify Platform APIs over GraphQL,.claude/adr/0002-spicetify-platform-apis-over-graphql.md,Background — explains why no host-API call appears in this mission.
+S004,in-repo:adr,ADR-0003 — Zustand for load state,.claude/adr/0003-zustand-for-load-state.md,Background — the store the button does NOT touch (FR-007).
+S005,in-repo:adr,ADR-0004 — Navigation port,.claude/adr/0004-navigation-port.md,Background — superseded by ADR-0005; included for ADR-sequence context.
+S006,in-repo:adr,ADR-0005 — React lifecycle reset,.claude/adr/0005-react-lifecycle-reset.md,Background — current route-reset mechanism unaffected by this mission.
+S007,in-repo:src,PlaylistRow component,src/ui/PlaylistRow.tsx,The row the button is attached to (Decision 3 + Decision 4).
+S008,in-repo:src,PlaylistRow CSS module,src/ui/PlaylistRow.module.scss,The grid that extends to 4 columns (Decision 4).
+S009,in-repo:src,LikedSongsRow component,src/ui/LikedSongsRow.tsx,Sibling row — research.md §7 open question.
+S010,in-repo:src,LikedSongsRow CSS module,src/ui/LikedSongsRow.module.scss,Mirrors Decision 4's grid change (3→4 columns) under Reading B (confirmed 2026-06-05).
+S011,in-repo:src,LoadedView component,src/ui/LoadedView.tsx,Iterates view models and dispatches to row variants — confirms button count parity with eligible-playlist count.
+S012,in-repo:src,Domain view-model transform,src/domain/view-models.ts,Defines CollectionViewModel; source of row.key (URI) and row.displayName (name) for DedupButtonProps.
+S013,in-repo:src,Styling tokens,src/styles/_tokens.module.scss,Source of --dedup-button / --dedup-button-hover / --dedup-button-disabled used by the button's CSS module.
+S014,in-repo:test,Architecture test,test/architecture.test.ts,Enforces src/ui forbidden imports — confirms new UI files comply.
+S015,in-repo:test,PlaylistRow tests,test/ui/PlaylistRow.test.tsx,Existing tests stay valid through Decision 4; the new button-presence tests extend this file.
+S016,in-repo:test,LoadedView tests,test/ui/LoadedView.test.tsx,Pattern for store-wired integration tests; new button-count assertions extend this file.
+S017,in-repo:config,Vitest config,vitest.config.ts,Coverage thresholds 100/100/100/100; environment happy-dom (Decision 5 probe target).
+S018,in-repo:config,Package manifest,package.json,Confirms @testing-library/user-event is NOT a current devDependency (Decision 5).
+S019,in-repo:doc,Project guide CLAUDE.md,.claude/CLAUDE.md,Project policy — workflow lifecycle and charter pointers.
+S020,in-repo:doc,Charter,.kittify/charter/charter.md,Policy source-of-truth — TDD; SOLID/SRP; fail-loud; 100% coverage; ADR per load-bearing decision; DIRECTIVE_001/003/010/030/034/036.
+S021,in-repo:doc,Spicetify ecosystem research,.claude/spicetify-ecosystem-research.md,Background on host instability — informs Decision 1's rejection of Spicetify.ReactComponent buttons.
+S022,external:spec,HTML living standard — implicit submission,https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#implicit-submission,Source for native-button Enter-activation semantics (Decision 1 / Decision 5).
+S023,external:spec,HTML living standard — tabindex attribute,https://html.spec.whatwg.org/multipage/interaction.html#the-tabindex-attribute,Source for default focus-order behavior on native interactive elements (NFR-001).
+S024,external:guide,WAI-ARIA Authoring Practices — Button Pattern,https://www.w3.org/WAI/ARIA/apg/patterns/button/,Source for "prefer native button over role=button" guidance (Decision 1).
+S025,external:guide,Testing Library — fireEvent API,https://testing-library.com/docs/dom-testing-library/api-events,Source for the fireEvent click / keyDown patterns Decision 5 uses.
+S026,external:guide,Testing Library — getByRole query,https://testing-library.com/docs/queries/byrole,Source for the accessibility-tree query pattern used in DedupButton tests (NFR-002).
+S027,external:guide,Vitest — vi.spyOn,https://vitest.dev/api/vi.html#vi-spyon,Source for the console.log spy pattern used in dedup-click-log tests.
+S028,external:lib,happy-dom — README and changelog,https://github.com/capricorn86/happy-dom,Reference for verifying happy-dom 20.x's native-button key-to-click synthesis (Decision 5 probe).
+S029,external:lib,@testing-library/user-event,https://github.com/testing-library/user-event,Fallback dependency considered in Decision 5 only if the happy-dom probe fails.

@@ -30,12 +30,12 @@ WP03 and WP04 touch disjoint file sets and can run in parallel after WP02 merges
 | T002 | Implement `src/ui/dedup-click-log.ts` to make T001 green | WP01 | | [D] |
 | T003 | Verify `npm run test:coverage` reports 100% line / 100% branch on the helper file | WP01 | | [D] |
 | T004 | Write ADR `0006-console-only-dedup-click-confirmation.md` | WP01 | [D] |
-| T005 | Run happy-dom button-key-to-click synthesis probe (research §5) | WP02 | |
-| T006 | Write failing tests for `DedupButton` (~7 cases: render, click, keyboard, accessible name, side-effect isolation, string edges) | WP02 | |
-| T007 | Implement `src/ui/DedupButton.tsx` to make T006 green | WP02 | |
-| T008 | Add `src/ui/DedupButton.module.scss` if styling exceeds 1–2 inline rules | WP02 | [P] |
-| T009 | If T005 probe failed, add `@testing-library/user-event` as devDependency in `package.json` | WP02 | [P] |
-| T010 | Verify coverage 100% line / 100% branch on new button file(s) | WP02 | |
+| T005 | Run happy-dom button-key-to-click synthesis probe (research §5) | WP02 | | [D] |
+| T006 | Write failing tests for `DedupButton` (~7 cases: render, click, keyboard, accessible name, side-effect isolation, string edges) | WP02 | | [D] |
+| T007 | Implement `src/ui/DedupButton.tsx` to make T006 green | WP02 | | [D] |
+| T008 | Add `src/ui/DedupButton.module.scss` if styling exceeds 1–2 inline rules | WP02 | [D] |
+| T009 | If T005 probe failed, add `@testing-library/user-event` as devDependency in `package.json` | WP02 | [D] |
+| T010 | Verify coverage 100% line / 100% branch on new button file(s) | WP02 | | [D] |
 | T011 | Write failing assertions in `test/ui/PlaylistRow.test.tsx` (button presence, NFR-002 accessible name, NFR-003 layout non-regression) | WP03 | |
 | T012 | Update `src/ui/PlaylistRow.tsx` to mount `<DedupButton>` in trailing cell with `row.displayName` and `row.key` | WP03 | |
 | T013 | Update `src/ui/PlaylistRow.module.scss` — extend `grid-template-columns` from 3 to 4 columns (`48px 1fr auto auto`) | WP03 | |
@@ -128,12 +128,12 @@ None. This WP unblocks WP02.
 
 ### Included subtasks
 
-- [ ] T005 Run happy-dom button-key-to-click synthesis probe (WP02)
-- [ ] T006 Write failing tests for `DedupButton` (~7 cases) (WP02)
-- [ ] T007 Implement `src/ui/DedupButton.tsx` to make T006 green (WP02)
-- [ ] T008 Add `src/ui/DedupButton.module.scss` if styling exceeds 1–2 rules (WP02)
-- [ ] T009 If T005 probe failed, add `@testing-library/user-event` as devDependency (WP02)
-- [ ] T010 Verify coverage 100% on new button file(s) (WP02)
+- [x] T005 Run happy-dom button-key-to-click synthesis probe (WP02)
+- [x] T006 Write failing tests for `DedupButton` (~7 cases) (WP02)
+- [x] T007 Implement `src/ui/DedupButton.tsx` to make T006 green (WP02)
+- [x] T008 Add `src/ui/DedupButton.module.scss` if styling exceeds 1–2 rules (WP02)
+- [x] T009 If T005 probe failed, add `@testing-library/user-event` as devDependency (WP02)
+- [x] T010 Verify coverage 100% on new button file(s) (WP02)
 
 ### Implementation sketch
 

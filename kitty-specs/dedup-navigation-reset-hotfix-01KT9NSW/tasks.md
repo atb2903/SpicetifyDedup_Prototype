@@ -37,11 +37,11 @@ Close DEFECT-1 from the prior mission: replace the broken navigation-port listen
 | T004 | RED — Port-forward surviving tests T-survive-1..4 to the new file/mechanism (no FakeNavigation, no setPath) | WP01 | — | [D] |
 | T005 | GREEN — Implement `src/store/RouteResetContext.tsx` per `contracts/route-reset-provider.md` §1 (JSDoc per §5) | WP01 | — | [D] |
 | T006 | Verify WP01 — `npm run test:run -- test/store/RouteResetContext.test.tsx` green; coverage 100/100/100/100 on the new file; typecheck clean | WP01 | — | [D] |
-| T007 | Edit `src/app.tsx`: replace `NavigationProvider` import with `RouteResetProvider`, drop `SpicetifyNavigation` construction, drop `navigation` prop on the JSX element | WP02 | — |
-| T008 | Edit `test/app.test.tsx`: drop `NavigationProvider`/`SpicetifyNavigation` stubbing; assert `RouteResetProvider` is mounted | WP02 | — |
-| T009 | Delete the five retired files (`src/ports/navigation.ts`, `src/adapters/spicetify-navigation.ts`, `src/store/NavigationContext.tsx`, `test/adapters/spicetify-navigation.test.ts`, `test/adapters/fake-navigation.ts`, `test/ports/navigation-port-contract.test.ts`, `test/store/NavigationContext.test.tsx`) | WP02 | — |
-| T010 | Verify WP02 — full `npm run test:run`, `npm run test:coverage` (100/100/100/100), `npm run typecheck`, architecture test all green | WP02 | — |
-| T011 | SC-3 grep verification — `grep -r -nE "NavigationPort\|SpicetifyNavigation\|FakeNavigation\|navigation-port-contract" src test` returns zero hits | WP02 | — |
+| T007 | Edit `src/app.tsx`: replace `NavigationProvider` import with `RouteResetProvider`, drop `SpicetifyNavigation` construction, drop `navigation` prop on the JSX element | WP02 | — | [D] |
+| T008 | Edit `test/app.test.tsx`: drop `NavigationProvider`/`SpicetifyNavigation` stubbing; assert `RouteResetProvider` is mounted | WP02 | — | [D] |
+| T009 | Delete the five retired files (`src/ports/navigation.ts`, `src/adapters/spicetify-navigation.ts`, `src/store/NavigationContext.tsx`, `test/adapters/spicetify-navigation.test.ts`, `test/adapters/fake-navigation.ts`, `test/ports/navigation-port-contract.test.ts`, `test/store/NavigationContext.test.tsx`) | WP02 | — | [D] |
+| T010 | Verify WP02 — full `npm run test:run`, `npm run test:coverage` (100/100/100/100), `npm run typecheck`, architecture test all green | WP02 | — | [D] |
+| T011 | SC-3 grep verification — `grep -r -nE "NavigationPort\|SpicetifyNavigation\|FakeNavigation\|navigation-port-contract" src test` returns zero hits | WP02 | — | [D] |
 | T012 | Edit `.claude/adr/0004-navigation-port.md` per `contracts/adr-supersession.md` §1: status flip + appended `## Supersession` section | WP03 | [D] |
 | T013 | Create `.claude/adr/0005-react-lifecycle-reset.md` per `contracts/adr-supersession.md` §2 (Status: Accepted, Context cites diagnostic evidence, Decision shows `useEffect` snippet, Alternatives considered enumerated, Implementation notes reference `RouteResetContext.tsx`) | WP03 | [D] |
 | T014 | Verify WP03 — `contracts/adr-supersession.md` §3 checks: status header on 0004, ADR-0005 exists with `Status: Accepted`, supersession chain readable end-to-end | WP03 | [D] |
@@ -86,11 +86,11 @@ The `[P]` marker in this index is informational only; per-WP progress tracks via
 
 **Included subtasks**:
 
-- [ ] T007 Edit `src/app.tsx`: swap `NavigationProvider` for `RouteResetProvider`; drop SpicetifyNavigation imports/construction; drop `navigation` prop
-- [ ] T008 Edit `test/app.test.tsx`: remove NavigationProvider/SpicetifyNavigation stubbing; assert `RouteResetProvider` wraps the page
-- [ ] T009 Delete five retired files + the prior provider test file
-- [ ] T010 Verify — full test suite, coverage gate, typecheck, architecture test all green
-- [ ] T011 SC-3 grep — zero hits for `NavigationPort | SpicetifyNavigation | FakeNavigation | navigation-port-contract` in `src/` and `test/`
+- [x] T007 Edit `src/app.tsx`: swap `NavigationProvider` for `RouteResetProvider`; drop SpicetifyNavigation imports/construction; drop `navigation` prop
+- [x] T008 Edit `test/app.test.tsx`: remove NavigationProvider/SpicetifyNavigation stubbing; assert `RouteResetProvider` wraps the page
+- [x] T009 Delete five retired files + the prior provider test file
+- [x] T010 Verify — full test suite, coverage gate, typecheck, architecture test all green
+- [x] T011 SC-3 grep — zero hits for `NavigationPort | SpicetifyNavigation | FakeNavigation | navigation-port-contract` in `src/` and `test/`
 
 **Estimated prompt size**: ~320 lines.
 **Implementation sketch**: Single commit pattern works fine — the deletion + the app.tsx rewire have to land together to keep the typecheck green. The architecture-test rule table is unchanged (no edit required). Coverage stays 100/100/100/100 because the deleted files are deleted, not orphaned.

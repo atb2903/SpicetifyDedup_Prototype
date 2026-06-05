@@ -136,3 +136,4 @@ A reviewer of WP05 should:
 - 2026-06-04T20:30:33Z – claude:opus-4-7:implementer:implementer – shell_pid=362146 – Ready for review: README DRIFT-2 styled-state-views note + RISK-5 --dedup-topbar-offset override doc; npm run build succeeded
 - 2026-06-04T20:31:00Z – claude:opus-4-7:reviewer:reviewer – shell_pid=364104 – Started review via action command
 - 2026-06-04T20:32:42Z – claude:opus-4-7:reviewer:reviewer – shell_pid=364104 – Review passed: FR-009 five-state note (idle/loading/list/empty/failed) lands in WP01 paragraph cluster; FR-010 documents --dedup-topbar-offset with 110px default in new ## Customization section; CSS property name and default cross-checked against src/ui/DedupPage.module.scss:25; scope limited to README.md (+7/-1).
+- 2026-06-05T09:48:33Z – claude:opus-4-7:reviewer:reviewer – shell_pid=364104 – Done override: Feature merged to get_library at ca55916

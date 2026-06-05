@@ -1,10 +1,12 @@
 {
   "created_at": "2026-06-05T14:38:19.031682+00:00",
-  "friendly_name": "dedup button per playlist row",
+  "friendly_name": "Dedup Button Per Playlist Row",
   "mission_id": "01KTC3GY1VM87DPV0SEDQS24NE",
   "mission_number": null,
   "mission_slug": "dedup-button-per-playlist-row-01KTC3GY",
   "mission_type": "software-dev",
   "slug": "dedup-button-per-playlist-row-01KTC3GY",
-  "target_branch": "main"
+  "source_description": "add a dedup button next to each of the playlists after they're loaded (the button shouldn't do anything besides confirm that it's been pressed on the correct playlist yet)",
+  "target_branch": "main",
+  "vcs": "git"
 }

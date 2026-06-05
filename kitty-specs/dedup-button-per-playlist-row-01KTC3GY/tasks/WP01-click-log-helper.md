@@ -7,11 +7,15 @@ requirement_refs:
 planning_base_branch: main
 merge_target_branch: main
 branch_strategy: Planning artifacts for this feature were generated on main. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into main unless the human explicitly redirects the landing branch.
+base_branch: kitty/mission-dedup-button-per-playlist-row-01KTC3GY
+base_commit: b4c68d6192244295b3661fa02ddedf95b190f100
+created_at: '2026-06-05T20:04:40.136600+00:00'
 subtasks:
 - T001
 - T002
 - T003
 - T004
+shell_pid: '441905'
 history:
 - date: '2026-06-05'
   note: Drafted by /spec-kitty.tasks.

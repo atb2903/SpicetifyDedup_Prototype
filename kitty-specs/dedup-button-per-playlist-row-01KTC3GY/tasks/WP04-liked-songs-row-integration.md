@@ -9,7 +9,7 @@ requirement_refs:
 - NFR-003
 planning_base_branch: main
 merge_target_branch: main
-branch_strategy: Workflow start branch main → planning/base main → merge target main. Branches off the lane base computed by finalize-tasks (after WP02 merges). Runs in parallel with WP03.
+branch_strategy: Planning artifacts for this feature were generated on main. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into main unless the human explicitly redirects the landing branch.
 subtasks:
 - T015
 - T016

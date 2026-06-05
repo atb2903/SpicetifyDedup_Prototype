@@ -1,0 +1,63 @@
+{
+  "event_count": 6,
+  "last_event_id": "01KTC5FA6VB1F7ZD0Z229BH4QD",
+  "materialized_at": "2026-06-05T15:12:22.235166+00:00",
+  "mission_number": "",
+  "mission_slug": "dedup-button-per-playlist-row-01KTC3GY",
+  "mission_type": "software-dev",
+  "summary": {
+    "approved": 0,
+    "blocked": 0,
+    "canceled": 0,
+    "claimed": 0,
+    "done": 0,
+    "for_review": 0,
+    "in_progress": 0,
+    "in_review": 0,
+    "planned": 6
+  },
+  "work_packages": {
+    "WP01": {
+      "actor": "finalize-tasks",
+      "force_count": 1,
+      "lane": "planned",
+      "last_event_id": "01KTC5FA1M1W8MCB1RHJBA2SN2",
+      "last_transition_at": "2026-06-05T15:12:22.068226+00:00"
+    },
+    "WP02": {
+      "actor": "finalize-tasks",
+      "force_count": 1,
+      "lane": "planned",
+      "last_event_id": "01KTC5FA5K5JV93067VDBXRN2K",
+      "last_transition_at": "2026-06-05T15:12:22.195355+00:00"
+    },
+    "WP03": {
+      "actor": "finalize-tasks",
+      "force_count": 1,
+      "lane": "planned",
+      "last_event_id": "01KTC5FA5WGBJGFJH3E7CW2C5E",
+      "last_transition_at": "2026-06-05T15:12:22.204493+00:00"
+    },
+    "WP04": {
+      "actor": "finalize-tasks",
+      "force_count": 1,
+      "lane": "planned",
+      "last_event_id": "01KTC5FA67EEJ31KHJG9X18F38",
+      "last_transition_at": "2026-06-05T15:12:22.215836+00:00"
+    },
+    "WP05": {
+      "actor": "finalize-tasks",
+      "force_count": 1,
+      "lane": "planned",
+      "last_event_id": "01KTC5FA6J4EX5JMNH6H9NH3GE",
+      "last_transition_at": "2026-06-05T15:12:22.226111+00:00"
+    },
+    "WP06": {
+      "actor": "finalize-tasks",
+      "force_count": 1,
+      "lane": "planned",
+      "last_event_id": "01KTC5FA6VB1F7ZD0Z229BH4QD",
+      "last_transition_at": "2026-06-05T15:12:22.235166+00:00"
+    }
+  }
+}

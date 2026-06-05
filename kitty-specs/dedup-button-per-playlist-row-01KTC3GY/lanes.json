@@ -1,0 +1,100 @@
+{
+  "version": 1,
+  "mission_slug": "dedup-button-per-playlist-row-01KTC3GY",
+  "mission_id": "01KTC3GY1VM87DPV0SEDQS24NE",
+  "mission_branch": "kitty/mission-dedup-button-per-playlist-row-01KTC3GY",
+  "target_branch": "main",
+  "lanes": [
+    {
+      "lane_id": "lane-a",
+      "wp_ids": [
+        "WP01",
+        "WP02",
+        "WP03",
+        "WP04",
+        "WP05"
+      ],
+      "write_scope": [
+        ".claude/adr/0006-console-only-dedup-click-confirmation.md",
+        "package.json",
+        "src/ui/DedupButton.module.scss",
+        "src/ui/DedupButton.tsx",
+        "src/ui/LikedSongsRow.module.scss",
+        "src/ui/LikedSongsRow.tsx",
+        "src/ui/PlaylistRow.module.scss",
+        "src/ui/PlaylistRow.tsx",
+        "src/ui/dedup-click-log.ts",
+        "test/ui/DedupButton.test.tsx",
+        "test/ui/EmptyView.test.tsx",
+        "test/ui/LikedSongsRow.test.tsx",
+        "test/ui/LoadedView.test.tsx",
+        "test/ui/PlaylistRow.test.tsx",
+        "test/ui/dedup-click-log.test.ts"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "app-shell",
+        "artifact-rendering",
+        "legacy-cleanup",
+        "tests",
+        "tracker-integration",
+        "workspace"
+      ],
+      "depends_on_lanes": [],
+      "parallel_group": 0
+    },
+    {
+      "lane_id": "lane-planning",
+      "wp_ids": [
+        "WP06"
+      ],
+      "write_scope": [
+        "kitty-specs/dedup-button-per-playlist-row-01KTC3GY/live-verification.2026-06-05.md",
+        "kitty-specs/dedup-button-per-playlist-row-01KTC3GY/screenshots/**"
+      ],
+      "predicted_surfaces": [
+        "planning"
+      ],
+      "depends_on_lanes": [],
+      "parallel_group": 0
+    }
+  ],
+  "computed_at": "2026-06-05T15:12:22.249780+00:00",
+  "computed_from": "dependency_graph+ownership",
+  "planning_artifact_wps": [
+    "WP06"
+  ],
+  "collapse_report": {
+    "events": [
+      {
+        "wp_a": "WP02",
+        "wp_b": "WP01",
+        "rule": "dependency",
+        "evidence": "WP02 depends on WP01"
+      },
+      {
+        "wp_a": "WP03",
+        "wp_b": "WP02",
+        "rule": "dependency",
+        "evidence": "WP03 depends on WP02"
+      },
+      {
+        "wp_a": "WP04",
+        "wp_b": "WP02",
+        "rule": "dependency",
+        "evidence": "WP04 depends on WP02"
+      },
+      {
+        "wp_a": "WP05",
+        "wp_b": "WP03",
+        "rule": "dependency",
+        "evidence": "WP05 depends on WP03"
+      }
+    ],
+    "total_merges": 4,
+    "independent_wps_collapsed": 0,
+    "by_rule": {
+      "dependency": 4
+    }
+  }
+}

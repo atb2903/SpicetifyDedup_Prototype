@@ -15,8 +15,8 @@ subtasks:
 - T002
 - T003
 - T004
-shell_pid: "441905"
-agent: "claude:opus-4.7:implementer:implementer"
+shell_pid: "445716"
+agent: "claude:opus-4.7:reviewer:reviewer"
 history:
 - date: '2026-06-05'
   note: Drafted by /spec-kitty.tasks.
@@ -205,3 +205,4 @@ This signals review-ready. Do not stop short.
 
 - 2026-06-05T20:04:42Z – claude:opus-4.7:implementer:implementer – shell_pid=441905 – Assigned agent via action command
 - 2026-06-05T20:11:12Z – claude:opus-4.7:implementer:implementer – shell_pid=441905 – Ready for review: logDedupClick helper + ADR-0006, coverage 100/100
+- 2026-06-05T20:11:47Z – claude:opus-4.7:reviewer:reviewer – shell_pid=445716 – Started review via action command

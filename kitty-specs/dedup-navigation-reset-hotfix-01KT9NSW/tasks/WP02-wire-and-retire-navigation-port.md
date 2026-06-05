@@ -248,3 +248,4 @@ A reviewer of WP02 should check:
 ## Activity Log
 
 - 2026-06-05T09:36:05Z – claude:opus-4-7:implementer:implementer – shell_pid=369622 – Started implementation via action command
+- 2026-06-05T09:41:31Z – claude:opus-4-7:implementer:implementer – shell_pid=369622 – Ready for review: app.tsx swap + 7-file retirement; SC-3 grep zero hits; gates green (402 tests, 100/100/100/100 coverage, tsc clean, build success); commit 38dfce9

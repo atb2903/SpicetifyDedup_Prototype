@@ -26,10 +26,10 @@ WP03 and WP04 touch disjoint file sets and can run in parallel after WP02 merges
 
 | ID | Description | WP | Parallel |
 |---|---|---|---|
-| T001 | Write failing tests for `logDedupClick` (3 cases: ASCII, empty name, mixed-special) | WP01 | |
-| T002 | Implement `src/ui/dedup-click-log.ts` to make T001 green | WP01 | |
-| T003 | Verify `npm run test:coverage` reports 100% line / 100% branch on the helper file | WP01 | |
-| T004 | Write ADR `0006-console-only-dedup-click-confirmation.md` | WP01 | [P] |
+| T001 | Write failing tests for `logDedupClick` (3 cases: ASCII, empty name, mixed-special) | WP01 | | [D] |
+| T002 | Implement `src/ui/dedup-click-log.ts` to make T001 green | WP01 | | [D] |
+| T003 | Verify `npm run test:coverage` reports 100% line / 100% branch on the helper file | WP01 | | [D] |
+| T004 | Write ADR `0006-console-only-dedup-click-confirmation.md` | WP01 | [D] |
 | T005 | Run happy-dom button-key-to-click synthesis probe (research §5) | WP02 | |
 | T006 | Write failing tests for `DedupButton` (~7 cases: render, click, keyboard, accessible name, side-effect isolation, string edges) | WP02 | |
 | T007 | Implement `src/ui/DedupButton.tsx` to make T006 green | WP02 | |
@@ -88,10 +88,10 @@ WP03 and WP04 touch disjoint file sets and can run in parallel after WP02 merges
 
 ### Included subtasks
 
-- [ ] T001 Write failing tests for `logDedupClick` (3 cases) (WP01)
-- [ ] T002 Implement `src/ui/dedup-click-log.ts` to make T001 green (WP01)
-- [ ] T003 Verify coverage 100% line / branch on helper (WP01)
-- [ ] T004 Write ADR `0006-console-only-dedup-click-confirmation.md` (WP01)
+- [x] T001 Write failing tests for `logDedupClick` (3 cases) (WP01)
+- [x] T002 Implement `src/ui/dedup-click-log.ts` to make T001 green (WP01)
+- [x] T003 Verify coverage 100% line / branch on helper (WP01)
+- [x] T004 Write ADR `0006-console-only-dedup-click-confirmation.md` (WP01)
 
 ### Implementation sketch
 

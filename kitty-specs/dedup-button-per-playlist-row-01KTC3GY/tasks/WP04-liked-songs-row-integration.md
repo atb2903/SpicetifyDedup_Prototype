@@ -172,3 +172,4 @@ spec-kitty agent action implement-done WP04 --agent <name> --mission dedup-butto
 ## Activity Log
 
 - 2026-06-06T11:08:58Z – claude:opus-4.7:implementer:implementer – shell_pid=459130 – Started implementation via action command
+- 2026-06-06T11:12:55Z – claude:opus-4.7:implementer:implementer – shell_pid=459130 – Ready for review: LikedSongsRow mounts DedupButton with hardcoded Liked Songs/spotify:collection:tracks, grid 4-col, coverage 100/100

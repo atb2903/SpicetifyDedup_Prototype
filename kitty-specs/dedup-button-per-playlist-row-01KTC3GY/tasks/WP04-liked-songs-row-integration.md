@@ -15,8 +15,8 @@ subtasks:
 - T016
 - T017
 - T018
-agent: "claude:opus-4.7:implementer:implementer"
-shell_pid: "459130"
+agent: "claude:opus-4.7:reviewer:reviewer"
+shell_pid: "461363"
 history:
 - date: '2026-06-05'
   note: Drafted by /spec-kitty.tasks.
@@ -173,3 +173,4 @@ spec-kitty agent action implement-done WP04 --agent <name> --mission dedup-butto
 
 - 2026-06-06T11:08:58Z – claude:opus-4.7:implementer:implementer – shell_pid=459130 – Started implementation via action command
 - 2026-06-06T11:12:55Z – claude:opus-4.7:implementer:implementer – shell_pid=459130 – Ready for review: LikedSongsRow mounts DedupButton with hardcoded Liked Songs/spotify:collection:tracks, grid 4-col, coverage 100/100
+- 2026-06-06T11:13:20Z – claude:opus-4.7:reviewer:reviewer – shell_pid=461363 – Started review via action command

@@ -10,11 +10,16 @@
  * already resolved everything this component needs, so rendering is a
  * pure function of `row`.
  *
- * Styling (WP02 / T010): ships its own CSS module with a three-column
- * grid (cover | text | count) so adjacent spans cannot collapse into a
- * single visual word (FR-004 — the P2 defect). Null `imageUrl` rows
- * render a placeholder glyph instead of a broken `<img>` (FR-005). The
- * row gets a low-opacity bottom border so siblings read as a list.
+ * Styling (WP02 / T010): ships its own CSS module with a four-column
+ * grid (cover | text | count | dedup-button) so adjacent spans cannot
+ * collapse into a single visual word (FR-004 — the P2 defect). Null
+ * `imageUrl` rows render a placeholder glyph instead of a broken `<img>`
+ * (FR-005). The row gets a low-opacity bottom border so siblings read as
+ * a list.
+ *
+ * WP03 (FR-001 / NFR-002 / NFR-003): mounts a `<DedupButton>` in the
+ * trailing grid cell so every playlist row exposes a per-row dedup
+ * affordance — see ADR-0006 for the diagnostic-only click contract.
  */
 
 import React from 'react';
@@ -22,6 +27,7 @@ import type {
   CollectionViewModel,
   OwnerIdentity,
 } from '../domain/view-models';
+import { DedupButton } from './DedupButton';
 import styles from './PlaylistRow.module.scss';
 
 /** Props for the `PlaylistRow` component. */
@@ -51,6 +57,7 @@ export function PlaylistRow({ row }: PlaylistRowProps) {
       <span className={styles.count}>
         {formatTrackCount(row.trackCount)}
       </span>
+      <DedupButton playlistName={row.displayName} playlistUri={row.key} />
     </li>
   );
 }

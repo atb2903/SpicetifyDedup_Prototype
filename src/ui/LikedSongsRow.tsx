@@ -17,10 +17,21 @@
  * Styling (WP02 / T010): ships its own CSS module with the same grid
  * footprint as `PlaylistRow` so the loaded list reads as one consistent
  * surface, differing only in the heart-tile cover treatment.
+ *
+ * WP04 (FR-001 / NFR-002 / NFR-003): mounts a `<DedupButton>` in the
+ * trailing grid cell using the hardcoded literals `"Liked Songs"` and
+ * `"spotify:collection:tracks"` at the call site, per research §7.1.
+ * The synthetic-row pattern already hardcodes the display name and
+ * owner label, so the URI literal fits the same shape; threading a
+ * `canonicalUri` field through `CollectionViewModel` would have a wide
+ * blast radius (transform, view-model type, every consumer) for a
+ * single call-site value. See ADR-0006 for the diagnostic-only click
+ * contract.
  */
 
 import React from 'react';
 import type { CollectionViewModel } from '../domain/view-models';
+import { DedupButton } from './DedupButton';
 import styles from './LikedSongsRow.module.scss';
 
 /** Props for the `LikedSongsRow` component. */
@@ -55,6 +66,7 @@ export function LikedSongsRow({ row }: LikedSongsRowProps) {
       <span className={styles.count}>
         {row.trackCount === 1 ? '1 track' : `${row.trackCount} tracks`}
       </span>
+      <DedupButton playlistName="Liked Songs" playlistUri="spotify:collection:tracks" />
     </li>
   );
 }

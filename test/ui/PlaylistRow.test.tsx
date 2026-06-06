@@ -8,8 +8,8 @@
  */
 
 import React from 'react';
-import { describe, it, expect } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { render, screen, fireEvent } from '@testing-library/react';
 import { PlaylistRow } from '../../src/ui/PlaylistRow';
 import type { CollectionViewModel } from '../../src/domain/view-models';
 
@@ -155,4 +155,82 @@ describe('PlaylistRow', () => {
       (cs.borderBottom !== '' && !cs.borderBottom.startsWith('0px'));
     expect(hasBorder).toBe(true);
   });
+});
+
+describe('PlaylistRow — Dedup button (WP03)', () => {
+  let logSpy: ReturnType<typeof vi.spyOn>;
+
+  beforeEach(() => {
+    logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+  });
+
+  afterEach(() => {
+    logSpy.mockRestore();
+  });
+
+  // (a) FR-001 — every playlist row mounts a Dedup button whose accessible
+  //     name is `Dedup <playlistName>` (NFR-002 contract from WP02).
+  it('renders a Dedup button on every playlist row', () => {
+    render(
+      <PlaylistRow
+        row={sample({
+          displayName: 'My Playlist',
+          key: 'spotify:playlist:abc',
+        })}
+      />,
+    );
+    expect(
+      screen.getByRole('button', { name: /^Dedup My Playlist$/ }),
+    ).toBeInTheDocument();
+  });
+
+  // (b) FR-002 / FR-004 — the row binds the button to its own display name
+  //     and key (URI) so click activation logs that row's identity exactly
+  //     once via WP01's logDedupClick helper.
+  it("binds the button to the row's display name and key (URI)", () => {
+    render(
+      <PlaylistRow
+        row={sample({
+          displayName: 'My Playlist',
+          key: 'spotify:playlist:abc',
+        })}
+      />,
+    );
+    const button = screen.getByRole('button', {
+      name: /^Dedup My Playlist$/,
+    });
+    fireEvent.click(button);
+    expect(logSpy).toHaveBeenCalledTimes(1);
+    expect(logSpy).toHaveBeenCalledWith(
+      '[Dedup] clicked: My Playlist (spotify:playlist:abc)',
+    );
+  });
+
+  // (c) NFR-003 — mounting the button must not truncate the playlist's
+  //     display name, owner label, or formatted track count. Long-name +
+  //     multi-track fixture mirrors the pattern used earlier in this file.
+  it('does not truncate the playlist name, owner label, or track count when the button is present', () => {
+    const long = 'A'.repeat(500);
+    render(
+      <PlaylistRow
+        row={sample({
+          displayName: long,
+          owner: { kind: 'other', displayName: 'friend' },
+          trackCount: 1000,
+        })}
+      />,
+    );
+    // (i) Display name is fully present (no truncation).
+    expect(screen.getByText(long)).toBeInTheDocument();
+    // (ii) Owner label is present.
+    expect(screen.getByText(/by friend/i)).toBeInTheDocument();
+    // (iii) Formatted track count is present.
+    expect(screen.getByText(/^1000 tracks$/i)).toBeInTheDocument();
+  });
+
+  // (d) Skipped: the existing `PlaylistRow` suite already exercises the
+  //     `data-row-kind="playlist"` routing attribute implicitly through
+  //     the `<li>` rendering — the attribute is set unconditionally in
+  //     the source and adding a Dedup button cannot reach it. The
+  //     non-regression assertion would duplicate existing coverage.
 });

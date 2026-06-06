@@ -10,8 +10,8 @@
  */
 
 import React from 'react';
-import { describe, it, expect } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { render, screen, fireEvent } from '@testing-library/react';
 import { LikedSongsRow } from '../../src/ui/LikedSongsRow';
 import type { CollectionViewModel } from '../../src/domain/view-models';
 
@@ -110,4 +110,60 @@ describe('LikedSongsRow', () => {
       (cs.borderBottom !== '' && !cs.borderBottom.startsWith('0px'));
     expect(hasBorder).toBe(true);
   });
+});
+
+describe('LikedSongsRow — Dedup button (WP04)', () => {
+  let logSpy: ReturnType<typeof vi.spyOn>;
+
+  beforeEach(() => {
+    logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+  });
+
+  afterEach(() => {
+    logSpy.mockRestore();
+  });
+
+  // (a) FR-001 / NFR-002 — the pinned Liked Songs row mounts a Dedup button
+  //     whose accessible name is the verbatim `Dedup Liked Songs` (uniform
+  //     wording per research §7.2).
+  it('renders a Dedup button with accessible name "Dedup Liked Songs"', () => {
+    render(<LikedSongsRow row={sample()} />);
+    expect(
+      screen.getByRole('button', { name: /^Dedup Liked Songs$/ }),
+    ).toBeInTheDocument();
+  });
+
+  // (b) FR-003 / FR-004 — clicking the button emits exactly one diagnostic
+  //     line `[Dedup] clicked: Liked Songs (spotify:collection:tracks)` via
+  //     WP01's logDedupClick helper. The literals are hardcoded at the call
+  //     site (research §7.1) and must propagate verbatim.
+  it('logs [Dedup] clicked: Liked Songs (spotify:collection:tracks) on click', () => {
+    render(<LikedSongsRow row={sample()} />);
+    const button = screen.getByRole('button', {
+      name: /^Dedup Liked Songs$/,
+    });
+    fireEvent.click(button);
+    expect(logSpy).toHaveBeenCalledTimes(1);
+    expect(logSpy).toHaveBeenCalledWith(
+      '[Dedup] clicked: Liked Songs (spotify:collection:tracks)',
+    );
+  });
+
+  // (c) NFR-003 — mounting the button must not displace the row's existing
+  //     copy: "Liked Songs" / "Your Library" / the heart icon all still
+  //     render alongside the new affordance.
+  it('preserves Liked Songs / Your Library copy and the heart icon alongside the button', () => {
+    render(<LikedSongsRow row={sample()} />);
+    expect(screen.getByText('Liked Songs')).toBeInTheDocument();
+    expect(screen.getByText('Your Library')).toBeInTheDocument();
+    expect(
+      screen.getByRole('img', { name: /Liked Songs icon/ }),
+    ).toBeInTheDocument();
+  });
+
+  // (d) Skipped: the existing `LikedSongsRow` suite already exercises the
+  //     `data-row-kind="liked-songs"` routing attribute on the `<li>` (see
+  //     the "carries a stable data-row-kind" test above). The attribute is
+  //     set unconditionally in the source and adding a Dedup button cannot
+  //     reach it. A non-regression assertion here would duplicate coverage.
 });

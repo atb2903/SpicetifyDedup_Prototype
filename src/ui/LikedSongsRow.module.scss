@@ -4,13 +4,14 @@
 // list reads as one consistent surface; differs visually by replacing
 // the cover with a heart glyph on a Spotify-purple tile so the pinned
 // Liked Songs row is recognisable at a glance.
+// WP04 (FR-001 / NFR-003): a fourth `auto` column hosts the trailing Dedup button.
 
 @use '../styles/tokens.module' as tokens;
 @include tokens.declare;
 
 .row {
   display: grid;
-  grid-template-columns: 48px 1fr auto;
+  grid-template-columns: 48px 1fr auto auto;
   align-items: center;
   gap: 12px;
   padding: 8px 12px;

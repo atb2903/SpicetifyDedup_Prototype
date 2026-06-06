@@ -8,13 +8,14 @@
 // reads as a list. Null `imageUrl` rows render a placeholder cover
 // (FR-005) — the same 48×48 footprint, with a music-note glyph centred
 // inside.
+// WP03 (FR-001 / NFR-003): a fourth `auto` column hosts the trailing Dedup button.
 
 @use '../styles/tokens.module' as tokens;
 @include tokens.declare;
 
 .row {
   display: grid;
-  grid-template-columns: 48px 1fr auto;
+  grid-template-columns: 48px 1fr auto auto;
   align-items: center;
   gap: 12px;
   padding: 8px 12px;

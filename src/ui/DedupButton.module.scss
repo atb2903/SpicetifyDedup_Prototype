@@ -1,0 +1,33 @@
+// DedupButton styling (WP02 / T008).
+//
+// Per-row Dedup affordance — a small pill button that lives at the
+// trailing edge of each playlist row. Decision rule from the WP brief
+// triggered the module path because the visual target needs three+
+// rules: hover treatment, focus-visible outline, padding/border-radius
+// for visual fit. Tokens come from the shared `_tokens.module.scss`
+// partial so theme drift in the host client propagates here without
+// edits.
+
+@use '../styles/tokens.module' as tokens;
+@include tokens.declare;
+
+.button {
+  background: transparent;
+  border: 1px solid var(--dedup-card-hover);
+  color: var(--dedup-text);
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: background-color 120ms ease, border-color 120ms ease;
+
+  &:hover {
+    background: var(--dedup-card-hover);
+    border-color: var(--dedup-button);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--dedup-button);
+    outline-offset: 2px;
+  }
+}

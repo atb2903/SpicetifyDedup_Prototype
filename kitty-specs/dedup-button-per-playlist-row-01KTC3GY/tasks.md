@@ -36,10 +36,10 @@ WP03 and WP04 touch disjoint file sets and can run in parallel after WP02 merges
 | T008 | Add `src/ui/DedupButton.module.scss` if styling exceeds 1–2 inline rules | WP02 | [D] |
 | T009 | If T005 probe failed, add `@testing-library/user-event` as devDependency in `package.json` | WP02 | [D] |
 | T010 | Verify coverage 100% line / 100% branch on new button file(s) | WP02 | | [D] |
-| T011 | Write failing assertions in `test/ui/PlaylistRow.test.tsx` (button presence, NFR-002 accessible name, NFR-003 layout non-regression) | WP03 | |
-| T012 | Update `src/ui/PlaylistRow.tsx` to mount `<DedupButton>` in trailing cell with `row.displayName` and `row.key` | WP03 | |
-| T013 | Update `src/ui/PlaylistRow.module.scss` — extend `grid-template-columns` from 3 to 4 columns (`48px 1fr auto auto`) | WP03 | |
-| T014 | Verify all PlaylistRow tests green; coverage 100% on touched ranges | WP03 | |
+| T011 | Write failing assertions in `test/ui/PlaylistRow.test.tsx` (button presence, NFR-002 accessible name, NFR-003 layout non-regression) | WP03 | | [D] |
+| T012 | Update `src/ui/PlaylistRow.tsx` to mount `<DedupButton>` in trailing cell with `row.displayName` and `row.key` | WP03 | | [D] |
+| T013 | Update `src/ui/PlaylistRow.module.scss` — extend `grid-template-columns` from 3 to 4 columns (`48px 1fr auto auto`) | WP03 | | [D] |
+| T014 | Verify all PlaylistRow tests green; coverage 100% on touched ranges | WP03 | | [D] |
 | T015 | Write failing assertions in `test/ui/LikedSongsRow.test.tsx` (button presence with hardcoded URI literal, accessible name `Dedup Liked Songs`) | WP04 | |
 | T016 | Update `src/ui/LikedSongsRow.tsx` to mount `<DedupButton playlistName="Liked Songs" playlistUri="spotify:collection:tracks" />` | WP04 | |
 | T017 | Update `src/ui/LikedSongsRow.module.scss` — extend `grid-template-columns` from 3 to 4 columns (`48px 1fr auto auto`) | WP04 | |
@@ -198,10 +198,10 @@ T008 and T009 are independent of the test-writing thread (T006/T007) once their 
 
 ### Included subtasks
 
-- [ ] T011 Write failing assertions in `PlaylistRow.test.tsx` (button presence, accessible name, layout non-regression) (WP03)
-- [ ] T012 Update `src/ui/PlaylistRow.tsx` to mount `<DedupButton>` with `row.displayName` / `row.key` (WP03)
-- [ ] T013 Update `src/ui/PlaylistRow.module.scss` — `grid-template-columns: 48px 1fr auto auto` (WP03)
-- [ ] T014 Verify PlaylistRow tests green; coverage 100% on touched ranges (WP03)
+- [x] T011 Write failing assertions in `PlaylistRow.test.tsx` (button presence, accessible name, layout non-regression) (WP03)
+- [x] T012 Update `src/ui/PlaylistRow.tsx` to mount `<DedupButton>` with `row.displayName` / `row.key` (WP03)
+- [x] T013 Update `src/ui/PlaylistRow.module.scss` — `grid-template-columns: 48px 1fr auto auto` (WP03)
+- [x] T014 Verify PlaylistRow tests green; coverage 100% on touched ranges (WP03)
 
 ### Implementation sketch
 

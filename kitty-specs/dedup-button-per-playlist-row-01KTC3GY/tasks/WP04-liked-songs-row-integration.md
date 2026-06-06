@@ -15,6 +15,8 @@ subtasks:
 - T016
 - T017
 - T018
+agent: "claude:opus-4.7:implementer:implementer"
+shell_pid: "459130"
 history:
 - date: '2026-06-05'
   note: Drafted by /spec-kitty.tasks.
@@ -166,3 +168,7 @@ spec-kitty agent action implement WP04 --agent <name>
 ```bash
 spec-kitty agent action implement-done WP04 --agent <name> --mission dedup-button-per-playlist-row-01KTC3GY
 ```
+
+## Activity Log
+
+- 2026-06-06T11:08:58Z – claude:opus-4.7:implementer:implementer – shell_pid=459130 – Started implementation via action command

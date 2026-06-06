@@ -40,10 +40,10 @@ WP03 and WP04 touch disjoint file sets and can run in parallel after WP02 merges
 | T012 | Update `src/ui/PlaylistRow.tsx` to mount `<DedupButton>` in trailing cell with `row.displayName` and `row.key` | WP03 | | [D] |
 | T013 | Update `src/ui/PlaylistRow.module.scss` — extend `grid-template-columns` from 3 to 4 columns (`48px 1fr auto auto`) | WP03 | | [D] |
 | T014 | Verify all PlaylistRow tests green; coverage 100% on touched ranges | WP03 | | [D] |
-| T015 | Write failing assertions in `test/ui/LikedSongsRow.test.tsx` (button presence with hardcoded URI literal, accessible name `Dedup Liked Songs`) | WP04 | |
-| T016 | Update `src/ui/LikedSongsRow.tsx` to mount `<DedupButton playlistName="Liked Songs" playlistUri="spotify:collection:tracks" />` | WP04 | |
-| T017 | Update `src/ui/LikedSongsRow.module.scss` — extend `grid-template-columns` from 3 to 4 columns (`48px 1fr auto auto`) | WP04 | |
-| T018 | Verify all LikedSongsRow tests green; coverage 100% on touched ranges | WP04 | |
+| T015 | Write failing assertions in `test/ui/LikedSongsRow.test.tsx` (button presence with hardcoded URI literal, accessible name `Dedup Liked Songs`) | WP04 | | [D] |
+| T016 | Update `src/ui/LikedSongsRow.tsx` to mount `<DedupButton playlistName="Liked Songs" playlistUri="spotify:collection:tracks" />` | WP04 | | [D] |
+| T017 | Update `src/ui/LikedSongsRow.module.scss` — extend `grid-template-columns` from 3 to 4 columns (`48px 1fr auto auto`) | WP04 | | [D] |
+| T018 | Verify all LikedSongsRow tests green; coverage 100% on touched ranges | WP04 | | [D] |
 | T019 | Update `test/ui/LoadedView.test.tsx` boundary cases: 0 rows, 1 row, 3+ rows with first/middle/last button-click assertions (C-005) | WP05 | |
 | T020 | Add duplicate-name fixture test in `LoadedView.test.tsx` — 5-row fixture, two playlists sharing display name, each logs distinct URI (SC-001) | WP05 | |
 | T021 | Add no-ownership-filter fixture test in `LoadedView.test.tsx` — self / other / system-library, all render buttons (FR-006) | WP05 | |
@@ -250,10 +250,10 @@ None within WP03 (the test ordering is RED → GREEN → coverage). Externally, 
 
 ### Included subtasks
 
-- [ ] T015 Write failing assertions in `LikedSongsRow.test.tsx` (button presence with hardcoded URI literal, accessible name `Dedup Liked Songs`) (WP04)
-- [ ] T016 Update `src/ui/LikedSongsRow.tsx` to mount `<DedupButton>` with literals (WP04)
-- [ ] T017 Update `src/ui/LikedSongsRow.module.scss` — `grid-template-columns: 48px 1fr auto auto` (WP04)
-- [ ] T018 Verify LikedSongsRow tests green; coverage 100% on touched ranges (WP04)
+- [x] T015 Write failing assertions in `LikedSongsRow.test.tsx` (button presence with hardcoded URI literal, accessible name `Dedup Liked Songs`) (WP04)
+- [x] T016 Update `src/ui/LikedSongsRow.tsx` to mount `<DedupButton>` with literals (WP04)
+- [x] T017 Update `src/ui/LikedSongsRow.module.scss` — `grid-template-columns: 48px 1fr auto auto` (WP04)
+- [x] T018 Verify LikedSongsRow tests green; coverage 100% on touched ranges (WP04)
 
 ### Implementation sketch
 

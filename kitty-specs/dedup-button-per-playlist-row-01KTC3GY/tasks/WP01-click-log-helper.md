@@ -207,3 +207,4 @@ This signals review-ready. Do not stop short.
 - 2026-06-05T20:11:12Z – claude:opus-4.7:implementer:implementer – shell_pid=441905 – Ready for review: logDedupClick helper + ADR-0006, coverage 100/100
 - 2026-06-05T20:11:47Z – claude:opus-4.7:reviewer:reviewer – shell_pid=445716 – Started review via action command
 - 2026-06-05T20:14:25Z – claude:opus-4.7:reviewer:reviewer – shell_pid=445716 – Review passed: helper + 3 tests pass (407/407 suite green), per-file coverage 1/1 stmts, 0/0 branches, 1/1 funcs, 1/1 lines (100%), global thresholds hold, tsc clean, architecture intact (helper imports nothing); ADR-0006 satisfies file-existence DoD on disk at .claude/adr/ (gitignored per CLAUDE.md, consistent with ADRs 0001-0005); no out-of-scope edits.
+- 2026-06-06T11:56:27Z – claude:opus-4.7:reviewer:reviewer – shell_pid=445716 – Done override: Mission merged at commit 19fcd0e (squash); auto-transition did not fire

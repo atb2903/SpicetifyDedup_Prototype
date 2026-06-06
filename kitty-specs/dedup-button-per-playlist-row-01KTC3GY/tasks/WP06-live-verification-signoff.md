@@ -24,6 +24,8 @@ subtasks:
 - T028
 - T029
 - T030
+agent: "claude:opus-4.7:implementer:implementer"
+shell_pid: "468075"
 history:
 - date: '2026-06-05'
   note: Drafted by /spec-kitty.tasks.
@@ -241,3 +243,7 @@ spec-kitty agent action implement-done WP06 --agent <name> --mission dedup-butto
 ```
 
 After WP06 completes, the mission is ready for `spec-kitty accept` and `spec-kitty merge`.
+
+## Activity Log
+
+- 2026-06-06T11:25:36Z – claude:opus-4.7:implementer:implementer – shell_pid=468075 – Started implementation via action command

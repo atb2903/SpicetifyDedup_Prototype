@@ -1,7 +1,7 @@
 {
-  "event_count": 31,
-  "last_event_id": "01KTEAV3CABQ24S78ZXAFWR6JZ",
-  "materialized_at": "2026-06-06T11:24:40.202486+00:00",
+  "event_count": 33,
+  "last_event_id": "01KTEAWT0PDCY657JKZ6SNZA18",
+  "materialized_at": "2026-06-06T11:25:36.150979+00:00",
   "mission_number": "",
   "mission_slug": "dedup-button-per-playlist-row-01KTC3GY",
   "mission_type": "software-dev",
@@ -12,9 +12,9 @@
     "claimed": 0,
     "done": 0,
     "for_review": 0,
-    "in_progress": 0,
+    "in_progress": 1,
     "in_review": 0,
-    "planned": 1
+    "planned": 0
   },
   "work_packages": {
     "WP01": {
@@ -53,11 +53,11 @@
       "last_transition_at": "2026-06-06T11:24:40.202486+00:00"
     },
     "WP06": {
-      "actor": "finalize-tasks",
+      "actor": "claude:opus-4.7:implementer:implementer",
       "force_count": 1,
-      "lane": "planned",
-      "last_event_id": "01KTC5FA6VB1F7ZD0Z229BH4QD",
-      "last_transition_at": "2026-06-05T15:12:22.235166+00:00"
+      "lane": "in_progress",
+      "last_event_id": "01KTEAWT0PDCY657JKZ6SNZA18",
+      "last_transition_at": "2026-06-06T11:25:36.150979+00:00"
     }
   }
 }

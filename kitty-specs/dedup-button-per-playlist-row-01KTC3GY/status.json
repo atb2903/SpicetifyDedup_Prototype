@@ -1,16 +1,16 @@
 {
-  "event_count": 37,
-  "last_event_id": "01KTECNA10NVN2WZ4E0PSGS1MP",
-  "materialized_at": "2026-06-06T11:56:27.552800+00:00",
+  "event_count": 38,
+  "last_event_id": "01KTECNBBC5DCBV3HBDSHK620C",
+  "materialized_at": "2026-06-06T11:56:28.908402+00:00",
   "mission_number": "4",
   "mission_slug": "dedup-button-per-playlist-row-01KTC3GY",
   "mission_type": "software-dev",
   "summary": {
-    "approved": 5,
+    "approved": 4,
     "blocked": 0,
     "canceled": 0,
     "claimed": 0,
-    "done": 1,
+    "done": 2,
     "for_review": 0,
     "in_progress": 0,
     "in_review": 0,
@@ -26,10 +26,10 @@
     },
     "WP02": {
       "actor": "user",
-      "force_count": 1,
-      "lane": "approved",
-      "last_event_id": "01KTCQDG5PF7T3WE8PGYVN0KGN",
-      "last_transition_at": "2026-06-05T20:25:57.174329+00:00"
+      "force_count": 2,
+      "lane": "done",
+      "last_event_id": "01KTECNBBC5DCBV3HBDSHK620C",
+      "last_transition_at": "2026-06-06T11:56:28.908402+00:00"
     },
     "WP03": {
       "actor": "user",

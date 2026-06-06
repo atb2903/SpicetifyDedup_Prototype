@@ -44,12 +44,12 @@ WP03 and WP04 touch disjoint file sets and can run in parallel after WP02 merges
 | T016 | Update `src/ui/LikedSongsRow.tsx` to mount `<DedupButton playlistName="Liked Songs" playlistUri="spotify:collection:tracks" />` | WP04 | | [D] |
 | T017 | Update `src/ui/LikedSongsRow.module.scss` — extend `grid-template-columns` from 3 to 4 columns (`48px 1fr auto auto`) | WP04 | | [D] |
 | T018 | Verify all LikedSongsRow tests green; coverage 100% on touched ranges | WP04 | | [D] |
-| T019 | Update `test/ui/LoadedView.test.tsx` boundary cases: 0 rows, 1 row, 3+ rows with first/middle/last button-click assertions (C-005) | WP05 | |
-| T020 | Add duplicate-name fixture test in `LoadedView.test.tsx` — 5-row fixture, two playlists sharing display name, each logs distinct URI (SC-001) | WP05 | |
-| T021 | Add no-ownership-filter fixture test in `LoadedView.test.tsx` — self / other / system-library, all render buttons (FR-006) | WP05 | |
-| T022 | Extend 1001-row scale test in `LoadedView.test.tsx` to assert exactly 1001 buttons render (FR-002 at scale) | WP05 | |
-| T023 | Add/verify `test/ui/EmptyView.test.tsx` no-Dedup-button assertion (FR-005) | WP05 | [P] |
-| T024 | Run full `npm run test:run` + `npm run test:coverage`; confirm green and 100% line/branch on all touched files | WP05 | |
+| T019 | Update `test/ui/LoadedView.test.tsx` boundary cases: 0 rows, 1 row, 3+ rows with first/middle/last button-click assertions (C-005) | WP05 | | [D] |
+| T020 | Add duplicate-name fixture test in `LoadedView.test.tsx` — 5-row fixture, two playlists sharing display name, each logs distinct URI (SC-001) | WP05 | | [D] |
+| T021 | Add no-ownership-filter fixture test in `LoadedView.test.tsx` — self / other / system-library, all render buttons (FR-006) | WP05 | | [D] |
+| T022 | Extend 1001-row scale test in `LoadedView.test.tsx` to assert exactly 1001 buttons render (FR-002 at scale) | WP05 | | [D] |
+| T023 | Add/verify `test/ui/EmptyView.test.tsx` no-Dedup-button assertion (FR-005) | WP05 | [D] |
+| T024 | Run full `npm run test:run` + `npm run test:coverage`; confirm green and 100% line/branch on all touched files | WP05 | | [D] |
 | T025 | Run `npm run build` and confirm deployment to `~/.config/spicetify/CustomApps/spicetify-dedup/` | WP06 | |
 | T026 | Execute quickstart §2.A (per-row click logs Liked Songs + first/middle/last) and capture transcript | WP06 | |
 | T027 | Execute quickstart §2.B (keyboard activation: Enter + Space) and capture transcript | WP06 | |
@@ -301,12 +301,12 @@ None within WP04. Runs in parallel with WP03 externally.
 
 ### Included subtasks
 
-- [ ] T019 Update `LoadedView.test.tsx` boundary cases: 0, 1, 3+ rows with first/middle/last click assertions (WP05)
-- [ ] T020 Add duplicate-name fixture test in `LoadedView.test.tsx` (SC-001) (WP05)
-- [ ] T021 Add no-ownership-filter fixture test in `LoadedView.test.tsx` (FR-006) (WP05)
-- [ ] T022 Extend 1001-row scale test in `LoadedView.test.tsx` to assert 1001 buttons (WP05)
-- [ ] T023 Add/verify `EmptyView.test.tsx` no-Dedup-button assertion (FR-005) (WP05)
-- [ ] T024 Run full suite + coverage; confirm 100% line/branch (WP05)
+- [x] T019 Update `LoadedView.test.tsx` boundary cases: 0, 1, 3+ rows with first/middle/last click assertions (WP05)
+- [x] T020 Add duplicate-name fixture test in `LoadedView.test.tsx` (SC-001) (WP05)
+- [x] T021 Add no-ownership-filter fixture test in `LoadedView.test.tsx` (FR-006) (WP05)
+- [x] T022 Extend 1001-row scale test in `LoadedView.test.tsx` to assert 1001 buttons (WP05)
+- [x] T023 Add/verify `EmptyView.test.tsx` no-Dedup-button assertion (FR-005) (WP05)
+- [x] T024 Run full suite + coverage; confirm 100% line/branch (WP05)
 
 ### Implementation sketch
 

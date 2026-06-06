@@ -15,8 +15,8 @@ subtasks:
 - T012
 - T013
 - T014
-agent: "claude:opus-4.7:implementer:implementer"
-shell_pid: "454405"
+agent: "claude:opus-4.7:reviewer:reviewer"
+shell_pid: "457458"
 history:
 - date: '2026-06-05'
   note: Drafted by /spec-kitty.tasks.
@@ -175,3 +175,4 @@ spec-kitty agent action implement-done WP03 --agent <name> --mission dedup-butto
 
 - 2026-06-05T20:26:44Z – claude:opus-4.7:implementer:implementer – shell_pid=454405 – Started implementation via action command
 - 2026-06-06T11:05:41Z – claude:opus-4.7:implementer:implementer – shell_pid=454405 – Ready for review: PlaylistRow mounts DedupButton, grid 4-col, coverage 100/100
+- 2026-06-06T11:06:03Z – claude:opus-4.7:reviewer:reviewer – shell_pid=457458 – Started review via action command

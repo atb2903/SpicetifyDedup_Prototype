@@ -50,12 +50,12 @@ WP03 and WP04 touch disjoint file sets and can run in parallel after WP02 merges
 | T022 | Extend 1001-row scale test in `LoadedView.test.tsx` to assert exactly 1001 buttons render (FR-002 at scale) | WP05 | | [D] |
 | T023 | Add/verify `test/ui/EmptyView.test.tsx` no-Dedup-button assertion (FR-005) | WP05 | [D] |
 | T024 | Run full `npm run test:run` + `npm run test:coverage`; confirm green and 100% line/branch on all touched files | WP05 | | [D] |
-| T025 | Run `npm run build` and confirm deployment to `~/.config/spicetify/CustomApps/spicetify-dedup/` | WP06 | |
-| T026 | Execute quickstart §2.A (per-row click logs Liked Songs + first/middle/last) and capture transcript | WP06 | |
-| T027 | Execute quickstart §2.B (keyboard activation: Enter + Space) and capture transcript | WP06 | |
-| T028 | Execute quickstart §2.D (host-API spies stay empty across all Dedup clicks) and capture transcript | WP06 | |
-| T029 | Capture 4 screenshots per quickstart §3 into `screenshots/` | WP06 | [P] |
-| T030 | Write sign-off artefact `live-verification.2026-06-05.md` (or current date) per quickstart §4 format | WP06 | |
+| T025 | Run `npm run build` and confirm deployment to `~/.config/spicetify/CustomApps/spicetify-dedup/` | WP06 | | [D] |
+| T026 | Execute quickstart §2.A (per-row click logs Liked Songs + first/middle/last) and capture transcript | WP06 | | [D] |
+| T027 | Execute quickstart §2.B (keyboard activation: Enter + Space) and capture transcript | WP06 | | [D] |
+| T028 | Execute quickstart §2.D (host-API spies stay empty across all Dedup clicks) and capture transcript | WP06 | | [D] |
+| T029 | Capture 4 screenshots per quickstart §3 into `screenshots/` | WP06 | [D] |
+| T030 | Write sign-off artefact `live-verification.2026-06-05.md` (or current date) per quickstart §4 format | WP06 | | [D] |
 
 `[P]` indicates parallel-safe within the WP (different files / no ordering constraint).
 
@@ -351,12 +351,12 @@ Both row WPs must already mount the button for the LoadedView assertions to pass
 
 ### Included subtasks
 
-- [ ] T025 Run `npm run build` and confirm deployment to `~/.config/spicetify/CustomApps/spicetify-dedup/` (WP06)
-- [ ] T026 Execute quickstart §2.A (per-row click logs) and capture transcript (WP06)
-- [ ] T027 Execute quickstart §2.B (keyboard activation Enter + Space) and capture transcript (WP06)
-- [ ] T028 Execute quickstart §2.D (host-API spies stay empty) and capture transcript (WP06)
-- [ ] T029 Capture 4 screenshots per quickstart §3 into `screenshots/` (WP06)
-- [ ] T030 Write sign-off artefact `live-verification.<YYYY-MM-DD>.md` per quickstart §4 (WP06)
+- [x] T025 Run `npm run build` and confirm deployment to `~/.config/spicetify/CustomApps/spicetify-dedup/` (WP06)
+- [x] T026 Execute quickstart §2.A (per-row click logs) and capture transcript (WP06)
+- [x] T027 Execute quickstart §2.B (keyboard activation Enter + Space) and capture transcript (WP06)
+- [x] T028 Execute quickstart §2.D (host-API spies stay empty) and capture transcript (WP06)
+- [x] T029 Capture 4 screenshots per quickstart §3 into `screenshots/` (WP06)
+- [x] T030 Write sign-off artefact `live-verification.<YYYY-MM-DD>.md` per quickstart §4 (WP06)
 
 ### Implementation sketch
 

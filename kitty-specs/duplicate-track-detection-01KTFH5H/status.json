@@ -1,0 +1,84 @@
+{
+  "event_count": 9,
+  "last_event_id": "01KTGKYSY8MG6SK2JSG9AX9B46",
+  "materialized_at": "2026-06-07T08:42:27.656159+00:00",
+  "mission_number": "",
+  "mission_slug": "duplicate-track-detection-01KTFH5H",
+  "mission_type": "software-dev",
+  "summary": {
+    "approved": 0,
+    "blocked": 0,
+    "canceled": 0,
+    "claimed": 0,
+    "done": 0,
+    "for_review": 0,
+    "in_progress": 0,
+    "in_review": 0,
+    "planned": 9
+  },
+  "work_packages": {
+    "WP01": {
+      "actor": "finalize-tasks",
+      "force_count": 1,
+      "lane": "planned",
+      "last_event_id": "01KTGKYSS92H61Q5XGCHDKTPB8",
+      "last_transition_at": "2026-06-07T08:42:27.497133+00:00"
+    },
+    "WP02": {
+      "actor": "finalize-tasks",
+      "force_count": 1,
+      "lane": "planned",
+      "last_event_id": "01KTGKYSWSVNW5MPVGD6E2WZT5",
+      "last_transition_at": "2026-06-07T08:42:27.609089+00:00"
+    },
+    "WP03": {
+      "actor": "finalize-tasks",
+      "force_count": 1,
+      "lane": "planned",
+      "last_event_id": "01KTGKYSWXHA95G3GV2FJXMT96",
+      "last_transition_at": "2026-06-07T08:42:27.613915+00:00"
+    },
+    "WP04": {
+      "actor": "finalize-tasks",
+      "force_count": 1,
+      "lane": "planned",
+      "last_event_id": "01KTGKYSX3ZV9A2MJE4A6MMWR4",
+      "last_transition_at": "2026-06-07T08:42:27.619977+00:00"
+    },
+    "WP05": {
+      "actor": "finalize-tasks",
+      "force_count": 1,
+      "lane": "planned",
+      "last_event_id": "01KTGKYSX9PNQT0JD68FHVRW0R",
+      "last_transition_at": "2026-06-07T08:42:27.625514+00:00"
+    },
+    "WP06": {
+      "actor": "finalize-tasks",
+      "force_count": 1,
+      "lane": "planned",
+      "last_event_id": "01KTGKYSXG5849H850PPP8PPEG",
+      "last_transition_at": "2026-06-07T08:42:27.632110+00:00"
+    },
+    "WP07": {
+      "actor": "finalize-tasks",
+      "force_count": 1,
+      "lane": "planned",
+      "last_event_id": "01KTGKYSXRS0CDXM0D2ZW3M7MC",
+      "last_transition_at": "2026-06-07T08:42:27.640179+00:00"
+    },
+    "WP08": {
+      "actor": "finalize-tasks",
+      "force_count": 1,
+      "lane": "planned",
+      "last_event_id": "01KTGKYSY0V5KVPQ44H5QS0SNN",
+      "last_transition_at": "2026-06-07T08:42:27.648142+00:00"
+    },
+    "WP09": {
+      "actor": "finalize-tasks",
+      "force_count": 1,
+      "lane": "planned",
+      "last_event_id": "01KTGKYSY8MG6SK2JSG9AX9B46",
+      "last_transition_at": "2026-06-07T08:42:27.656159+00:00"
+    }
+  }
+}

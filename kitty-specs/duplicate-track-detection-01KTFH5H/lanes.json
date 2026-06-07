@@ -1,0 +1,205 @@
+{
+  "version": 1,
+  "mission_slug": "duplicate-track-detection-01KTFH5H",
+  "mission_id": "01KTFH5HHX2PX4NNT9WZE873B8",
+  "mission_branch": "kitty/mission-duplicate-track-detection-01KTFH5H",
+  "target_branch": "main",
+  "lanes": [
+    {
+      "lane_id": "lane-a",
+      "wp_ids": [
+        "WP01"
+      ],
+      "write_scope": [
+        "src/domain/detection-errors.ts",
+        "src/domain/detection-state.ts",
+        "src/domain/detection-types.ts",
+        "test/domain/detection-errors.test.ts",
+        "test/domain/detection-state.test.ts"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "legacy-cleanup",
+        "workspace"
+      ],
+      "depends_on_lanes": [],
+      "parallel_group": 0
+    },
+    {
+      "lane_id": "lane-b",
+      "wp_ids": [
+        "WP02"
+      ],
+      "write_scope": [
+        "src/domain/duplicate-detector.ts",
+        "src/domain/duplicate-key.ts",
+        "src/domain/enriched-track-parser.ts",
+        "test/domain/duplicate-detector.test.ts",
+        "test/domain/duplicate-key.test.ts",
+        "test/domain/enriched-track-parser.test.ts"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "tests"
+      ],
+      "depends_on_lanes": [],
+      "parallel_group": 0
+    },
+    {
+      "lane_id": "lane-c",
+      "wp_ids": [
+        "WP03"
+      ],
+      "write_scope": [
+        "src/adapters/retry-after.ts",
+        "src/ports/catalog-enricher.ts",
+        "src/ports/detection-scanner.ts",
+        "src/ports/tracks-enumerator.ts",
+        "test/adapters/retry-after.test.ts"
+      ],
+      "predicted_surfaces": [
+        "api"
+      ],
+      "depends_on_lanes": [],
+      "parallel_group": 0
+    },
+    {
+      "lane_id": "lane-d",
+      "wp_ids": [
+        "WP04"
+      ],
+      "write_scope": [
+        "src/adapters/detection-scanner.ts",
+        "src/adapters/fake-catalog-enricher.ts",
+        "src/adapters/fake-tracks-enumerator.ts",
+        "test/adapters/detection-scanner.test.ts",
+        "test/adapters/fake-catalog-enricher.test.ts",
+        "test/adapters/fake-tracks-enumerator.test.ts"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "legacy-cleanup",
+        "tests",
+        "tracker-integration"
+      ],
+      "depends_on_lanes": [],
+      "parallel_group": 0
+    },
+    {
+      "lane_id": "lane-e",
+      "wp_ids": [
+        "WP05"
+      ],
+      "write_scope": [
+        "src/adapters/spicetify-catalog-enricher.ts",
+        "src/adapters/spicetify-tracks-enumerator.ts",
+        "test/adapters/spicetify-catalog-enricher.test.ts",
+        "test/adapters/spicetify-tracks-enumerator.test.ts"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "legacy-cleanup",
+        "tracker-integration"
+      ],
+      "depends_on_lanes": [],
+      "parallel_group": 0
+    },
+    {
+      "lane_id": "lane-f",
+      "wp_ids": [
+        "WP06"
+      ],
+      "write_scope": [
+        "src/store/DetectionStoreContext.tsx",
+        "src/store/RouteResetContext.tsx",
+        "src/store/detection-store.ts",
+        "test/integration/detection-end-to-end.test.ts",
+        "test/store/DetectionStoreContext.test.tsx",
+        "test/store/RouteResetContext.test.tsx",
+        "test/store/detection-store.test.ts"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "app-shell",
+        "legacy-cleanup",
+        "tests"
+      ],
+      "depends_on_lanes": [],
+      "parallel_group": 0
+    },
+    {
+      "lane_id": "lane-g",
+      "wp_ids": [
+        "WP07"
+      ],
+      "write_scope": [
+        "src/ui/DetectionFailedView.module.scss",
+        "src/ui/DetectionFailedView.tsx",
+        "src/ui/DetectionLoadedSummary.module.scss",
+        "src/ui/DetectionLoadedSummary.tsx",
+        "src/ui/ScanningView.module.scss",
+        "src/ui/ScanningView.tsx",
+        "test/ui/DetectionFailedView.test.tsx",
+        "test/ui/DetectionLoadedSummary.test.tsx",
+        "test/ui/ScanningView.test.tsx"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "app-shell",
+        "artifact-rendering",
+        "legacy-cleanup"
+      ],
+      "depends_on_lanes": [],
+      "parallel_group": 0
+    },
+    {
+      "lane_id": "lane-h",
+      "wp_ids": [
+        "WP08"
+      ],
+      "write_scope": [
+        "src/app.tsx",
+        "src/ui/DedupButton.tsx",
+        "src/ui/LikedSongsRow.tsx",
+        "src/ui/PlaylistRow.tsx",
+        "src/ui/dedup-click-log.ts",
+        "test/app.test.tsx",
+        "test/ui/DedupButton.test.tsx",
+        "test/ui/LikedSongsRow.test.tsx",
+        "test/ui/PlaylistRow.test.tsx",
+        "test/ui/dedup-click-log.test.ts"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "artifact-rendering",
+        "legacy-cleanup",
+        "tracker-integration"
+      ],
+      "depends_on_lanes": [],
+      "parallel_group": 0
+    },
+    {
+      "lane_id": "lane-planning",
+      "wp_ids": [
+        "WP09"
+      ],
+      "write_scope": [
+        ".claude/adr/0006-separate-detection-store.md",
+        ".claude/adr/0007-abort-signal-cancellation.md",
+        ".claude/adr/0008-progress-signal-shape.md",
+        ".claude/adr/0009-sequential-enrichment-and-retry-after.md",
+        "kitty-specs/duplicate-track-detection-01KTFH5H/live-verification/**"
+      ],
+      "predicted_surfaces": [
+        "planning"
+      ],
+      "depends_on_lanes": [],
+      "parallel_group": 0
+    }
+  ],
+  "computed_at": "2026-06-07T08:42:27.669057+00:00",
+  "computed_from": "dependency_graph+ownership",
+  "planning_artifact_wps": [
+    "WP09"
+  ]
+}

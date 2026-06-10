@@ -55,11 +55,11 @@ Reference table only — see per-WP checkbox rows below for tracking.
 | T023 | Refactor `DedupButton.tsx` — dispatch `scanCollection`, derive `disabled` from per-row scan-in-flight | WP08 |  |
 | T024 | Update `PlaylistRow.tsx` + `LikedSongsRow.tsx` to render per-row detection state | WP08 |  |
 | T025 | Wire production stack in `app.tsx` — Spicetify adapters → scanner → detection store → provider | WP08 |  |
-| T026 | ADR-0006 — separate `detection-store` | WP09 | [P] |
-| T027 | ADR-0007 — `AbortSignal` as the cancellation primitive | WP09 | [P] |
-| T028 | ADR-0008 — progress signal shape (stage + counts) | WP09 | [P] |
-| T029 | ADR-0009 — sequential enrichment + local Retry-After honoring | WP09 | [P] |
-| T030 | Live verification — build extension, run end-to-end flow, capture screenshot | WP09 |  |
+| T026 | ADR-0006 — separate `detection-store` | WP09 | [D] |
+| T027 | ADR-0007 — `AbortSignal` as the cancellation primitive | WP09 | [D] |
+| T028 | ADR-0008 — progress signal shape (stage + counts) | WP09 | [D] |
+| T029 | ADR-0009 — sequential enrichment + local Retry-After honoring | WP09 | [D] |
+| T030 | Live verification — build extension, run end-to-end flow, capture screenshot | WP09 |  | [D] |
 
 ---
 
@@ -486,11 +486,11 @@ FR-009, FR-010, FR-013, C-004, C-005, AS-1, AS-2, AS-7, AS-8, AS-10, AS-11.
 
 ### Subtasks
 
-- [ ] T026 ADR-0006 — separate `detection-store` (WP09)
-- [ ] T027 ADR-0007 — `AbortSignal` as the cancellation primitive (WP09)
-- [ ] T028 ADR-0008 — progress signal shape (stage + counts) (WP09)
-- [ ] T029 ADR-0009 — sequential enrichment + local Retry-After honoring (WP09)
-- [ ] T030 Live verification — build extension, run end-to-end flow, capture screenshot (WP09)
+- [x] T026 ADR-0006 — separate `detection-store` (WP09)
+- [x] T027 ADR-0007 — `AbortSignal` as the cancellation primitive (WP09)
+- [x] T028 ADR-0008 — progress signal shape (stage + counts) (WP09)
+- [x] T029 ADR-0009 — sequential enrichment + local Retry-After honoring (WP09)
+- [x] T030 Live verification — build extension, run end-to-end flow, capture screenshot (WP09)
 
 ### Implementation sketch
 

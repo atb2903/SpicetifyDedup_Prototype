@@ -18,7 +18,8 @@ subtasks:
 - T020
 - T021
 - T022
-shell_pid: '19710'
+shell_pid: "19710"
+agent: "claude:claude-sonnet-4-6:implementer:implementer"
 history:
 - timestamp: '2026-06-07T08:24:49Z'
   action: created
@@ -217,3 +218,7 @@ Coverage gate: 100% line + branch on all three components.
 ```bash
 spec-kitty agent action implement WP07 --agent <name>
 ```
+
+## Activity Log
+
+- 2026-06-10T09:23:50Z – claude:claude-sonnet-4-6:implementer:implementer – shell_pid=19710 – Assigned agent via action command

@@ -1,7 +1,7 @@
 {
-  "event_count": 87,
-  "last_event_id": "01KTSM20CY6H40GH4V93J512ZB",
-  "materialized_at": "2026-06-10T20:37:22.462843+00:00",
+  "event_count": 88,
+  "last_event_id": "01KTSM287ARHV8NBB1KC33D1JC",
+  "materialized_at": "2026-06-10T20:37:30.474858+00:00",
   "mission_number": "",
   "mission_slug": "duplicate-track-detection-01KTFH5H",
   "mission_type": "software-dev",
@@ -11,9 +11,9 @@
     "canceled": 0,
     "claimed": 0,
     "done": 0,
-    "for_review": 1,
+    "for_review": 0,
     "in_progress": 0,
-    "in_review": 0,
+    "in_review": 1,
     "planned": 2
   },
   "work_packages": {
@@ -46,11 +46,11 @@
       "last_transition_at": "2026-06-10T20:33:18.115179+00:00"
     },
     "WP05": {
-      "actor": "user",
+      "actor": "claude:claude-sonnet-4-6:reviewer:reviewer",
       "force_count": 2,
-      "lane": "for_review",
-      "last_event_id": "01KTSM20CY6H40GH4V93J512ZB",
-      "last_transition_at": "2026-06-10T20:37:22.462843+00:00"
+      "lane": "in_review",
+      "last_event_id": "01KTSM287ARHV8NBB1KC33D1JC",
+      "last_transition_at": "2026-06-10T20:37:30.474858+00:00"
     },
     "WP06": {
       "actor": "user",

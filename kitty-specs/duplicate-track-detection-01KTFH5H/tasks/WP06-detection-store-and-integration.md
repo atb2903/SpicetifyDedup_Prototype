@@ -24,7 +24,7 @@ subtasks:
 - T017
 - T018
 - T019
-shell_pid: "59803"
+shell_pid: "84345"
 agent: "claude:claude-sonnet-4-6:reviewer:reviewer"
 history:
 - timestamp: '2026-06-07T08:24:49Z'
@@ -296,3 +296,4 @@ spec-kitty agent action implement WP06 --agent <name>
 - 2026-06-10T14:32:04Z – claude:claude-sonnet-4-6:implementer:implementer – shell_pid=43327 – Ready for review
 - 2026-06-10T14:32:38Z – claude:claude-sonnet-4-6:reviewer:reviewer – shell_pid=59803 – Started review via action command
 - 2026-06-10T20:25:34Z – claude:claude-sonnet-4-6:reviewer:reviewer – shell_pid=59803 – Code committed (4f78553: feat(WP06): detection store + context + route-reset integration + e2e test). Reviewer timed out during review-cycle-1 without issuing verdict. Ready for fresh review.
+- 2026-06-10T20:30:43Z – claude:claude-sonnet-4-6:reviewer:reviewer – shell_pid=84345 – Started review via action command

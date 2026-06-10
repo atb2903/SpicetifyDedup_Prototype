@@ -40,9 +40,9 @@ Reference table only — see per-WP checkbox rows below for tracking.
 | T008 | Catalog enricher port interface (`ports/catalog-enricher.ts`) | WP03 | [D] |
 | T009 | Detection scanner port interface (`ports/detection-scanner.ts`) | WP03 | [D] |
 | T010 | Retry-After parser (`adapters/retry-after.ts`) — `parseRetryAfter`, `isRetryAfterParseError` + boundary tests | WP03 |  | [D] |
-| T011 | `FakeTracksEnumerator` test double | WP04 | [P] |
-| T012 | `FakeCatalogEnricher` test double (with force modes) | WP04 | [P] |
-| T013 | Composition adapter (`adapters/detection-scanner.ts`) — `createDetectionScanner` + 9-step orchestration | WP04 |  |
+| T011 | `FakeTracksEnumerator` test double | WP04 | [D] |
+| T012 | `FakeCatalogEnricher` test double (with force modes) | WP04 | [D] |
+| T013 | Composition adapter (`adapters/detection-scanner.ts`) — `createDetectionScanner` + 9-step orchestration | WP04 |  | [D] |
 | T014 | `SpicetifyTracksEnumerator` adapter — LibraryAPI / PlaylistAPI dispatch, pagination, local-file filter, abort, error classification | WP05 | [P] |
 | T015 | `SpicetifyCatalogEnricher` adapter — sequential 50-ID batching, abort-aware sleep, Retry-After loop, CosmosAsync silent-error classification | WP05 | [P] |
 | T016 | `detection-store.ts` — per-row state map, `AbortController` tracking, atomic-replace, reset wiring | WP06 |  |
@@ -210,9 +210,9 @@ FR-002, FR-008, FR-010, NFR-004 (parser exact-honoring), NFR-007, NFR-008.
 
 ### Subtasks
 
-- [ ] T011 `FakeTracksEnumerator` test double (WP04)
-- [ ] T012 `FakeCatalogEnricher` test double (with force modes) (WP04)
-- [ ] T013 Composition adapter (`adapters/detection-scanner.ts`) — `createDetectionScanner` + 9-step orchestration (WP04)
+- [x] T011 `FakeTracksEnumerator` test double (WP04)
+- [x] T012 `FakeCatalogEnricher` test double (with force modes) (WP04)
+- [x] T013 Composition adapter (`adapters/detection-scanner.ts`) — `createDetectionScanner` + 9-step orchestration (WP04)
 
 ### Implementation sketch
 

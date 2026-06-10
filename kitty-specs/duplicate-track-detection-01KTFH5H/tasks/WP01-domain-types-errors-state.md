@@ -21,7 +21,8 @@ subtasks:
 - T001
 - T002
 - T003
-shell_pid: '18838'
+shell_pid: "18838"
+agent: "claude:claude-sonnet-4-6:implementer:implementer"
 history:
 - timestamp: '2026-06-07T08:24:49Z'
   action: created
@@ -212,3 +213,7 @@ This WP has no dependencies, so the implement command is straightforward:
 ```bash
 spec-kitty agent action implement WP01 --agent <name>
 ```
+
+## Activity Log
+
+- 2026-06-10T09:23:02Z – claude:claude-sonnet-4-6:implementer:implementer – shell_pid=18838 – Assigned agent via action command

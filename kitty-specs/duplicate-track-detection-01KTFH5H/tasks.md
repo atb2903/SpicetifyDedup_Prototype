@@ -52,9 +52,9 @@ Reference table only — see per-WP checkbox rows below for tracking.
 | T020 | `ScanningView.tsx` + module.scss — stage label + counts | WP07 | [D] |
 | T021 | `DetectionLoadedSummary.tsx` + module.scss — group/track counts + "No duplicates found" | WP07 | [D] |
 | T022 | `DetectionFailedView.tsx` + module.scss — per-reason label table | WP07 | [D] |
-| T023 | Refactor `DedupButton.tsx` — dispatch `scanCollection`, derive `disabled` from per-row scan-in-flight | WP08 |  |
-| T024 | Update `PlaylistRow.tsx` + `LikedSongsRow.tsx` to render per-row detection state | WP08 |  |
-| T025 | Wire production stack in `app.tsx` — Spicetify adapters → scanner → detection store → provider | WP08 |  |
+| T023 | Refactor `DedupButton.tsx` — dispatch `scanCollection`, derive `disabled` from per-row scan-in-flight | WP08 |  | [D] |
+| T024 | Update `PlaylistRow.tsx` + `LikedSongsRow.tsx` to render per-row detection state | WP08 |  | [D] |
+| T025 | Wire production stack in `app.tsx` — Spicetify adapters → scanner → detection store → provider | WP08 |  | [D] |
 | T026 | ADR-0006 — separate `detection-store` | WP09 | [D] |
 | T027 | ADR-0007 — `AbortSignal` as the cancellation primitive | WP09 | [D] |
 | T028 | ADR-0008 — progress signal shape (stage + counts) | WP09 | [D] |
@@ -441,9 +441,9 @@ FR-009, NFR-006, AS-1, AS-2, AS-8.
 
 ### Subtasks
 
-- [ ] T023 Refactor `DedupButton.tsx` — dispatch `scanCollection`, derive `disabled` from per-row scan-in-flight (WP08)
-- [ ] T024 Update `PlaylistRow.tsx` + `LikedSongsRow.tsx` to render per-row detection state (WP08)
-- [ ] T025 Wire production stack in `app.tsx` — Spicetify adapters → scanner → detection store → provider (WP08)
+- [x] T023 Refactor `DedupButton.tsx` — dispatch `scanCollection`, derive `disabled` from per-row scan-in-flight (WP08)
+- [x] T024 Update `PlaylistRow.tsx` + `LikedSongsRow.tsx` to render per-row detection state (WP08)
+- [x] T025 Wire production stack in `app.tsx` — Spicetify adapters → scanner → detection store → provider (WP08)
 
 ### Implementation sketch
 

@@ -23,7 +23,8 @@ subtasks:
 - T011
 - T012
 - T013
-shell_pid: '19293'
+shell_pid: "19293"
+agent: "claude:claude-sonnet-4-6:implementer:implementer"
 history:
 - timestamp: '2026-06-07T08:24:49Z'
   action: created
@@ -264,3 +265,7 @@ The composition adapter's test file should use fresh `FakeTracksEnumerator` + `F
 ```bash
 spec-kitty agent action implement WP04 --agent <name>
 ```
+
+## Activity Log
+
+- 2026-06-10T09:23:28Z – claude:claude-sonnet-4-6:implementer:implementer – shell_pid=19293 – Assigned agent via action command

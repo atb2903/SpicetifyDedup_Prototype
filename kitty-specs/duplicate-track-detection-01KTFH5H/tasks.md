@@ -33,9 +33,9 @@ Reference table only — see per-WP checkbox rows below for tracking.
 | T001 | Detection types (`detection-types.ts`) — `RawTrack`, `EnrichedTrack`, `DuplicateGroup`, `DetectionResult`, `ProgressEvent`, `ScanRequest` | WP01 | [P] | [D] |
 | T002 | Detection errors (`detection-errors.ts`) — `DetectionError`, `DetectionErrorReason`, `isDetectionError` | WP01 | [D] |
 | T003 | Detection state FSM (`detection-state.ts`) — `DetectionState`, `DetectionAction`, `transition` + 20-cell test grid | WP01 |  | [D] |
-| T004 | Duplicate key (`duplicate-key.ts`) — branded `DuplicateKey`, `composeKey` | WP02 | [P] |
-| T005 | Enriched-track parser (`enriched-track-parser.ts`) — `asEnrichedTrack` fail-loud + `isEnrichedTrack` classifier | WP02 | [P] |
-| T006 | Duplicate detector (`duplicate-detector.ts`) — `detect()` + 1999/2000/2001 ms boundary tests | WP02 |  |
+| T004 | Duplicate key (`duplicate-key.ts`) — branded `DuplicateKey`, `composeKey` | WP02 | [D] |
+| T005 | Enriched-track parser (`enriched-track-parser.ts`) — `asEnrichedTrack` fail-loud + `isEnrichedTrack` classifier | WP02 | [D] |
+| T006 | Duplicate detector (`duplicate-detector.ts`) — `detect()` + 1999/2000/2001 ms boundary tests | WP02 |  | [D] |
 | T007 | Tracks enumerator port interface (`ports/tracks-enumerator.ts`) | WP03 | [D] |
 | T008 | Catalog enricher port interface (`ports/catalog-enricher.ts`) | WP03 | [D] |
 | T009 | Detection scanner port interface (`ports/detection-scanner.ts`) | WP03 | [D] |
@@ -110,9 +110,9 @@ FR-008 (state shape), FR-011 (atomic replace transition), FR-012 (`cancel` actio
 
 ### Subtasks
 
-- [ ] T004 Duplicate key (`duplicate-key.ts`) — branded `DuplicateKey`, `composeKey` (WP02)
-- [ ] T005 Enriched-track parser (`enriched-track-parser.ts`) — `asEnrichedTrack` fail-loud + `isEnrichedTrack` classifier (WP02)
-- [ ] T006 Duplicate detector (`duplicate-detector.ts`) — `detect()` + 1999/2000/2001 ms boundary tests (WP02)
+- [x] T004 Duplicate key (`duplicate-key.ts`) — branded `DuplicateKey`, `composeKey` (WP02)
+- [x] T005 Enriched-track parser (`enriched-track-parser.ts`) — `asEnrichedTrack` fail-loud + `isEnrichedTrack` classifier (WP02)
+- [x] T006 Duplicate detector (`duplicate-detector.ts`) — `detect()` + 1999/2000/2001 ms boundary tests (WP02)
 
 ### Implementation sketch
 

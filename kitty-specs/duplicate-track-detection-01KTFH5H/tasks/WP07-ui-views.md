@@ -18,8 +18,8 @@ subtasks:
 - T020
 - T021
 - T022
-shell_pid: "43389"
-agent: "claude:claude-sonnet-4-6:implementer:implementer"
+shell_pid: "48475"
+agent: "claude:claude-sonnet-4-6:reviewer:reviewer"
 history:
 - timestamp: '2026-06-07T08:24:49Z'
   action: created
@@ -225,3 +225,4 @@ spec-kitty agent action implement WP07 --agent <name>
 - 2026-06-10T14:15:36Z – claude:claude-sonnet-4-6:implementer:implementer – shell_pid=19710 – Moved to planned
 - 2026-06-10T14:16:18Z – claude:claude-sonnet-4-6:implementer:implementer – shell_pid=43389 – Started implementation via action command
 - 2026-06-10T14:19:59Z – claude:claude-sonnet-4-6:implementer:implementer – shell_pid=43389 – Ready for review: UI view components; callers land in WP08
+- 2026-06-10T14:20:52Z – claude:claude-sonnet-4-6:reviewer:reviewer – shell_pid=48475 – Started review via action command

@@ -49,9 +49,9 @@ Reference table only — see per-WP checkbox rows below for tracking.
 | T017 | `DetectionStoreContext.tsx` — provider + selector hook | WP06 | [P] |
 | T018 | Extend `RouteResetContext.tsx` to reset both stores | WP06 | [P] |
 | T019 | Integration test (`test/integration/detection-end-to-end.test.ts`) — full row-click-to-summary via fakes | WP06 |  |
-| T020 | `ScanningView.tsx` + module.scss — stage label + counts | WP07 | [P] |
-| T021 | `DetectionLoadedSummary.tsx` + module.scss — group/track counts + "No duplicates found" | WP07 | [P] |
-| T022 | `DetectionFailedView.tsx` + module.scss — per-reason label table | WP07 | [P] |
+| T020 | `ScanningView.tsx` + module.scss — stage label + counts | WP07 | [D] |
+| T021 | `DetectionLoadedSummary.tsx` + module.scss — group/track counts + "No duplicates found" | WP07 | [D] |
+| T022 | `DetectionFailedView.tsx` + module.scss — per-reason label table | WP07 | [D] |
 | T023 | Refactor `DedupButton.tsx` — dispatch `scanCollection`, derive `disabled` from per-row scan-in-flight | WP08 |  |
 | T024 | Update `PlaylistRow.tsx` + `LikedSongsRow.tsx` to render per-row detection state | WP08 |  |
 | T025 | Wire production stack in `app.tsx` — Spicetify adapters → scanner → detection store → provider | WP08 |  |
@@ -395,9 +395,9 @@ FR-008, FR-010, FR-011, FR-012, FR-013, NFR-005, NFR-007, AS-9, AS-10, AS-11.
 
 ### Subtasks
 
-- [ ] T020 `ScanningView.tsx` + module.scss — stage label + counts (WP07)
-- [ ] T021 `DetectionLoadedSummary.tsx` + module.scss — group/track counts + "No duplicates found" (WP07)
-- [ ] T022 `DetectionFailedView.tsx` + module.scss — per-reason label table (WP07)
+- [x] T020 `ScanningView.tsx` + module.scss — stage label + counts (WP07)
+- [x] T021 `DetectionLoadedSummary.tsx` + module.scss — group/track counts + "No duplicates found" (WP07)
+- [x] T022 `DetectionFailedView.tsx` + module.scss — per-reason label table (WP07)
 
 ### Implementation sketch
 

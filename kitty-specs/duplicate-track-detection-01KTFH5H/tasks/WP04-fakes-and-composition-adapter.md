@@ -273,3 +273,4 @@ spec-kitty agent action implement WP04 --agent <name>
 - 2026-06-10T14:16:14Z – claude:claude-sonnet-4-6:implementer:implementer – shell_pid=43177 – Started implementation via action command
 - 2026-06-10T14:22:49Z – claude:claude-sonnet-4-6:implementer:implementer – shell_pid=43177 – Ready for review
 - 2026-06-10T14:23:28Z – claude:claude-sonnet-4-6:reviewer:reviewer – shell_pid=52422 – Started review via action command
+- 2026-06-10T14:34:26Z – claude:claude-sonnet-4-6:reviewer:reviewer – shell_pid=52422 – Moved to planned

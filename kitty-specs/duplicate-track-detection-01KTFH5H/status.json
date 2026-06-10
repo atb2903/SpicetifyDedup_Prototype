@@ -1,7 +1,7 @@
 {
-  "event_count": 25,
-  "last_event_id": "01KTRDGZS4GTQWNEVXNBWMPWNX",
-  "materialized_at": "2026-06-10T09:23:58.884503+00:00",
+  "event_count": 27,
+  "last_event_id": "01KTRDH6KQ8S5F8AMP6N91FFVG",
+  "materialized_at": "2026-06-10T09:24:05.879497+00:00",
   "mission_number": "",
   "mission_slug": "duplicate-track-detection-01KTFH5H",
   "mission_type": "software-dev",
@@ -12,9 +12,9 @@
     "claimed": 0,
     "done": 0,
     "for_review": 0,
-    "in_progress": 8,
+    "in_progress": 9,
     "in_review": 0,
-    "planned": 1
+    "planned": 0
   },
   "work_packages": {
     "WP01": {
@@ -74,11 +74,11 @@
       "last_transition_at": "2026-06-10T09:23:58.884503+00:00"
     },
     "WP09": {
-      "actor": "finalize-tasks",
+      "actor": "claude:claude-sonnet-4-6:implementer:implementer",
       "force_count": 1,
-      "lane": "planned",
-      "last_event_id": "01KTGKYSY8MG6SK2JSG9AX9B46",
-      "last_transition_at": "2026-06-07T08:42:27.656159+00:00"
+      "lane": "in_progress",
+      "last_event_id": "01KTRDH6KQ8S5F8AMP6N91FFVG",
+      "last_transition_at": "2026-06-10T09:24:05.879497+00:00"
     }
   }
 }

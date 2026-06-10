@@ -18,6 +18,8 @@ subtasks:
 - T028
 - T029
 - T030
+agent: "claude:claude-sonnet-4-6:implementer:implementer"
+shell_pid: "19984"
 history:
 - timestamp: '2026-06-07T08:24:49Z'
   action: created
@@ -211,3 +213,7 @@ The existing `npm run test:run` and `npm run typecheck` must remain green from W
 ```bash
 spec-kitty agent action implement WP09 --agent <name>
 ```
+
+## Activity Log
+
+- 2026-06-10T09:24:05Z – claude:claude-sonnet-4-6:implementer:implementer – shell_pid=19984 – Started implementation via action command

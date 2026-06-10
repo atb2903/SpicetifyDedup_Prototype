@@ -281,3 +281,4 @@ spec-kitty agent action implement WP05 --agent <name>
 - 2026-06-10T14:16:15Z – claude:claude-sonnet-4-6:implementer:implementer – shell_pid=43255 – Started implementation via action command
 - 2026-06-10T14:39:08Z – claude:claude-sonnet-4-6:implementer:implementer – shell_pid=43255 – Ready for review
 - 2026-06-10T20:30:36Z – claude:claude-sonnet-4-6:reviewer:reviewer – shell_pid=84243 – Started review via action command
+- 2026-06-10T20:35:28Z – claude:claude-sonnet-4-6:reviewer:reviewer – shell_pid=84243 – Moved to planned

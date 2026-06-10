@@ -23,7 +23,8 @@ subtasks:
 - T008
 - T009
 - T010
-shell_pid: '19178'
+shell_pid: "19178"
+agent: "claude:claude-sonnet-4-6:implementer:implementer"
 history:
 - timestamp: '2026-06-07T08:24:49Z'
   action: created
@@ -251,3 +252,7 @@ Coverage gate: 100% line + branch on `retry-after.ts`. Port files are types-only
 ```bash
 spec-kitty agent action implement WP03 --agent <name>
 ```
+
+## Activity Log
+
+- 2026-06-10T09:23:21Z – claude:claude-sonnet-4-6:implementer:implementer – shell_pid=19178 – Assigned agent via action command

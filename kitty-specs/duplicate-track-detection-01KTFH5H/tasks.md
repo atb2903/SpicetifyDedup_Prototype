@@ -36,10 +36,10 @@ Reference table only — see per-WP checkbox rows below for tracking.
 | T004 | Duplicate key (`duplicate-key.ts`) — branded `DuplicateKey`, `composeKey` | WP02 | [P] |
 | T005 | Enriched-track parser (`enriched-track-parser.ts`) — `asEnrichedTrack` fail-loud + `isEnrichedTrack` classifier | WP02 | [P] |
 | T006 | Duplicate detector (`duplicate-detector.ts`) — `detect()` + 1999/2000/2001 ms boundary tests | WP02 |  |
-| T007 | Tracks enumerator port interface (`ports/tracks-enumerator.ts`) | WP03 | [P] |
-| T008 | Catalog enricher port interface (`ports/catalog-enricher.ts`) | WP03 | [P] |
-| T009 | Detection scanner port interface (`ports/detection-scanner.ts`) | WP03 | [P] |
-| T010 | Retry-After parser (`adapters/retry-after.ts`) — `parseRetryAfter`, `isRetryAfterParseError` + boundary tests | WP03 |  |
+| T007 | Tracks enumerator port interface (`ports/tracks-enumerator.ts`) | WP03 | [D] |
+| T008 | Catalog enricher port interface (`ports/catalog-enricher.ts`) | WP03 | [D] |
+| T009 | Detection scanner port interface (`ports/detection-scanner.ts`) | WP03 | [D] |
+| T010 | Retry-After parser (`adapters/retry-after.ts`) — `parseRetryAfter`, `isRetryAfterParseError` + boundary tests | WP03 |  | [D] |
 | T011 | `FakeTracksEnumerator` test double | WP04 | [P] |
 | T012 | `FakeCatalogEnricher` test double (with force modes) | WP04 | [P] |
 | T013 | Composition adapter (`adapters/detection-scanner.ts`) — `createDetectionScanner` + 9-step orchestration | WP04 |  |
@@ -158,10 +158,10 @@ FR-002, FR-004, FR-005, FR-006, FR-007, NFR-001, NFR-002, NFR-003, NFR-008.
 
 ### Subtasks
 
-- [ ] T007 Tracks enumerator port interface (`ports/tracks-enumerator.ts`) (WP03)
-- [ ] T008 Catalog enricher port interface (`ports/catalog-enricher.ts`) (WP03)
-- [ ] T009 Detection scanner port interface (`ports/detection-scanner.ts`) (WP03)
-- [ ] T010 Retry-After parser (`adapters/retry-after.ts`) — `parseRetryAfter`, `isRetryAfterParseError` + boundary tests (WP03)
+- [x] T007 Tracks enumerator port interface (`ports/tracks-enumerator.ts`) (WP03)
+- [x] T008 Catalog enricher port interface (`ports/catalog-enricher.ts`) (WP03)
+- [x] T009 Detection scanner port interface (`ports/detection-scanner.ts`) (WP03)
+- [x] T010 Retry-After parser (`adapters/retry-after.ts`) — `parseRetryAfter`, `isRetryAfterParseError` + boundary tests (WP03)
 
 ### Implementation sketch
 

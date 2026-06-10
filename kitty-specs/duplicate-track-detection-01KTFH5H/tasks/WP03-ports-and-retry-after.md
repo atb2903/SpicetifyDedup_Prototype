@@ -15,11 +15,15 @@ requirement_refs:
 planning_base_branch: main
 merge_target_branch: main
 branch_strategy: Planning artifacts for this feature were generated on main. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into main unless the human explicitly redirects the landing branch.
+base_branch: kitty/mission-duplicate-track-detection-01KTFH5H
+base_commit: 3c497a11e757bfff3f1614a993ec92d14b4d462b
+created_at: '2026-06-10T09:23:20.649443+00:00'
 subtasks:
 - T007
 - T008
 - T009
 - T010
+shell_pid: '19178'
 history:
 - timestamp: '2026-06-07T08:24:49Z'
   action: created

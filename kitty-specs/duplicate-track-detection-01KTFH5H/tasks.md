@@ -30,9 +30,9 @@ Reference table only — see per-WP checkbox rows below for tracking.
 
 | ID | Description | WP | Parallel |
 |----|-------------|----|----------|
-| T001 | Detection types (`detection-types.ts`) — `RawTrack`, `EnrichedTrack`, `DuplicateGroup`, `DetectionResult`, `ProgressEvent`, `ScanRequest` | WP01 | [P] |
-| T002 | Detection errors (`detection-errors.ts`) — `DetectionError`, `DetectionErrorReason`, `isDetectionError` | WP01 | [P] |
-| T003 | Detection state FSM (`detection-state.ts`) — `DetectionState`, `DetectionAction`, `transition` + 20-cell test grid | WP01 |  |
+| T001 | Detection types (`detection-types.ts`) — `RawTrack`, `EnrichedTrack`, `DuplicateGroup`, `DetectionResult`, `ProgressEvent`, `ScanRequest` | WP01 | [P] | [D] |
+| T002 | Detection errors (`detection-errors.ts`) — `DetectionError`, `DetectionErrorReason`, `isDetectionError` | WP01 | [D] |
+| T003 | Detection state FSM (`detection-state.ts`) — `DetectionState`, `DetectionAction`, `transition` + 20-cell test grid | WP01 |  | [D] |
 | T004 | Duplicate key (`duplicate-key.ts`) — branded `DuplicateKey`, `composeKey` | WP02 | [P] |
 | T005 | Enriched-track parser (`enriched-track-parser.ts`) — `asEnrichedTrack` fail-loud + `isEnrichedTrack` classifier | WP02 | [P] |
 | T006 | Duplicate detector (`duplicate-detector.ts`) — `detect()` + 1999/2000/2001 ms boundary tests | WP02 |  |
@@ -72,9 +72,9 @@ Reference table only — see per-WP checkbox rows below for tracking.
 
 ### Subtasks
 
-- [ ] T001 Detection types (`detection-types.ts`) — `RawTrack`, `EnrichedTrack`, `DuplicateGroup`, `DetectionResult`, `ProgressEvent`, `ScanRequest` (WP01)
-- [ ] T002 Detection errors (`detection-errors.ts`) — `DetectionError`, `DetectionErrorReason`, `isDetectionError` (WP01)
-- [ ] T003 Detection state FSM (`detection-state.ts`) — `DetectionState`, `DetectionAction`, `transition` + 20-cell test grid (WP01)
+- [x] T001 Detection types (`detection-types.ts`) — `RawTrack`, `EnrichedTrack`, `DuplicateGroup`, `DetectionResult`, `ProgressEvent`, `ScanRequest` (WP01)
+- [x] T002 Detection errors (`detection-errors.ts`) — `DetectionError`, `DetectionErrorReason`, `isDetectionError` (WP01)
+- [x] T003 Detection state FSM (`detection-state.ts`) — `DetectionState`, `DetectionAction`, `transition` + 20-cell test grid (WP01)
 
 ### Implementation sketch
 

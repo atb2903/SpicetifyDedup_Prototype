@@ -24,7 +24,8 @@ subtasks:
 - T017
 - T018
 - T019
-shell_pid: '19562'
+shell_pid: "19562"
+agent: "claude:claude-sonnet-4-6:implementer:implementer"
 history:
 - timestamp: '2026-06-07T08:24:49Z'
   action: created
@@ -286,3 +287,7 @@ spec-kitty agent action implement WP06 --agent <name>
 ```
 
 (`finalize-tasks` resolves the lane base from the WP04 dependency.)
+
+## Activity Log
+
+- 2026-06-10T09:23:43Z – claude:claude-sonnet-4-6:implementer:implementer – shell_pid=19562 – Assigned agent via action command

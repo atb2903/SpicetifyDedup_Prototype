@@ -43,8 +43,8 @@ Reference table only — see per-WP checkbox rows below for tracking.
 | T011 | `FakeTracksEnumerator` test double | WP04 | [D] |
 | T012 | `FakeCatalogEnricher` test double (with force modes) | WP04 | [D] |
 | T013 | Composition adapter (`adapters/detection-scanner.ts`) — `createDetectionScanner` + 9-step orchestration | WP04 |  | [D] |
-| T014 | `SpicetifyTracksEnumerator` adapter — LibraryAPI / PlaylistAPI dispatch, pagination, local-file filter, abort, error classification | WP05 | [P] |
-| T015 | `SpicetifyCatalogEnricher` adapter — sequential 50-ID batching, abort-aware sleep, Retry-After loop, CosmosAsync silent-error classification | WP05 | [P] |
+| T014 | `SpicetifyTracksEnumerator` adapter — LibraryAPI / PlaylistAPI dispatch, pagination, local-file filter, abort, error classification | WP05 | [D] |
+| T015 | `SpicetifyCatalogEnricher` adapter — sequential 50-ID batching, abort-aware sleep, Retry-After loop, CosmosAsync silent-error classification | WP05 | [D] |
 | T016 | `detection-store.ts` — per-row state map, `AbortController` tracking, atomic-replace, reset wiring | WP06 |  | [D] |
 | T017 | `DetectionStoreContext.tsx` — provider + selector hook | WP06 | [D] |
 | T018 | Extend `RouteResetContext.tsx` to reset both stores | WP06 | [D] |
@@ -261,8 +261,8 @@ FR-006, FR-008, NFR-001, NFR-005, NFR-006, NFR-007.
 
 ### Subtasks
 
-- [ ] T014 `SpicetifyTracksEnumerator` adapter — LibraryAPI / PlaylistAPI dispatch, pagination, local-file filter, abort, error classification (WP05)
-- [ ] T015 `SpicetifyCatalogEnricher` adapter — sequential 50-ID batching, abort-aware sleep, Retry-After loop, CosmosAsync silent-error classification (WP05)
+- [x] T014 `SpicetifyTracksEnumerator` adapter — LibraryAPI / PlaylistAPI dispatch, pagination, local-file filter, abort, error classification (WP05)
+- [x] T015 `SpicetifyCatalogEnricher` adapter — sequential 50-ID batching, abort-aware sleep, Retry-After loop, CosmosAsync silent-error classification (WP05)
 
 ### Implementation sketch
 

@@ -23,8 +23,8 @@ subtasks:
 - T008
 - T009
 - T010
-shell_pid: "19178"
-agent: "claude:claude-sonnet-4-6:implementer:implementer"
+shell_pid: "42934"
+agent: "claude:claude-sonnet-4-6:reviewer:reviewer"
 history:
 - timestamp: '2026-06-07T08:24:49Z'
   action: created
@@ -257,3 +257,4 @@ spec-kitty agent action implement WP03 --agent <name>
 
 - 2026-06-10T09:23:21Z – claude:claude-sonnet-4-6:implementer:implementer – shell_pid=19178 – Assigned agent via action command
 - 2026-06-10T14:13:06Z – claude:claude-sonnet-4-6:implementer:implementer – shell_pid=19178 – Ready for review (recovered: agent committed code but timed out before admin steps)
+- 2026-06-10T14:16:01Z – claude:claude-sonnet-4-6:reviewer:reviewer – shell_pid=42934 – Started review via action command

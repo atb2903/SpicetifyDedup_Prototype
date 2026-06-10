@@ -21,7 +21,7 @@ created_at: '2026-06-10T09:23:34.990228+00:00'
 subtasks:
 - T014
 - T015
-shell_pid: "19436"
+shell_pid: "43255"
 agent: "claude:claude-sonnet-4-6:implementer:implementer"
 history:
 - timestamp: '2026-06-07T08:24:49Z'
@@ -278,3 +278,4 @@ spec-kitty agent action implement WP05 --agent <name>
 
 - 2026-06-10T09:23:35Z – claude:claude-sonnet-4-6:implementer:implementer – shell_pid=19436 – Assigned agent via action command
 - 2026-06-10T14:15:33Z – claude:claude-sonnet-4-6:implementer:implementer – shell_pid=19436 – Moved to planned
+- 2026-06-10T14:16:15Z – claude:claude-sonnet-4-6:implementer:implementer – shell_pid=43255 – Started implementation via action command

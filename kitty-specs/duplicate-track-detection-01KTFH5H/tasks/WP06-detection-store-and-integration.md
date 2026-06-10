@@ -24,8 +24,8 @@ subtasks:
 - T017
 - T018
 - T019
-shell_pid: "43327"
-agent: "claude:claude-sonnet-4-6:implementer:implementer"
+shell_pid: "59803"
+agent: "claude:claude-sonnet-4-6:reviewer:reviewer"
 history:
 - timestamp: '2026-06-07T08:24:49Z'
   action: created
@@ -294,3 +294,4 @@ spec-kitty agent action implement WP06 --agent <name>
 - 2026-06-10T14:15:35Z – claude:claude-sonnet-4-6:implementer:implementer – shell_pid=19562 – Moved to planned
 - 2026-06-10T14:16:17Z – claude:claude-sonnet-4-6:implementer:implementer – shell_pid=43327 – Started implementation via action command
 - 2026-06-10T14:32:04Z – claude:claude-sonnet-4-6:implementer:implementer – shell_pid=43327 – Ready for review
+- 2026-06-10T14:32:38Z – claude:claude-sonnet-4-6:reviewer:reviewer – shell_pid=59803 – Started review via action command

@@ -45,10 +45,10 @@ Reference table only — see per-WP checkbox rows below for tracking.
 | T013 | Composition adapter (`adapters/detection-scanner.ts`) — `createDetectionScanner` + 9-step orchestration | WP04 |  | [D] |
 | T014 | `SpicetifyTracksEnumerator` adapter — LibraryAPI / PlaylistAPI dispatch, pagination, local-file filter, abort, error classification | WP05 | [P] |
 | T015 | `SpicetifyCatalogEnricher` adapter — sequential 50-ID batching, abort-aware sleep, Retry-After loop, CosmosAsync silent-error classification | WP05 | [P] |
-| T016 | `detection-store.ts` — per-row state map, `AbortController` tracking, atomic-replace, reset wiring | WP06 |  |
-| T017 | `DetectionStoreContext.tsx` — provider + selector hook | WP06 | [P] |
-| T018 | Extend `RouteResetContext.tsx` to reset both stores | WP06 | [P] |
-| T019 | Integration test (`test/integration/detection-end-to-end.test.ts`) — full row-click-to-summary via fakes | WP06 |  |
+| T016 | `detection-store.ts` — per-row state map, `AbortController` tracking, atomic-replace, reset wiring | WP06 |  | [D] |
+| T017 | `DetectionStoreContext.tsx` — provider + selector hook | WP06 | [D] |
+| T018 | Extend `RouteResetContext.tsx` to reset both stores | WP06 | [D] |
+| T019 | Integration test (`test/integration/detection-end-to-end.test.ts`) — full row-click-to-summary via fakes | WP06 |  | [D] |
 | T020 | `ScanningView.tsx` + module.scss — stage label + counts | WP07 | [D] |
 | T021 | `DetectionLoadedSummary.tsx` + module.scss — group/track counts + "No duplicates found" | WP07 | [D] |
 | T022 | `DetectionFailedView.tsx` + module.scss — per-reason label table | WP07 | [D] |
@@ -328,10 +328,10 @@ FR-001, FR-002, FR-003, NFR-004, NFR-008, AS-3, AS-7.
 
 ### Subtasks
 
-- [ ] T016 `detection-store.ts` — per-row state map, `AbortController` tracking, atomic-replace, reset wiring (WP06)
-- [ ] T017 `DetectionStoreContext.tsx` — provider + selector hook (WP06)
-- [ ] T018 Extend `RouteResetContext.tsx` to reset both stores (WP06)
-- [ ] T019 Integration test (`test/integration/detection-end-to-end.test.ts`) — full row-click-to-summary via fakes (WP06)
+- [x] T016 `detection-store.ts` — per-row state map, `AbortController` tracking, atomic-replace, reset wiring (WP06)
+- [x] T017 `DetectionStoreContext.tsx` — provider + selector hook (WP06)
+- [x] T018 Extend `RouteResetContext.tsx` to reset both stores (WP06)
+- [x] T019 Integration test (`test/integration/detection-end-to-end.test.ts`) — full row-click-to-summary via fakes (WP06)
 
 ### Implementation sketch
 

@@ -182,15 +182,24 @@ export interface TracksEnumeratorPlatform {
  * API, filters local files, validates shapes, and emits progress events.
  */
 export class SpicetifyTracksEnumerator implements TracksEnumerator {
-  private readonly platform: TracksEnumeratorPlatform;
+  private readonly _platform: TracksEnumeratorPlatform | undefined;
+
+  /** Lazy accessor: returns the injected platform or reads from globalThis.Spicetify.Platform. */
+  private get platform(): TracksEnumeratorPlatform {
+    if (this._platform !== undefined) return this._platform;
+    return (
+      (globalThis as unknown as { Spicetify?: { Platform?: TracksEnumeratorPlatform } })
+        .Spicetify?.Platform as TracksEnumeratorPlatform
+    );
+  }
 
   /**
-   * @param platform - Spicetify Platform subset. In production, pass
-   *   `(globalThis as { Spicetify: { Platform: TracksEnumeratorPlatform } }).Spicetify.Platform`.
+   * @param platform - Spicetify Platform subset. In production, omit to read
+   *   lazily from `globalThis.Spicetify.Platform` (no access at construction time).
    *   In tests, pass a stub built from `makePlatform()`.
    */
-  constructor(platform: TracksEnumeratorPlatform) {
-    this.platform = platform;
+  constructor(platform?: TracksEnumeratorPlatform) {
+    this._platform = platform;
   }
 
   /**

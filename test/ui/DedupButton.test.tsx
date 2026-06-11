@@ -132,7 +132,7 @@ describe('DedupButton — disabled state', () => {
     const scanner: DetectionScanner = {
       scan: vi.fn(
         () =>
-          new Promise((resolve) => {
+          new Promise<import('../../src/domain/detection-types').DetectionResult>((resolve) => {
             resolveResult = resolve;
           }),
       ),

@@ -105,15 +105,24 @@ export interface CosmosAsyncClient {
  * Uses the injected `cosmos` client to fetch catalog records sequentially.
  */
 export class SpicetifyCatalogEnricher implements CatalogEnricher {
-  private readonly cosmos: CosmosAsyncClient;
+  private readonly _cosmos: CosmosAsyncClient | undefined;
+
+  /** Lazy accessor: returns the injected client or reads from globalThis.Spicetify.CosmosAsync. */
+  private get cosmos(): CosmosAsyncClient {
+    if (this._cosmos !== undefined) return this._cosmos;
+    return (
+      (globalThis as unknown as { Spicetify?: { CosmosAsync?: CosmosAsyncClient } })
+        .Spicetify?.CosmosAsync as CosmosAsyncClient
+    );
+  }
 
   /**
-   * @param cosmos - CosmosAsync subset. In production, pass
-   *   `(globalThis as { Spicetify: { CosmosAsync: CosmosAsyncClient } }).Spicetify.CosmosAsync`.
+   * @param cosmos - CosmosAsync subset. In production, omit to read lazily
+   *   from `globalThis.Spicetify.CosmosAsync` (no access at construction time).
    *   In tests, pass a stub.
    */
-  constructor(cosmos: CosmosAsyncClient) {
-    this.cosmos = cosmos;
+  constructor(cosmos?: CosmosAsyncClient) {
+    this._cosmos = cosmos;
   }
 
   /**

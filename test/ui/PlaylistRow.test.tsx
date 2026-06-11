@@ -252,7 +252,7 @@ describe('PlaylistRow — T024 detection state rendering', () => {
   it('loaded row renders DetectionLoadedSummary ("No duplicates found")', async () => {
     let resolveResult!: (r: DetectionResult) => void;
     const scanner: DetectionScanner = {
-      scan: vi.fn(() => new Promise((resolve) => { resolveResult = resolve; })),
+      scan: vi.fn(() => new Promise<DetectionResult>((resolve) => { resolveResult = resolve; })),
     };
     const store = createDetectionStore(scanner);
     renderRow(sample({ key: 'spotify:playlist:abc' }), store);

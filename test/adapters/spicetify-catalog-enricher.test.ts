@@ -4,8 +4,12 @@
  * All tests inject a stub `CosmosAsync.get` via the constructor; tests also
  * inject a fake `now` clock for abort-during-sleep timing.
  *
- * Covers: batch size boundaries, Retry-After honoring, retry loop, error
- * classification (401, 4xx, 5xx, thrown, bad-shape), null slots, abort
+ * Stubs use the REAL CosmosAsync contract: HTTP errors resolve as
+ * `{ code, error, message, stack }` (status under `code`, no headers); 2xx
+ * success resolves as the parsed body (e.g. `{ tracks: [...] }`, no `code`).
+ *
+ * Covers: batch size boundaries, 429 bounded exponential backoff, retry loop,
+ * error classification (401, 4xx, 5xx, thrown, bad-shape), null slots, abort
  * semantics, progress events, and order alignment.
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
@@ -154,10 +158,15 @@ describe('SpicetifyCatalogEnricher — batch size', () => {
 });
 
 // ---------------------------------------------------------------------------
-// Retry-After with fake timers
+// 429 bounded exponential backoff with fake timers
 // ---------------------------------------------------------------------------
 
-describe('SpicetifyCatalogEnricher — Retry-After', () => {
+/** Real CosmosAsync 429 error shape (status under `code`, no headers). */
+function rateLimited() {
+  return { code: 429, error: '', message: 'Failed to fetch', stack: '' };
+}
+
+describe('SpicetifyCatalogEnricher — 429 backoff', () => {
   beforeEach(() => {
     vi.useFakeTimers();
   });
@@ -165,98 +174,109 @@ describe('SpicetifyCatalogEnricher — Retry-After', () => {
     vi.useRealTimers();
   });
 
-  it("header '0' → no wait, proceeds immediately", async () => {
+  it('one 429 then success → backs off 1000ms then succeeds (boundary: 1 retry)', async () => {
     const tracks = makeRawTracks(1);
     let callCount = 0;
     const cosmos = makeCosmos(async () => {
       callCount++;
-      if (callCount === 1) {
-        return { status: 429, headers: { 'Retry-After': '0' } };
-      }
+      if (callCount === 1) return rateLimited();
       return successResponse(tracks.map((t) => t.id));
     });
     const enricher = new SpicetifyCatalogEnricher(cosmos);
     const promise = enricher.enrich(tracks, neverAborted(), vi.fn());
+    // Backoff has not yet elapsed: still only one call made.
+    await vi.advanceTimersByTimeAsync(999);
+    expect(callCount).toBe(1);
+    await vi.advanceTimersByTimeAsync(1);
     const result = await promise;
-    expect(result).toHaveLength(1);
     expect(callCount).toBe(2);
-    expect(vi.getTimerCount()).toBe(0);
+    expect(result).toHaveLength(1);
+    expect(result[0]?.kind).toBe('enriched');
   });
 
-  it("header '1' → sleeps 1000 ms", async () => {
+  it('delays grow exponentially: 1000, 2000, 4000, 8000 across successive 429s', async () => {
     const tracks = makeRawTracks(1);
     let callCount = 0;
     const cosmos = makeCosmos(async () => {
       callCount++;
-      if (callCount === 1) {
-        return { status: 429, headers: { 'Retry-After': '1' } };
-      }
+      if (callCount <= 4) return rateLimited();
       return successResponse(tracks.map((t) => t.id));
     });
     const enricher = new SpicetifyCatalogEnricher(cosmos);
     const promise = enricher.enrich(tracks, neverAborted(), vi.fn());
-    // Advance past the 1000ms sleep
+    // attempt 0 → 1000ms
     await vi.advanceTimersByTimeAsync(1000);
-    const result = await promise;
-    expect(result).toHaveLength(1);
     expect(callCount).toBe(2);
-  });
-
-  it("header '3600' → sleeps 3,600,000 ms", async () => {
-    const tracks = makeRawTracks(1);
-    let callCount = 0;
-    const cosmos = makeCosmos(async () => {
-      callCount++;
-      if (callCount === 1) {
-        return { status: 429, headers: { 'Retry-After': '3600' } };
-      }
-      return successResponse(tracks.map((t) => t.id));
-    });
-    const enricher = new SpicetifyCatalogEnricher(cosmos);
-    const promise = enricher.enrich(tracks, neverAborted(), vi.fn());
-    await vi.advanceTimersByTimeAsync(3_600_000);
-    const result = await promise;
-    expect(callCount).toBe(2);
-    expect(result).toHaveLength(1);
-  });
-
-  it("missing Retry-After header → throws rate-limit-unparseable", async () => {
-    const tracks = makeRawTracks(1);
-    const cosmos = makeCosmos(async () => {
-      return { status: 429, headers: {} };
-    });
-    const enricher = new SpicetifyCatalogEnricher(cosmos);
-    await expect(enricher.enrich(tracks, neverAborted(), vi.fn())).rejects.toSatisfy(
-      (e: unknown) => isDetectionError(e) && (e as DetectionError).reason === 'rate-limit-unparseable',
-    );
-  });
-
-  it("non-numeric Retry-After header ('abc') → throws rate-limit-unparseable", async () => {
-    const tracks = makeRawTracks(1);
-    const cosmos = makeCosmos(async () => {
-      return { status: 429, headers: { 'Retry-After': 'abc' } };
-    });
-    const enricher = new SpicetifyCatalogEnricher(cosmos);
-    await expect(enricher.enrich(tracks, neverAborted(), vi.fn())).rejects.toSatisfy(
-      (e: unknown) => isDetectionError(e) && (e as DetectionError).reason === 'rate-limit-unparseable',
-    );
-  });
-
-  it('429 → 429 → 200 → succeeds after two waits', async () => {
-    const tracks = makeRawTracks(1);
-    let callCount = 0;
-    const cosmos = makeCosmos(async () => {
-      callCount++;
-      if (callCount <= 2) {
-        return { status: 429, headers: { 'Retry-After': '1' } };
-      }
-      return successResponse(tracks.map((t) => t.id));
-    });
-    const enricher = new SpicetifyCatalogEnricher(cosmos);
-    const promise = enricher.enrich(tracks, neverAborted(), vi.fn());
+    // attempt 1 → 2000ms
     await vi.advanceTimersByTimeAsync(2000);
-    const result = await promise;
     expect(callCount).toBe(3);
+    // attempt 2 → 4000ms
+    await vi.advanceTimersByTimeAsync(4000);
+    expect(callCount).toBe(4);
+    // attempt 3 → 8000ms
+    await vi.advanceTimersByTimeAsync(8000);
+    expect(callCount).toBe(5);
+    const result = await promise;
+    expect(result).toHaveLength(1);
+  });
+
+  it('MAX_ATTEMPTS - 1 (4) 429s then success → succeeds (boundary)', async () => {
+    const tracks = makeRawTracks(1);
+    let callCount = 0;
+    const cosmos = makeCosmos(async () => {
+      callCount++;
+      if (callCount <= 4) return rateLimited();
+      return successResponse(tracks.map((t) => t.id));
+    });
+    const enricher = new SpicetifyCatalogEnricher(cosmos);
+    const promise = enricher.enrich(tracks, neverAborted(), vi.fn());
+    // 1000 + 2000 + 4000 + 8000 = 15000ms total backoff (all below the 16000 cap)
+    await vi.advanceTimersByTimeAsync(15000);
+    const result = await promise;
+    expect(callCount).toBe(5);
+    expect(result).toHaveLength(1);
+  });
+
+  it('MAX_ATTEMPTS (5) 429s → throws rate-limit-unparseable (boundary)', async () => {
+    const tracks = makeRawTracks(1);
+    let callCount = 0;
+    const cosmos = makeCosmos(async () => {
+      callCount++;
+      return rateLimited();
+    });
+    const enricher = new SpicetifyCatalogEnricher(cosmos);
+    const promise = enricher.enrich(tracks, neverAborted(), vi.fn());
+    const assertion = expect(promise).rejects.toSatisfy(
+      (e: unknown) =>
+        isDetectionError(e) && (e as DetectionError).reason === 'rate-limit-unparseable',
+    );
+    // 5 backoffs: 1000 + 2000 + 4000 + 8000 + 16000 (capped) = 31000ms.
+    await vi.advanceTimersByTimeAsync(31000);
+    await assertion;
+    // 1 initial + 5 retries = 6 calls, the 6th still 429 → give up.
+    expect(callCount).toBe(6);
+  });
+
+  it('backoff delay is capped at RATE_LIMIT_MAX_DELAY_MS (16000) on the final attempt', async () => {
+    const tracks = makeRawTracks(1);
+    let callCount = 0;
+    const cosmos = makeCosmos(async () => {
+      callCount++;
+      // 5 consecutive 429s, then success on the 6th call.
+      if (callCount <= 5) return rateLimited();
+      return successResponse(tracks.map((t) => t.id));
+    });
+    const enricher = new SpicetifyCatalogEnricher(cosmos);
+    const promise = enricher.enrich(tracks, neverAborted(), vi.fn());
+    // Step through the first four backoffs: 1000 + 2000 + 4000 + 8000 = 15000.
+    await vi.advanceTimersByTimeAsync(15000);
+    expect(callCount).toBe(5);
+    // Fifth backoff: 2**4 * 1000 = 16000 (exactly at the cap). 15999 not enough.
+    await vi.advanceTimersByTimeAsync(15999);
+    expect(callCount).toBe(5);
+    await vi.advanceTimersByTimeAsync(1);
+    const result = await promise;
+    expect(callCount).toBe(6);
     expect(result).toHaveLength(1);
   });
 
@@ -265,9 +285,7 @@ describe('SpicetifyCatalogEnricher — Retry-After', () => {
     let callCount = 0;
     const cosmos = makeCosmos(async () => {
       callCount++;
-      if (callCount === 1) {
-        return { status: 429, headers: { 'Retry-After': '1' } };
-      }
+      if (callCount === 1) return rateLimited();
       return successResponse(tracks.map((t) => t.id));
     });
     const onProgress = vi.fn<(e: ProgressEvent) => void>();
@@ -278,6 +296,24 @@ describe('SpicetifyCatalogEnricher — Retry-After', () => {
     // Only 1 progress event (after success), not 2 (one per attempt)
     expect(onProgress).toHaveBeenCalledTimes(1);
   });
+
+  it('aborting mid-backoff throws AbortError', async () => {
+    const controller = new AbortController();
+    const tracks = makeRawTracks(1);
+    let callCount = 0;
+    const cosmos = makeCosmos(async () => {
+      callCount++;
+      if (callCount === 1) return rateLimited();
+      return successResponse(tracks.map((t) => t.id));
+    });
+    const enricher = new SpicetifyCatalogEnricher(cosmos);
+    const promise = enricher.enrich(tracks, controller.signal, vi.fn());
+    // Advance partway through the 1000ms backoff, then abort.
+    await vi.advanceTimersByTimeAsync(100);
+    controller.abort();
+    await expect(promise).rejects.toMatchObject({ name: 'AbortError' });
+    expect(callCount).toBe(1);
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -285,8 +321,8 @@ describe('SpicetifyCatalogEnricher — Retry-After', () => {
 // ---------------------------------------------------------------------------
 
 describe('SpicetifyCatalogEnricher — error classification', () => {
-  it('status 401 → auth-token-expired', async () => {
-    const cosmos = makeCosmos(async () => ({ status: 401 }));
+  it('code 401 → auth-token-expired', async () => {
+    const cosmos = makeCosmos(async () => ({ code: 401, error: '', message: 'Unauthorized', stack: '' }));
     const enricher = new SpicetifyCatalogEnricher(cosmos);
     await expect(enricher.enrich(makeRawTracks(1), neverAborted(), vi.fn())).rejects.toSatisfy(
       (e: unknown) => isDetectionError(e) && (e as DetectionError).reason === 'auth-token-expired',
@@ -311,7 +347,48 @@ describe('SpicetifyCatalogEnricher — error classification', () => {
     );
   });
 
-  it('status 403 → catalog-rejected with context.status === 403', async () => {
+  it('code 403 → catalog-rejected with context.status === 403', async () => {
+    const cosmos = makeCosmos(async () => ({ code: 403, error: '', message: 'Forbidden', stack: '' }));
+    const enricher = new SpicetifyCatalogEnricher(cosmos);
+    let caughtError: unknown;
+    try {
+      await enricher.enrich(makeRawTracks(1), neverAborted(), vi.fn());
+    } catch (e) {
+      caughtError = e;
+    }
+    expect(isDetectionError(caughtError)).toBe(true);
+    const err = caughtError as DetectionError;
+    expect(err.reason).toBe('catalog-rejected');
+    expect(err.context?.['status']).toBe(403);
+  });
+
+  it('code 404 → catalog-rejected', async () => {
+    const cosmos = makeCosmos(async () => ({ code: 404, error: '', message: 'Not Found', stack: '' }));
+    const enricher = new SpicetifyCatalogEnricher(cosmos);
+    await expect(enricher.enrich(makeRawTracks(1), neverAborted(), vi.fn())).rejects.toSatisfy(
+      (e: unknown) => isDetectionError(e) && (e as DetectionError).reason === 'catalog-rejected',
+    );
+  });
+
+  it('code 400 → catalog-rejected with context.status === 400', async () => {
+    const cosmos = makeCosmos(async () => ({ code: 400, error: '', message: 'Bad Request', stack: '' }));
+    const enricher = new SpicetifyCatalogEnricher(cosmos);
+    let caughtError: unknown;
+    try {
+      await enricher.enrich(makeRawTracks(1), neverAborted(), vi.fn());
+    } catch (e) {
+      caughtError = e;
+    }
+    expect(isDetectionError(caughtError)).toBe(true);
+    const err = caughtError as DetectionError;
+    expect(err.reason).toBe('catalog-rejected');
+    expect(err.context?.['status']).toBe(400);
+  });
+
+  it('defensive `status` fallback: { status: 403 } (no code) → catalog-rejected with context.status === 403', async () => {
+    // extractStatus reads `code` first then falls back to `status`. The real
+    // contract uses `code`, but the fallback keeps the adapter robust if the
+    // host ever returns `status`.
     const cosmos = makeCosmos(async () => ({ status: 403 }));
     const enricher = new SpicetifyCatalogEnricher(cosmos);
     let caughtError: unknown;
@@ -326,24 +403,16 @@ describe('SpicetifyCatalogEnricher — error classification', () => {
     expect(err.context?.['status']).toBe(403);
   });
 
-  it('status 404 → catalog-rejected', async () => {
-    const cosmos = makeCosmos(async () => ({ status: 404 }));
-    const enricher = new SpicetifyCatalogEnricher(cosmos);
-    await expect(enricher.enrich(makeRawTracks(1), neverAborted(), vi.fn())).rejects.toSatisfy(
-      (e: unknown) => isDetectionError(e) && (e as DetectionError).reason === 'catalog-rejected',
-    );
-  });
-
-  it('status 500 → network-failure', async () => {
-    const cosmos = makeCosmos(async () => ({ status: 500 }));
+  it('code 500 → network-failure', async () => {
+    const cosmos = makeCosmos(async () => ({ code: 500, error: '', message: 'Server Error', stack: '' }));
     const enricher = new SpicetifyCatalogEnricher(cosmos);
     await expect(enricher.enrich(makeRawTracks(1), neverAborted(), vi.fn())).rejects.toSatisfy(
       (e: unknown) => isDetectionError(e) && (e as DetectionError).reason === 'network-failure',
     );
   });
 
-  it('status 503 → network-failure', async () => {
-    const cosmos = makeCosmos(async () => ({ status: 503 }));
+  it('code 503 → network-failure', async () => {
+    const cosmos = makeCosmos(async () => ({ code: 503, error: '', message: 'Unavailable', stack: '' }));
     const enricher = new SpicetifyCatalogEnricher(cosmos);
     await expect(enricher.enrich(makeRawTracks(1), neverAborted(), vi.fn())).rejects.toSatisfy(
       (e: unknown) => isDetectionError(e) && (e as DetectionError).reason === 'network-failure',
@@ -469,7 +538,7 @@ describe('SpicetifyCatalogEnricher — abort', () => {
     expect(callCount).toBe(1);
   });
 
-  it('abort during Retry-After sleep → throws AbortError promptly', async () => {
+  it('abort during 429 backoff sleep → throws AbortError promptly', async () => {
     vi.useFakeTimers();
     const controller = new AbortController();
     const tracks = makeRawTracks(1);
@@ -477,13 +546,13 @@ describe('SpicetifyCatalogEnricher — abort', () => {
     const cosmos = makeCosmos(async () => {
       callCount++;
       if (callCount === 1) {
-        return { status: 429, headers: { 'Retry-After': '10' } };
+        return { code: 429, error: '', message: 'Failed to fetch', stack: '' };
       }
       return successResponse(tracks.map((t) => t.id));
     });
     const enricher = new SpicetifyCatalogEnricher(cosmos);
     const promise = enricher.enrich(tracks, controller.signal, vi.fn());
-    // Advance partway through sleep
+    // Advance partway through the 1000ms backoff sleep
     await vi.advanceTimersByTimeAsync(100);
     // Now abort
     controller.abort();
@@ -637,14 +706,14 @@ describe('isCatalogTrack', () => {
 });
 
 // ---------------------------------------------------------------------------
-// Additional coverage: abort-during-sleep entry, headers non-object, body.message auth
+// Additional coverage: abort-on-sleep-entry, body.message auth
 // ---------------------------------------------------------------------------
 
 describe('SpicetifyCatalogEnricher — additional branch coverage', () => {
   it('sleep immediately rejects when signal is already aborted on entry', async () => {
     vi.useFakeTimers();
-    // We test the sleep method indirectly: signal is aborted BEFORE sleep begins.
-    // The flow: 429 → parseRetryAfter → sleep(delayMs, signal) → signal already aborted
+    // We test the sleep method indirectly: signal is aborted BEFORE the 429
+    // backoff sleep begins. The flow: 429 → sleep(delay, signal) → already aborted.
     const controller = new AbortController();
     const tracks = makeRawTracks(1);
     let callCount = 0;
@@ -653,7 +722,7 @@ describe('SpicetifyCatalogEnricher — additional branch coverage', () => {
       if (callCount === 1) {
         // Abort signal synchronously before sleep starts
         controller.abort();
-        return { status: 429, headers: { 'Retry-After': '10' } };
+        return { code: 429, error: '', message: 'Failed to fetch', stack: '' };
       }
       return successResponse(tracks.map((t) => t.id));
     });
@@ -662,20 +731,6 @@ describe('SpicetifyCatalogEnricher — additional branch coverage', () => {
       enricher.enrich(tracks, controller.signal, vi.fn()),
     ).rejects.toMatchObject({ name: 'AbortError' });
     vi.useRealTimers();
-  });
-
-  it('extractHeaders returns undefined when headers is not an object (number)', async () => {
-    // A 429 response with headers set to a non-object → headers extraction returns undefined
-    // → Retry-After header is undefined → parseRetryAfter throws → rate-limit-unparseable
-    const tracks = makeRawTracks(1);
-    const cosmos = makeCosmos(async () => ({
-      status: 429,
-      headers: 42, // not an object
-    }));
-    const enricher = new SpicetifyCatalogEnricher(cosmos);
-    await expect(enricher.enrich(tracks, neverAborted(), vi.fn())).rejects.toSatisfy(
-      (e: unknown) => isDetectionError(e) && (e as DetectionError).reason === 'rate-limit-unparseable',
-    );
   });
 
   it('body.message matching /access token expired/i → auth-token-expired', async () => {

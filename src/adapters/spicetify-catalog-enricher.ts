@@ -10,28 +10,30 @@
  *   2. Batch the IDs 50 at a time (the catalog endpoint maximum).
  *   3. Classify every response:
  *      - Recognised auth-expired signal (status 401 or body text) → `auth-token-expired`.
- *      - 429 + parseable Retry-After → sleep + retry (unbounded retry loop per research §R-009).
- *      - 429 + missing/malformed Retry-After → `rate-limit-unparseable`.
+ *      - 429 → bounded exponential backoff + retry; gives up after
+ *        `RATE_LIMIT_MAX_ATTEMPTS` retries → `rate-limit-unparseable`.
  *      - 4xx other than 401/429 → `catalog-rejected`.
  *      - 5xx or thrown Error → `network-failure`.
  *      - 200 + missing `tracks` array → `catalog-rejected` (shape violation).
  *      - 200 + track slot missing required fields → `malformed-enrichment-payload`.
  *      - null slot in `tracks[]` → `unenriched` slot (removed/unknown track).
  *   4. Abort semantics: check abort before each batch and wake up promptly from
- *      Retry-After sleeps.
+ *      backoff sleeps.
  *   5. Emit one progress event per completed batch (not per retry attempt).
  *
  * Exports `isCatalogTrack` classifier per NFR-008 / charter Input Validation.
  *
- * CosmosAsync response shape: the host wraps HTTP responses as objects with an
- * optional `status` property (for non-2xx) and/or a JSON body. 2xx responses
- * are returned as the parsed body directly (no `status` key). The adapter
- * normalises both forms.
+ * CosmosAsync response shape (confirmed empirically against the real Spotify
+ * client): on an HTTP error (non-2xx) the promise RESOLVES (does not reject)
+ * with an object `{ code: <httpStatusNumber>, error: string, message: string,
+ * stack: string }` — the status is under `code`, and there are NO headers and
+ * no `Retry-After`. On success (2xx) it resolves with the parsed JSON body
+ * directly (e.g. `{ tracks: [...] }`) with no `code`. It only rejects on
+ * lower-level failures, which the adapter maps to `network-failure`.
  */
 import type { CatalogEnricher, EnrichmentSlot } from '../ports/catalog-enricher';
 import type { RawTrack, ProgressEvent } from '../domain/detection-types';
 import { DetectionError } from '../domain/detection-errors';
-import { parseRetryAfter } from './retry-after';
 import { asEnrichedTrack } from '../domain/enriched-track-parser';
 
 // ---------------------------------------------------------------------------
@@ -43,6 +45,13 @@ const BATCH_SIZE = 50;
 
 /** Base URL for the catalog tracks endpoint. */
 const TRACKS_URL = 'https://api.spotify.com/v1/tracks';
+
+/** Initial backoff delay before retrying a rate-limited (429) batch. */
+const RATE_LIMIT_BASE_DELAY_MS = 1000;
+/** Maximum single backoff delay (cap for exponential growth). */
+const RATE_LIMIT_MAX_DELAY_MS = 16000;
+/** Maximum number of 429 retry attempts before giving up. */
+const RATE_LIMIT_MAX_ATTEMPTS = 5;
 
 // ---------------------------------------------------------------------------
 // Classifier
@@ -134,7 +143,8 @@ export class SpicetifyCatalogEnricher implements CatalogEnricher {
    *                     `{ stage: 'enriching', processed, total }`.
    * @returns Promise resolving with `EnrichmentSlot[]` aligned to `tracks`.
    * @throws DetectionError('auth-token-expired') on 401 or token-expired body.
-   * @throws DetectionError('rate-limit-unparseable') on 429 with bad Retry-After.
+   * @throws DetectionError('rate-limit-unparseable') on 429 still rate-limited
+   *         after the bounded backoff retries are exhausted.
    * @throws DetectionError('network-failure') on 5xx, thrown Error, or Error instance.
    * @throws DetectionError('malformed-enrichment-payload') on bad per-track shape.
    * @throws DetectionError('catalog-rejected') on 4xx other than 401/429.
@@ -190,7 +200,9 @@ export class SpicetifyCatalogEnricher implements CatalogEnricher {
   /**
    * Fetch and parse a single batch of tracks.
    *
-   * Retries indefinitely on 429 + valid Retry-After. Other errors throw immediately.
+   * On 429, retries with bounded exponential backoff (the real CosmosAsync 429
+   * error object carries no Retry-After to honor), giving up after
+   * `RATE_LIMIT_MAX_ATTEMPTS` retries. Other errors throw immediately.
    */
   private async fetchBatch(
     batchTracks: ReadonlyArray<RawTrack>,
@@ -198,6 +210,8 @@ export class SpicetifyCatalogEnricher implements CatalogEnricher {
   ): Promise<EnrichmentSlot[]> {
     const ids = batchTracks.map((t) => t.id).join(',');
     const url = `${TRACKS_URL}?ids=${ids}`;
+
+    let attempt = 0;
 
     // eslint-disable-next-line no-constant-condition
     while (true) {
@@ -210,8 +224,10 @@ export class SpicetifyCatalogEnricher implements CatalogEnricher {
         });
       }
 
-      // CosmosAsync returns error responses as objects with a `status` property.
-      // 2xx success responses are returned as the parsed body without a `status`.
+      // On an HTTP error CosmosAsync resolves with `{ code, error, message, stack }`
+      // (status under `code`, no headers). On success it resolves with the parsed
+      // body directly (no `code`). extractStatus reads `code` (with `status` as a
+      // defensive fallback).
       const status = this.extractStatus(raw);
 
       // Auth expired
@@ -222,26 +238,21 @@ export class SpicetifyCatalogEnricher implements CatalogEnricher {
         );
       }
 
-      // Rate limited — sleep and retry
+      // Rate limited — bounded exponential backoff then retry. The real 429
+      // object has no Retry-After, so we back off ourselves.
       if (status === 429) {
-        // status === 429 implies extractStatus() confirmed raw is an object with
-        // a numeric status property, so the cast is safe.
-        const headers = this.extractHeaders(raw as Record<string, unknown>);
-        const retryAfterHeader = headers?.['Retry-After'] ?? headers?.['retry-after'];
-        let delayMs: number;
-        try {
-          delayMs = parseRetryAfter(retryAfterHeader);
-        } catch (parseErr) {
-          // parseRetryAfter only throws RetryAfterParseError; we catch
-          // generically for type narrowing, then always map to our typed error.
+        if (attempt >= RATE_LIMIT_MAX_ATTEMPTS) {
           throw new DetectionError(
             'rate-limit-unparseable',
-            `Catalog 429 has unparseable Retry-After header: ${String(retryAfterHeader)}`,
-            { cause: parseErr },
+            `Catalog still rate-limited after ${RATE_LIMIT_MAX_ATTEMPTS} backoff retries`,
           );
         }
-        await this.sleep(delayMs, signal);
-        // Retry
+        const delay = Math.min(
+          RATE_LIMIT_BASE_DELAY_MS * 2 ** attempt,
+          RATE_LIMIT_MAX_DELAY_MS,
+        );
+        await this.sleep(delay, signal);
+        attempt += 1;
         continue;
       }
 
@@ -323,10 +334,10 @@ export class SpicetifyCatalogEnricher implements CatalogEnricher {
   }
 
   /**
-   * Sleep for `ms` milliseconds, but wake early if `signal` aborts.
+   * Sleep for `ms` milliseconds (always > 0 in the backoff path), but wake
+   * early if `signal` aborts.
    */
   private sleep(ms: number, signal: AbortSignal): Promise<void> {
-    if (ms <= 0) return Promise.resolve();
     return new Promise<void>((resolve, reject) => {
       if (signal.aborted) {
         reject(new DOMException('Aborted before sleep', 'AbortError'));
@@ -350,27 +361,16 @@ export class SpicetifyCatalogEnricher implements CatalogEnricher {
   /**
    * Extract the HTTP status from a CosmosAsync response object.
    *
-   * CosmosAsync returns non-2xx as `{ status: number, ... }`.
-   * 2xx responses omit the status property (body is returned directly).
+   * On an HTTP error CosmosAsync resolves with `{ code: number, ... }` (the
+   * status lives under `code`, with no `status` key). On a 2xx success it
+   * resolves with the parsed body, which has neither `code` nor `status`. We
+   * read `code` first and keep `status` as a defensive fallback.
    */
   private extractStatus(raw: unknown): number | undefined {
     if (typeof raw !== 'object' || raw === null) return undefined;
-    const status = (raw as Record<string, unknown>)['status'];
-    if (typeof status === 'number') return status;
-    return undefined;
-  }
-
-  /**
-   * Extract the headers object from a CosmosAsync non-2xx response.
-   *
-   * Called only in the 429 path where `raw` is already confirmed to be an
-   * object (it had a numeric `status` property); the null guard is omitted.
-   */
-  private extractHeaders(raw: Record<string, unknown>): Record<string, string> | undefined {
-    const headers = raw['headers'];
-    if (typeof headers === 'object' && headers !== null) {
-      return headers as Record<string, string>;
-    }
+    const obj = raw as Record<string, unknown>;
+    if (typeof obj['code'] === 'number') return obj['code'];
+    if (typeof obj['status'] === 'number') return obj['status'];
     return undefined;
   }
 

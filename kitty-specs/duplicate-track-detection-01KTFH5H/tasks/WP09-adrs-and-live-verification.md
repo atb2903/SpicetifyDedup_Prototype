@@ -220,3 +220,4 @@ spec-kitty agent action implement WP09 --agent <name>
 - 2026-06-10T09:32:19Z – claude:claude-sonnet-4-6:implementer:implementer – shell_pid=19984 – Ready for review: 4 ADRs written to .claude/adr/ (0006-separate-detection-store, 0007-abort-signal-cancellation, 0008-progress-signal-shape, 0009-sequential-enrichment-and-retry-after); live verification checklist in kitty-specs/duplicate-track-detection-01KTFH5H/live-verification/checklist.md
 - 2026-06-10T09:32:43Z – claude:claude-sonnet-4-6:reviewer:reviewer – shell_pid=25681 – Started review via action command
 - 2026-06-11T20:10:05Z – claude:claude-sonnet-4-6:reviewer:reviewer – shell_pid=25681 – ADRs 0006-0011 present; live-verification screenshot+notes committed; dedup confirmed working in-client
+- 2026-06-11T20:10:37Z – claude:claude-sonnet-4-6:reviewer:reviewer – shell_pid=25681 – Moved to done

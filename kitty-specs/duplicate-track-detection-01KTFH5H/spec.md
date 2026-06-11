@@ -72,13 +72,15 @@ When a user clicks the dedup button on a collection row in the Dedup page (Liked
 | NFR-001 | The duplicate-detection algorithm MUST be deterministic: given the same input collection (same tracks in the same order), it MUST produce the same groups in the same order. | Approved |
 | NFR-002 | The duplicate-detection algorithm MUST be pure — implementable without touching the music client, the network, the DOM, or any global state — so it can be exhaustively unit-tested. | Approved |
 | NFR-003 | Boundary cases at the duration tolerance MUST have explicit test coverage at 1999 ms, 2000 ms, and 2001 ms differences (inclusive boundary on 2000). | Approved |
-| NFR-004 | On rate-limit responses, the system MUST honor the server-provided retry hint exactly — neither shorter (avoiding bans) nor unbounded longer (avoiding stalls). | Approved |
+| NFR-004 | On rate-limit responses, the system MUST honor the server-provided retry hint exactly — neither shorter (avoiding bans) nor unbounded longer (avoiding stalls). | Amended — see note |
 | NFR-005 | On authentication-token-expiry mid-scan, the partial result MUST be discarded; the user MUST see a discriminable failure state. No partial result may be presented as a complete result. | Approved |
 | NFR-006 | Long-running scans MUST surface observable progress to the user: at minimum, a "scanning" status distinguishable from "idle" and "loaded". | Approved |
 | NFR-007 | Concurrent scans across distinct rows MUST be independently scheduled — a scan on Liked Songs MUST NOT block a scan on Playlist X. | Approved |
 | NFR-008 | The detector MUST fail loud on malformed enrichment payloads (missing required fields: id, name, duration_ms, artists[0].name) by throwing a typed error AND ship a paired classifier predicate so callers can pre-check. | Approved |
 | NFR-009 | 100% line and branch coverage on every new module MUST be enforced at the test runner (matches charter). | Approved |
 | NFR-010 | Every exported function and type MUST carry JSDoc describing intent, parameters, return shape, and error modes. | Approved |
+
+> **NFR-004 amendment (2026-06-11, post-live-verification — see [ADR-0010](../../.claude/adr/0010-cosmosasync-error-contract-and-429-backoff.md)):** Live verification established that `Spicetify.CosmosAsync.get` resolves HTTP errors as `{ code, error, message, stack }` and exposes **no** response headers, so no server `Retry-After` hint is available to honor. The original "honor the hint exactly" requirement is therefore unsatisfiable via this API. The enricher instead applies **bounded exponential backoff** on 429 (delays `min(1000·2^attempt, 16000)` ms, abort-aware, up to 5 attempts; on exhaustion → `rate-limit-unparseable`). NFR-004's intent — never hammer (avoid bans) and never stall unboundedly — is preserved via the growing-but-capped, attempt-bounded schedule.
 
 ### Constraints (C-###)
 

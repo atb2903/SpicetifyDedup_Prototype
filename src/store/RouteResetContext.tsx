@@ -13,33 +13,46 @@
  * Dedup navigation — which makes a React-lifecycle reset both correct
  * and load-bearing.
  *
+ * Extended by WP06 (T018): the provider now also resets the detection store
+ * on mount and unmount. This ensures that any in-progress scans are aborted
+ * and per-row detection state is cleared whenever the user navigates away
+ * from and back to the Dedup page (FR-012).
+ *
  * Architecture (`test/architecture.test.ts`): lives under `src/store/`;
- * imports only `react` and `./PlaylistsStoreContext` (same layer). No
- * cross-layer imports — no `../adapters/`, no `../ports/`, no `../ui/`.
+ * imports only `react`, `./PlaylistsStoreContext`, and
+ * `./DetectionStoreContext` (same layer). No cross-layer imports — no
+ * `../adapters/`, no `../ports/`, no `../ui/`.
  */
 import React, { useEffect } from 'react';
 import { usePlaylistsStore } from './PlaylistsStoreContext';
+import { useDetectionStore } from './DetectionStoreContext';
 
 interface RouteResetProviderProps {
   children: React.ReactNode;
 }
 
 /**
- * Reset the playlists store on mount and on unmount.
+ * Reset the playlists store and the detection store on mount and on unmount.
  *
- * Wires `usePlaylistsStore((s) => s.reset)` into a React lifecycle effect
- * so that every entry into and exit from the Dedup React tree lands the
- * store on `{ kind: 'idle' }`. The mount-time reset handles the production
+ * Wires `usePlaylistsStore((s) => s.reset)` and
+ * `useDetectionStore((s) => s.reset)` into a React lifecycle effect so that
+ * every entry into and exit from the Dedup React tree lands both stores in
+ * their idle / empty states. The mount-time reset handles the production
  * lifecycle observed in the 2026-06-04 live-client diagnostic (Spicetify
  * mounts the tree AFTER navigating to /spicetify-dedup, so any in-band
  * "transition" event has already fired by mount time). The unmount-time
  * cleanup handles the hypothetical alternative where Spicetify ever keeps
  * the tree mounted across navigation (the reset runs as the tree tears
- * down, leaving the store idle for whatever boundary comes next).
+ * down, leaving the stores idle for whatever boundary comes next).
  *
- * Idempotent from `idle` (see R-1 in `playlists-store.test.ts`), so the
- * cold-start cold-mount case (store already idle) is a safe no-op rather
- * than a redundant state mutation.
+ * Detection store reset additionally aborts every in-flight `AbortController`
+ * so ongoing scans (enumerating / enriching / matching) are cancelled
+ * promptly rather than continuing to run in the background after navigation
+ * (FR-012).
+ *
+ * Both resets are idempotent from their respective idle states, so the
+ * cold-start cold-mount case (stores already idle / empty) is a safe no-op
+ * rather than a redundant state mutation.
  *
  * See `.claude/adr/0005-react-lifecycle-reset.md` for the full decision
  * rationale and `.claude/adr/0004-navigation-port.md` for the superseded
@@ -50,10 +63,15 @@ interface RouteResetProviderProps {
 export function RouteResetProvider({
   children,
 }: RouteResetProviderProps): React.ReactElement {
-  const reset = usePlaylistsStore((s) => s.reset);
+  const resetPlaylists = usePlaylistsStore((s) => s.reset);
+  const resetDetection = useDetectionStore((s) => s.reset);
   useEffect(() => {
-    reset();
-    return () => reset();
-  }, [reset]);
+    resetPlaylists();
+    resetDetection();
+    return () => {
+      resetPlaylists();
+      resetDetection();
+    };
+  }, [resetPlaylists, resetDetection]);
   return <>{children}</>;
 }

@@ -21,7 +21,7 @@
  * Dedup page, the store is `idle` by the time render() returns" — which
  * is what the parametrised `T-new-1` block proves.
  *
- * Coverage (mapped to subtasks in WP01):
+ * Coverage (mapped to subtasks in WP01 and WP06):
  * - T001 / T-new-1 — production-lifecycle mount-time reset across all five
  *   source `loadState` kinds.
  * - T002 / T-new-2 — mount/unmount cycles each fire reset; loader
@@ -32,15 +32,21 @@
  *   whether to switch to `useLayoutEffect`.
  * - T004 — port-forward of the surviving prior tests (loader isolation,
  *   children pass-through).
+ * - T018 — detection store reset: in-flight scans are aborted and rows are
+ *   cleared on mount and unmount (FR-012).
  */
 import React from 'react';
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { render } from '@testing-library/react';
 import { createPlaylistsStore } from '../../src/store/playlists-store';
 import { PlaylistsStoreProvider } from '../../src/store/PlaylistsStoreContext';
+import { createDetectionStore } from '../../src/store/detection-store';
+import { DetectionStoreProvider } from '../../src/store/DetectionStoreContext';
 import { RouteResetProvider } from '../../src/store/RouteResetContext';
 import { PlaylistsLoaderError } from '../../src/domain/errors';
 import type { PlaylistsLoader } from '../../src/ports/playlists-loader';
+import type { DetectionScanner } from '../../src/ports/detection-scanner';
+import type { DetectionResult } from '../../src/domain/detection-types';
 import type {
   RawCollection,
   LikedSongsSummary,
@@ -81,6 +87,11 @@ function makeControllableLoader(): {
     reject: (err) => rejectFn(err),
     callCount: () => calls,
   };
+}
+
+/** A hanging scanner that never resolves its `scan()` promise. */
+function makeHangingScanner(): DetectionScanner {
+  return { scan: vi.fn(() => new Promise<DetectionResult>(() => {})) };
 }
 
 /**
@@ -139,6 +150,28 @@ async function makeStoreInState(
   return { store, callCount: controllable.callCount };
 }
 
+// ── Helper: render with both store providers ──────────────────────────────────
+
+/**
+ * Render `children` inside both `PlaylistsStoreProvider` and
+ * `DetectionStoreProvider`. Every test that mounts `RouteResetProvider`
+ * must include both providers because the provider now calls
+ * `useDetectionStore` in addition to `usePlaylistsStore`.
+ */
+function renderWithProviders(
+  playlistsStore: ReturnType<typeof createPlaylistsStore>,
+  detectionStore: ReturnType<typeof createDetectionStore>,
+  children: React.ReactNode,
+) {
+  return render(
+    <PlaylistsStoreProvider store={playlistsStore}>
+      <DetectionStoreProvider store={detectionStore}>
+        <RouteResetProvider>{children}</RouteResetProvider>
+      </DetectionStoreProvider>
+    </PlaylistsStoreProvider>,
+  );
+}
+
 describe('RouteResetProvider — production-lifecycle reset', () => {
   describe.each([
     ['idle'],
@@ -153,6 +186,7 @@ describe('RouteResetProvider — production-lifecycle reset', () => {
         const { store, callCount } = await makeStoreInState(sourceKind);
         const preState = store.getState().loadState.kind;
         const preCalls = callCount();
+        const detectionStore = createDetectionStore(makeHangingScanner());
 
         // Sanity: the helper actually drove the store into the requested
         // source state. (For `loading` the store has `triggerLoad` in
@@ -163,13 +197,7 @@ describe('RouteResetProvider — production-lifecycle reset', () => {
           expect(preState).toBe(sourceKind);
         }
 
-        render(
-          <PlaylistsStoreProvider store={store}>
-            <RouteResetProvider>
-              <span data-testid="child" />
-            </RouteResetProvider>
-          </PlaylistsStoreProvider>,
-        );
+        renderWithProviders(store, detectionStore, <span data-testid="child" />);
 
         expect(store.getState().loadState.kind).toBe('idle');
         // The reset MUST NOT invoke the loader (R-1..R-5 invariant
@@ -184,6 +212,7 @@ describe('RouteResetProvider — mount/unmount cycles', () => {
   it('T-new-2 — each mount and unmount resets to idle; loader call-count is exact (also covers T-survive-2)', async () => {
     const controllable = makeControllableLoader();
     const store = createPlaylistsStore(controllable.loader);
+    const detectionStore = createDetectionStore(makeHangingScanner());
 
     // First pre-load to `loaded`.
     const first = store.getState().triggerLoad();
@@ -196,13 +225,7 @@ describe('RouteResetProvider — mount/unmount cycles', () => {
     const c0 = controllable.callCount();
 
     // Mount the provider — mount-time reset fires; store → idle.
-    const { unmount } = render(
-      <PlaylistsStoreProvider store={store}>
-        <RouteResetProvider>
-          <span />
-        </RouteResetProvider>
-      </PlaylistsStoreProvider>,
-    );
+    const { unmount } = renderWithProviders(store, detectionStore, <span />);
     expect(store.getState().loadState.kind).toBe('idle');
 
     // Second pre-load while the provider is mounted; one extra loader call.
@@ -227,6 +250,7 @@ describe('RouteResetProvider — mount/unmount cycles', () => {
 describe('RouteResetProvider — synchronous reset on mount', () => {
   it('T-new-3 — store is idle by the time render() returns (no await, no act() wrap)', async () => {
     const { store } = await makeStoreInState('loaded');
+    const detectionStore = createDetectionStore(makeHangingScanner());
     expect(store.getState().loadState.kind).toBe('loaded');
 
     // Contract assertion: under @testing-library/react 16 + happy-dom 20 +
@@ -234,13 +258,7 @@ describe('RouteResetProvider — synchronous reset on mount', () => {
     // returning. If a future React version delays this, do NOT mask the
     // failure with `await act(...)` — revisit whether the provider
     // should use `useLayoutEffect`.
-    render(
-      <PlaylistsStoreProvider store={store}>
-        <RouteResetProvider>
-          <span />
-        </RouteResetProvider>
-      </PlaylistsStoreProvider>,
-    );
+    renderWithProviders(store, detectionStore, <span />);
     expect(store.getState().loadState.kind).toBe('idle');
   });
 });
@@ -249,6 +267,7 @@ describe('RouteResetProvider — loader isolation', () => {
   it('T-survive-1 — mount + unmount do NOT call loader.load()', async () => {
     const controllable = makeControllableLoader();
     const store = createPlaylistsStore(controllable.loader);
+    const detectionStore = createDetectionStore(makeHangingScanner());
 
     // Pre-load to loaded so the resets have something to reset from.
     const inflight = store.getState().triggerLoad();
@@ -260,13 +279,7 @@ describe('RouteResetProvider — loader isolation', () => {
     const preCalls = controllable.callCount();
     expect(preCalls).toBe(1);
 
-    const { unmount } = render(
-      <PlaylistsStoreProvider store={store}>
-        <RouteResetProvider>
-          <span />
-        </RouteResetProvider>
-      </PlaylistsStoreProvider>,
-    );
+    const { unmount } = renderWithProviders(store, detectionStore, <span />);
     expect(controllable.callCount()).toBe(preCalls);
     unmount();
     expect(controllable.callCount()).toBe(preCalls);
@@ -276,13 +289,84 @@ describe('RouteResetProvider — loader isolation', () => {
 describe('RouteResetProvider — children pass-through', () => {
   it('T-survive-3 — renders its children', async () => {
     const { store } = await makeStoreInState('idle');
-    const { getByTestId } = render(
-      <PlaylistsStoreProvider store={store}>
-        <RouteResetProvider>
-          <span data-testid="child">hello</span>
-        </RouteResetProvider>
-      </PlaylistsStoreProvider>,
+    const detectionStore = createDetectionStore(makeHangingScanner());
+    const { getByTestId } = renderWithProviders(
+      store,
+      detectionStore,
+      <span data-testid="child">hello</span>,
     );
     expect(getByTestId('child').textContent).toBe('hello');
+  });
+});
+
+describe('RouteResetProvider — detection store reset (T018)', () => {
+  it('T018-mount — detection store rows cleared and in-flight scan aborted on mount', async () => {
+    const { store: playlistsStore } = await makeStoreInState('idle');
+
+    // Create a hanging scanner to keep a scan in flight.
+    const detectionStore = createDetectionStore(makeHangingScanner());
+
+    // Prime the detection store with a scanning row before mount.
+    void detectionStore.getState().scanCollection('liked-songs', { kind: 'liked-songs' });
+    expect(detectionStore.getState().rows['liked-songs']?.kind).toBe('scanning');
+
+    // Mount the provider — detection reset fires; rows cleared.
+    renderWithProviders(playlistsStore, detectionStore, <span />);
+
+    expect(detectionStore.getState().rows).toEqual({});
+  });
+
+  it('T018-unmount — detection store rows cleared on unmount', async () => {
+    const { store: playlistsStore } = await makeStoreInState('idle');
+    const detectionStore = createDetectionStore(makeHangingScanner());
+
+    const { unmount } = renderWithProviders(playlistsStore, detectionStore, <span />);
+    // After mount the rows should be empty (mount-time reset).
+    expect(detectionStore.getState().rows).toEqual({});
+
+    // Prime a scan after mount (simulating a user clicking the scan button).
+    void detectionStore.getState().scanCollection('liked-songs', { kind: 'liked-songs' });
+    expect(detectionStore.getState().rows['liked-songs']?.kind).toBe('scanning');
+
+    // Unmount — cleanup reset fires; rows cleared.
+    unmount();
+    expect(detectionStore.getState().rows).toEqual({});
+  });
+
+  it('T018-abort — in-flight scan AbortSignal is fired on unmount', async () => {
+    const { store: playlistsStore } = await makeStoreInState('idle');
+
+    let capturedSignal: AbortSignal | undefined;
+    const scanner: DetectionScanner = {
+      scan: vi.fn((_req, signal) => {
+        capturedSignal = signal;
+        return new Promise<DetectionResult>(() => {}); // never resolves
+      }),
+    };
+    const detectionStore = createDetectionStore(scanner);
+
+    const { unmount } = renderWithProviders(playlistsStore, detectionStore, <span />);
+
+    // Start a scan after mount.
+    void detectionStore.getState().scanCollection('liked-songs', { kind: 'liked-songs' });
+    expect(capturedSignal).toBeDefined();
+    expect(capturedSignal!.aborted).toBe(false);
+
+    // Unmount — detection reset should abort the signal.
+    unmount();
+    expect(capturedSignal!.aborted).toBe(true);
+    expect(detectionStore.getState().rows).toEqual({});
+  });
+
+  it('T018-idempotent — detection reset from empty rows is a no-op', async () => {
+    const { store: playlistsStore } = await makeStoreInState('idle');
+    const detectionStore = createDetectionStore(makeHangingScanner());
+
+    expect(detectionStore.getState().rows).toEqual({});
+    // Mount + unmount with no scans started: rows stay empty.
+    const { unmount } = renderWithProviders(playlistsStore, detectionStore, <span />);
+    expect(detectionStore.getState().rows).toEqual({});
+    unmount();
+    expect(detectionStore.getState().rows).toEqual({});
   });
 });

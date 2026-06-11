@@ -50,6 +50,12 @@ export type RawTrack = {
    * is the member with the lowest `position` in each group).
    */
   position: number;
+  /**
+   * Track duration in ms from the host's inline `duration.milliseconds`;
+   * `null` when the host item omits a usable duration — such tracks become
+   * `unenriched`.
+   */
+  durationMs: number | null;
 };
 
 // ── §1.2 — EnrichedTrack ─────────────────────────────────────────────────────
@@ -59,9 +65,7 @@ export type RawTrack = {
  * fields the dedup algorithm requires (`canonicalUri`, `durationMs`,
  * `artists[0].name`) that are not reliably present on the enumeration output.
  *
- * Produced by `enriched-track-parser.ts` which fails loud
- * (`DetectionError('malformed-enrichment-payload', …)`) on non-conforming
- * catalog responses (NFR-008).
+ * Built by the catalog enricher from inline host data.
  */
 export type EnrichedTrack = {
   /** Mirrors `RawTrack.position`. Preserved unchanged through enrichment. */

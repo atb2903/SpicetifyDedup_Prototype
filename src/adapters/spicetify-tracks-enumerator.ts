@@ -14,8 +14,10 @@
  *   6. Emit a progress event per page.
  *   7. Classify host errors as `enumerator-failed` or `auth-token-expired`.
  *
- * Item host shape: `{ type, uri, name, album: { uri, name }, artists: [{ uri, name }] }`.
- * `duration_ms` and `linked_from` are NOT present inline — the enrichment step adds them.
+ * Item host shape: `{ type, uri, name, duration: { milliseconds }, album: { uri, name },
+ * artists: [{ uri, name }] }`. `duration` IS present inline as `duration.milliseconds`
+ * and maps to `RawTrack.durationMs`; only `linked_from` is absent (so `canonicalUri`
+ * falls back to `uri`).
  *
  * Exports `isLibraryTrackItem` (classifier) and `parseLibraryTrackItem` (parser)
  * per NFR-008 / charter Input Validation pattern so callers and tests can interact
@@ -47,6 +49,7 @@ export interface LibraryTrackItem {
   type: string;
   uri: string;
   name: string;
+  duration?: { milliseconds: number };
   album: { uri: string; name: string };
   artists: ReadonlyArray<{ uri: string; name: string }>;
 }
@@ -139,11 +142,24 @@ export function parseLibraryTrackItem(x: unknown, position: number): RawTrack {
     };
   });
 
+  // Inline duration: the host returns `duration: { milliseconds: <int> }`.
+  // Derive `durationMs` when that object carries a finite `milliseconds`
+  // number; otherwise `null` (the track flows to an `unenriched` slot).
+  const duration = item['duration'];
+  let durationMs: number | null = null;
+  if (typeof duration === 'object' && duration !== null) {
+    const ms = (duration as Record<string, unknown>)['milliseconds'];
+    if (typeof ms === 'number' && Number.isFinite(ms)) {
+      durationMs = ms;
+    }
+  }
+
   return {
     uri,
     id,
     name,
     position,
+    durationMs,
     artists: mappedArtists,
     album: {
       uri: typeof albumObj['uri'] === 'string' ? albumObj['uri'] : '',

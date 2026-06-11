@@ -7,7 +7,7 @@
  * Singleton construction order (module load, side-effect-free):
  * 1. `productionPlaylistsStore` — backed by `SpicetifyPlaylistsLoader`.
  * 2. `productionDetectionStore` — backed by `createDetectionScanner`
- *    (which composes `SpicetifyTracksEnumerator` + `SpicetifyCatalogEnricher`).
+ *    (which composes `SpicetifyTracksEnumerator` + `InlineCatalogEnricher`).
  *
  * All adapter constructors are side-effect-free at construction time:
  * no `Spicetify.*` access happens until the user triggers an action. This
@@ -28,7 +28,7 @@ import { PlaylistsStoreProvider } from './store/PlaylistsStoreContext';
 import { RouteResetProvider } from './store/RouteResetContext';
 import { SpicetifyPlaylistsLoader } from './adapters/spicetify-playlists-loader';
 import { SpicetifyTracksEnumerator } from './adapters/spicetify-tracks-enumerator';
-import { SpicetifyCatalogEnricher } from './adapters/spicetify-catalog-enricher';
+import { InlineCatalogEnricher } from './adapters/inline-catalog-enricher';
 import { createDetectionScanner } from './adapters/detection-scanner';
 import { createDetectionStore } from './store/detection-store';
 import { DetectionStoreProvider } from './store/DetectionStoreContext';
@@ -44,7 +44,7 @@ const productionPlaylistsStore = createPlaylistsStore(new SpicetifyPlaylistsLoad
  */
 const detectionScanner = createDetectionScanner(
   new SpicetifyTracksEnumerator(),
-  new SpicetifyCatalogEnricher(),
+  new InlineCatalogEnricher(),
 );
 const productionDetectionStore = createDetectionStore(detectionScanner);
 

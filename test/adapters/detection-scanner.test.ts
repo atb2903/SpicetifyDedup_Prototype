@@ -38,6 +38,7 @@ function makeRawTrack(i: number): RawTrack {
     artists: [{ uri: `spotify:artist:ART${i}`, name: `Artist ${i}` }],
     album: { uri: `spotify:album:ALB${i}`, name: `Album ${i}` },
     position: i,
+    durationMs: 180000 + i,
   };
 }
 

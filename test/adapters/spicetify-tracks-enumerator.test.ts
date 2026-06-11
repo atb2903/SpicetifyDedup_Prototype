@@ -34,6 +34,7 @@ function makeItem(i: number, overrides: Record<string, unknown> = {}) {
     type: 'track',
     uri: `spotify:track:TRACK${String(i).padStart(4, '0')}`,
     name: `Track ${i}`,
+    duration: { milliseconds: 180000 + i },
     album: { uri: `spotify:album:ALBUM${i}`, name: `Album ${i}` },
     artists: [{ uri: `spotify:artist:ART${i}`, name: `Artist ${i}` }],
     ...overrides,
@@ -626,6 +627,48 @@ describe('parseLibraryTrackItem', () => {
     expect(result.album).toEqual(item.album);
   });
 
+  it('maps inline duration.milliseconds to durationMs', () => {
+    const item = makeItem(5); // duration: { milliseconds: 180005 }
+    const result = parseLibraryTrackItem(item, 0);
+    expect(result.durationMs).toBe(180005);
+  });
+
+  it('durationMs is null when duration is absent', () => {
+    const item = {
+      type: 'track',
+      uri: 'spotify:track:X',
+      name: 'N',
+      album: { uri: '', name: '' },
+      artists: [{ uri: '', name: 'A' }],
+    };
+    const result = parseLibraryTrackItem(item, 0);
+    expect(result.durationMs).toBeNull();
+  });
+
+  it('durationMs is null when duration object lacks a numeric milliseconds', () => {
+    const item = makeItem(5, { duration: { milliseconds: 'oops' } });
+    const result = parseLibraryTrackItem(item, 0);
+    expect(result.durationMs).toBeNull();
+  });
+
+  it('durationMs is null when milliseconds is non-finite', () => {
+    const item = makeItem(5, { duration: { milliseconds: Number.NaN } });
+    const result = parseLibraryTrackItem(item, 0);
+    expect(result.durationMs).toBeNull();
+  });
+
+  it('durationMs is null when duration is not an object', () => {
+    const item = makeItem(5, { duration: 180000 });
+    const result = parseLibraryTrackItem(item, 0);
+    expect(result.durationMs).toBeNull();
+  });
+
+  it('durationMs is null when duration is explicitly null', () => {
+    const item = makeItem(5, { duration: null });
+    const result = parseLibraryTrackItem(item, 0);
+    expect(result.durationMs).toBeNull();
+  });
+
   it('throws enumerator-failed when artists is missing with missingField: artists', () => {
     const item = { type: 'track', uri: 'spotify:track:X', name: 'N', album: { uri: '', name: '' } };
     expect(() => parseLibraryTrackItem(item, 0)).toThrow(
@@ -682,6 +725,7 @@ describe('SpicetifyTracksEnumerator — RawTrack shape', () => {
     expect(track.position).toBe(0);
     expect(track.artists).toHaveLength(1);
     expect(track.album).toBeDefined();
+    expect(track.durationMs).toBe(180042);
   });
 });
 

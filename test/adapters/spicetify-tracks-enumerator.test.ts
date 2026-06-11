@@ -528,6 +528,33 @@ describe('SpicetifyTracksEnumerator — playlist path', () => {
 });
 
 // ---------------------------------------------------------------------------
+// globalThis fallback (no-arg constructor)
+// ---------------------------------------------------------------------------
+
+describe('SpicetifyTracksEnumerator — globalThis fallback', () => {
+  it('reads Platform from globalThis.Spicetify when constructed with no argument', async () => {
+    const platform = makePlatform({
+      getTracks: async () => makePage(1, 1),
+    });
+    const prev = (globalThis as Record<string, unknown>)['Spicetify'];
+    try {
+      (globalThis as Record<string, unknown>)['Spicetify'] = { Platform: platform };
+      const enumerator = new SpicetifyTracksEnumerator(); // no arg — triggers fallback branch
+      const result = await enumerator.enumerate(likedRequest(), neverAborted(), vi.fn());
+      expect(result).toHaveLength(1);
+      expect(result[0]?.position).toBe(0);
+      expect(platform.LibraryAPI.getTracks).toHaveBeenCalledTimes(1);
+    } finally {
+      if (prev === undefined) {
+        delete (globalThis as Record<string, unknown>)['Spicetify'];
+      } else {
+        (globalThis as Record<string, unknown>)['Spicetify'] = prev;
+      }
+    }
+  });
+});
+
+// ---------------------------------------------------------------------------
 // isLibraryTrackItem
 // ---------------------------------------------------------------------------
 

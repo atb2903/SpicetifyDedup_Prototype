@@ -556,6 +556,32 @@ describe('SpicetifyCatalogEnricher — order alignment', () => {
 });
 
 // ---------------------------------------------------------------------------
+// globalThis fallback (no-arg constructor)
+// ---------------------------------------------------------------------------
+
+describe('SpicetifyCatalogEnricher — globalThis fallback', () => {
+  it('reads CosmosAsync from globalThis.Spicetify when constructed with no argument', async () => {
+    const tracks = makeRawTracks(1);
+    const cosmosFn = vi.fn<CosmosGet>(async () => successResponse(tracks.map((t) => t.id)));
+    const prev = (globalThis as Record<string, unknown>)['Spicetify'];
+    try {
+      (globalThis as Record<string, unknown>)['Spicetify'] = { CosmosAsync: { get: cosmosFn } };
+      const enricher = new SpicetifyCatalogEnricher(); // no arg — triggers fallback branch
+      const result = await enricher.enrich(tracks, neverAborted(), vi.fn());
+      expect(result).toHaveLength(1);
+      expect(result[0]?.kind).toBe('enriched');
+      expect(cosmosFn).toHaveBeenCalledTimes(1);
+    } finally {
+      if (prev === undefined) {
+        delete (globalThis as Record<string, unknown>)['Spicetify'];
+      } else {
+        (globalThis as Record<string, unknown>)['Spicetify'] = prev;
+      }
+    }
+  });
+});
+
+// ---------------------------------------------------------------------------
 // isCatalogTrack
 // ---------------------------------------------------------------------------
 

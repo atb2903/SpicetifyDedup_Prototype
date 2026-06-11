@@ -1,17 +1,28 @@
 /**
- * PlaylistRow tests (T032 / WP08).
+ * PlaylistRow tests (T024 / WP08 + prior WP03 suite).
  *
- * Pure presentational component — view model in via props, no store.
- * Covers owner-identity variants (self / other), placeholder image
- * fallback, long-name passthrough, and the singular/plural boundary on
- * `trackCount` (0 / 1 / nominal / large) per charter.
+ * Sections:
+ * 1. Pure presentational tests (existing suite — owner labels, images, track
+ *    counts, layout). These mount WITHOUT the detection store provider because
+ *    the existing tests predate WP08; PlaylistRow's detection-store reads
+ *    happen through DedupButton which requires the provider. These tests
+ *    focus on the row's non-detection content and are wrapped in
+ *    <DetectionStoreProvider> to satisfy the new hook requirement.
+ * 2. T024 — per-row detection state rendering (new suite). Exercises the
+ *    four branches: idle (no extra content), scanning, loaded, failed.
  */
 
 import React from 'react';
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, act } from '@testing-library/react';
 import { PlaylistRow } from '../../src/ui/PlaylistRow';
 import type { CollectionViewModel } from '../../src/domain/view-models';
+import { DetectionStoreProvider } from '../../src/store/DetectionStoreContext';
+import { createDetectionStore } from '../../src/store/detection-store';
+import type { DetectionStoreState } from '../../src/store/detection-store';
+import type { DetectionScanner } from '../../src/ports/detection-scanner';
+import type { DetectionResult } from '../../src/domain/detection-types';
+import { DetectionError } from '../../src/domain/detection-errors';
 
 const sample = (
   overrides: Partial<CollectionViewModel> = {},
@@ -25,39 +36,51 @@ const sample = (
   ...overrides,
 });
 
+/** Build a stub scanner whose `scan` never resolves. */
+function makeHangingScanner(): DetectionScanner {
+  return { scan: vi.fn(() => new Promise<never>(() => {})) };
+}
+
+/** Wrap a row in the detection provider with the given store. */
+function renderRow(
+  row: CollectionViewModel,
+  store: ReturnType<typeof createDetectionStore>,
+) {
+  return render(
+    <DetectionStoreProvider store={store}>
+      <ul>
+        <PlaylistRow row={row} />
+      </ul>
+    </DetectionStoreProvider>,
+  );
+}
+
+// ─── Existing presentational tests (require the detection store provider) ────
+
 describe('PlaylistRow', () => {
   it('shows the playlist name', () => {
-    render(<PlaylistRow row={sample()} />);
+    const store = createDetectionStore(makeHangingScanner());
+    renderRow(sample(), store);
     expect(screen.getByText('My Playlist')).toBeInTheDocument();
   });
 
   it('shows "by you" for self-owned playlists', () => {
-    render(
-      <PlaylistRow
-        row={sample({ owner: { kind: 'self', displayName: 'me' } })}
-      />,
-    );
+    const store = createDetectionStore(makeHangingScanner());
+    renderRow(sample({ owner: { kind: 'self', displayName: 'me' } }), store);
     expect(screen.getByText(/by you/i)).toBeInTheDocument();
   });
 
   it('shows "by {displayName}" for other-owned (collaborative) playlists', () => {
-    render(
-      <PlaylistRow
-        row={sample({ owner: { kind: 'other', displayName: 'friend' } })}
-      />,
-    );
+    const store = createDetectionStore(makeHangingScanner());
+    renderRow(sample({ owner: { kind: 'other', displayName: 'friend' } }), store);
     expect(screen.getByText(/by friend/i)).toBeInTheDocument();
   });
 
   it('renders the cover image when imageUrl is provided', () => {
-    // The cover img uses alt="" (correct ARIA for decorative imagery
-    // adjacent to descriptive text); query by tag, not by role. We query
-    // by `<img>` rather than by the CSS-module classname because the
-    // module hash rotates per build.
-    const { container } = render(
-      <PlaylistRow
-        row={sample({ imageUrl: 'https://example.com/cover.jpg' })}
-      />,
+    const store = createDetectionStore(makeHangingScanner());
+    const { container } = renderRow(
+      sample({ imageUrl: 'https://example.com/cover.jpg' }),
+      store,
     );
     const img = container.querySelector('img');
     expect(img).not.toBeNull();
@@ -65,91 +88,73 @@ describe('PlaylistRow', () => {
   });
 
   it('does not render a placeholder when imageUrl is provided', () => {
-    render(
-      <PlaylistRow
-        row={sample({ imageUrl: 'https://example.com/cover.jpg' })}
-      />,
-    );
+    const store = createDetectionStore(makeHangingScanner());
+    renderRow(sample({ imageUrl: 'https://example.com/cover.jpg' }), store);
     expect(screen.queryByLabelText(/no cover image/i)).not.toBeInTheDocument();
   });
 
   it('renders a placeholder with an accessible label when imageUrl is null', () => {
-    render(<PlaylistRow row={sample({ imageUrl: null })} />);
+    const store = createDetectionStore(makeHangingScanner());
+    renderRow(sample({ imageUrl: null }), store);
     expect(screen.getByLabelText(/no cover image/i)).toBeInTheDocument();
   });
 
   it('passes very long names through verbatim', () => {
+    const store = createDetectionStore(makeHangingScanner());
     const long = 'A'.repeat(500);
-    render(<PlaylistRow row={sample({ displayName: long })} />);
+    renderRow(sample({ displayName: long }), store);
     expect(screen.getByText(long)).toBeInTheDocument();
   });
 
   it('renders "0 tracks" at the zero-track boundary', () => {
-    render(<PlaylistRow row={sample({ trackCount: 0 })} />);
+    const store = createDetectionStore(makeHangingScanner());
+    renderRow(sample({ trackCount: 0 }), store);
     expect(screen.getByText(/^0 tracks$/i)).toBeInTheDocument();
   });
 
   it('renders "1 track" (singular) at the one-track boundary', () => {
-    render(<PlaylistRow row={sample({ trackCount: 1 })} />);
+    const store = createDetectionStore(makeHangingScanner());
+    renderRow(sample({ trackCount: 1 }), store);
     expect(screen.getByText(/^1 track$/i)).toBeInTheDocument();
   });
 
   it('renders "{n} tracks" (plural) at the nominal track count', () => {
-    render(<PlaylistRow row={sample({ trackCount: 10 })} />);
+    const store = createDetectionStore(makeHangingScanner());
+    renderRow(sample({ trackCount: 10 }), store);
     expect(screen.getByText(/^10 tracks$/i)).toBeInTheDocument();
   });
 
   it('renders "{n} tracks" (plural) at a large track count', () => {
-    render(<PlaylistRow row={sample({ trackCount: 1000 })} />);
+    const store = createDetectionStore(makeHangingScanner());
+    renderRow(sample({ trackCount: 1000 }), store);
     expect(screen.getByText(/^1000 tracks$/i)).toBeInTheDocument();
   });
 
   it('carries a li role so the parent ul can wrap it semantically', () => {
-    render(
-      <ul>
-        <PlaylistRow row={sample()} />
-      </ul>,
-    );
+    const store = createDetectionStore(makeHangingScanner());
+    renderRow(sample(), store);
     expect(screen.getByRole('listitem')).toBeInTheDocument();
   });
 
   it('defensively renders "Your Library" when given a system-library owner', () => {
-    // LoadedView dispatches system-library rows to LikedSongsRow, but
-    // OwnerIdentity's type signature includes the variant — exercise the
-    // defensive branch so the contract is explicit.
-    render(
-      <PlaylistRow row={sample({ owner: { kind: 'system-library' } })} />,
-    );
+    const store = createDetectionStore(makeHangingScanner());
+    renderRow(sample({ owner: { kind: 'system-library' } }), store);
     expect(screen.getByText('Your Library')).toBeInTheDocument();
   });
 
-  // WP02 / T010 / FR-004: the row spans (cover, name, owner, count) must
-  // NOT collapse into a single visual word. Asserts the row uses a
-  // grid/flex layout so the spans are positioned, not inlined.
   it('FR-004 — Row uses a grid or flex layout so spans do not collapse', () => {
-    render(
-      <ul>
-        <PlaylistRow row={sample()} />
-      </ul>,
-    );
+    const store = createDetectionStore(makeHangingScanner());
+    renderRow(sample(), store);
     const row = screen.getByRole('listitem');
     const display = getComputedStyle(row).display;
     expect(['grid', 'flex']).toContain(display);
   });
 
-  // WP02 / T010 / FR-004: rows must have visible separation from siblings.
-  // Asserts a non-zero `border-bottom-width` (the styling approach the
-  // module uses) so adjacent rows do not visually run together.
   it('FR-004 — Row has visible separation (non-zero border-bottom)', () => {
-    render(
-      <ul>
-        <PlaylistRow row={sample()} />
-      </ul>,
-    );
+    const store = createDetectionStore(makeHangingScanner());
+    renderRow(sample(), store);
     const row = screen.getByRole('listitem');
     const cs = getComputedStyle(row);
-    // happy-dom returns the shorthand `border-bottom` or the longhand
-    // `border-bottom-width`; either signalling presence is acceptable.
     const hasBorder =
       (cs.borderBottomWidth !== '' && cs.borderBottomWidth !== '0px') ||
       (cs.borderBottom !== '' && !cs.borderBottom.startsWith('0px'));
@@ -157,10 +162,14 @@ describe('PlaylistRow', () => {
   });
 });
 
-describe('PlaylistRow — Dedup button (WP03)', () => {
+// ─── Prior dedup-button suite (WP03) — updated for new prop shape ─────────────
+
+describe('PlaylistRow — Dedup button (WP03 / T024)', () => {
   let logSpy: ReturnType<typeof vi.spyOn>;
 
   beforeEach(() => {
+    // The button no longer calls logDedupClick but tests below may need
+    // console spy if any console calls happen indirectly.
     logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
   });
 
@@ -168,69 +177,139 @@ describe('PlaylistRow — Dedup button (WP03)', () => {
     logSpy.mockRestore();
   });
 
-  // (a) FR-001 — every playlist row mounts a Dedup button whose accessible
-  //     name is `Dedup <playlistName>` (NFR-002 contract from WP02).
   it('renders a Dedup button on every playlist row', () => {
-    render(
-      <PlaylistRow
-        row={sample({
-          displayName: 'My Playlist',
-          key: 'spotify:playlist:abc',
-        })}
-      />,
-    );
+    const store = createDetectionStore(makeHangingScanner());
+    renderRow(sample({ displayName: 'My Playlist', key: 'spotify:playlist:abc' }), store);
     expect(
       screen.getByRole('button', { name: /^Dedup My Playlist$/ }),
     ).toBeInTheDocument();
   });
 
-  // (b) FR-002 / FR-004 — the row binds the button to its own display name
-  //     and key (URI) so click activation logs that row's identity exactly
-  //     once via WP01's logDedupClick helper.
-  it("binds the button to the row's display name and key (URI)", () => {
-    render(
-      <PlaylistRow
-        row={sample({
-          displayName: 'My Playlist',
-          key: 'spotify:playlist:abc',
-        })}
-      />,
-    );
-    const button = screen.getByRole('button', {
-      name: /^Dedup My Playlist$/,
-    });
-    fireEvent.click(button);
-    expect(logSpy).toHaveBeenCalledTimes(1);
-    expect(logSpy).toHaveBeenCalledWith(
-      '[Dedup] clicked: My Playlist (spotify:playlist:abc)',
-    );
+  it("binds the button to the row's displayName (aria-label)", () => {
+    const store = createDetectionStore(makeHangingScanner());
+    renderRow(sample({ displayName: 'My Playlist', key: 'spotify:playlist:abc' }), store);
+    const button = screen.getByRole('button', { name: /^Dedup My Playlist$/ });
+    expect(button.getAttribute('aria-label')).toBe('Dedup My Playlist');
   });
 
-  // (c) NFR-003 — mounting the button must not truncate the playlist's
-  //     display name, owner label, or formatted track count. Long-name +
-  //     multi-track fixture mirrors the pattern used earlier in this file.
+  it('dispatches scanCollection with row.key as collectionKey', async () => {
+    const scanner = makeHangingScanner();
+    const store = createDetectionStore(scanner);
+    const scanCollection = vi.fn(() => Promise.resolve());
+    store.setState({ ...store.getState(), scanCollection } as DetectionStoreState);
+
+    renderRow(sample({ displayName: 'My Playlist', key: 'spotify:playlist:abc' }), store);
+    const button = screen.getByRole('button', { name: /^Dedup My Playlist$/ });
+    await act(async () => { fireEvent.click(button); });
+
+    expect(scanCollection).toHaveBeenCalledWith('spotify:playlist:abc', {
+      kind: 'playlist',
+      playlistUri: 'spotify:playlist:abc',
+    });
+  });
+
   it('does not truncate the playlist name, owner label, or track count when the button is present', () => {
+    const store = createDetectionStore(makeHangingScanner());
     const long = 'A'.repeat(500);
-    render(
-      <PlaylistRow
-        row={sample({
-          displayName: long,
-          owner: { kind: 'other', displayName: 'friend' },
-          trackCount: 1000,
-        })}
-      />,
+    renderRow(
+      sample({ displayName: long, owner: { kind: 'other', displayName: 'friend' }, trackCount: 1000 }),
+      store,
     );
-    // (i) Display name is fully present (no truncation).
     expect(screen.getByText(long)).toBeInTheDocument();
-    // (ii) Owner label is present.
     expect(screen.getByText(/by friend/i)).toBeInTheDocument();
-    // (iii) Formatted track count is present.
     expect(screen.getByText(/^1000 tracks$/i)).toBeInTheDocument();
   });
+});
 
-  // (d) Skipped: the existing `PlaylistRow` suite already exercises the
-  //     `data-row-kind="playlist"` routing attribute implicitly through
-  //     the `<li>` rendering — the attribute is set unconditionally in
-  //     the source and adding a Dedup button cannot reach it. The
-  //     non-regression assertion would duplicate existing coverage.
+// ─── T024 — per-row detection state rendering ─────────────────────────────────
+
+describe('PlaylistRow — T024 detection state rendering', () => {
+  it('idle row (undefined) renders no scanning/loaded/failed content', () => {
+    const store = createDetectionStore(makeHangingScanner());
+    renderRow(sample(), store);
+    // No scanning status, no summary, no alert
+    expect(screen.queryByRole('status')).not.toBeInTheDocument();
+    expect(screen.queryByText(/No duplicates found/i)).not.toBeInTheDocument();
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  });
+
+  it('scanning row renders ScanningView (role="status")', async () => {
+    const scanner = makeHangingScanner();
+    const store = createDetectionStore(scanner);
+    renderRow(sample({ key: 'spotify:playlist:abc' }), store);
+
+    await act(async () => {
+      void store.getState().scanCollection('spotify:playlist:abc', {
+        kind: 'playlist',
+        playlistUri: 'spotify:playlist:abc',
+      });
+    });
+
+    expect(screen.getByRole('status')).toBeInTheDocument();
+    expect(screen.getByRole('status')).toHaveTextContent(/Enumerating tracks/);
+  });
+
+  it('loaded row renders DetectionLoadedSummary ("No duplicates found")', async () => {
+    let resolveResult!: (r: DetectionResult) => void;
+    const scanner: DetectionScanner = {
+      scan: vi.fn(() => new Promise((resolve) => { resolveResult = resolve; })),
+    };
+    const store = createDetectionStore(scanner);
+    renderRow(sample({ key: 'spotify:playlist:abc' }), store);
+
+    await act(async () => {
+      const p = store.getState().scanCollection('spotify:playlist:abc', {
+        kind: 'playlist',
+        playlistUri: 'spotify:playlist:abc',
+      });
+      resolveResult({
+        collectionKey: 'spotify:playlist:abc',
+        completedAt: 1000,
+        groups: [],
+        duplicateTrackCount: 0,
+        removableTrackCount: 0,
+        skippedLocalCount: 0,
+        unenrichedCount: 0,
+        scannedTrackCount: 5,
+      });
+      await p;
+    });
+
+    expect(screen.getByText(/No duplicates found/i)).toBeInTheDocument();
+  });
+
+  it('failed row renders DetectionFailedView (role="alert")', async () => {
+    const scanner: DetectionScanner = {
+      scan: vi.fn(() => Promise.reject(new DetectionError('network-failure', 'Test'))),
+    };
+    const store = createDetectionStore(scanner);
+    renderRow(sample({ key: 'spotify:playlist:abc' }), store);
+
+    await act(async () => {
+      await store.getState().scanCollection('spotify:playlist:abc', {
+        kind: 'playlist',
+        playlistUri: 'spotify:playlist:abc',
+      });
+    });
+
+    expect(screen.getByRole('alert')).toBeInTheDocument();
+    expect(screen.getByRole('alert')).toHaveTextContent(/Couldn't reach Spotify/);
+  });
+
+  it('collection key for playlist row is row.key (the playlist URI)', async () => {
+    const scanner = makeHangingScanner();
+    const store = createDetectionStore(scanner);
+    const scanCollection = vi.fn(() => Promise.resolve());
+    store.setState({ ...store.getState(), scanCollection } as DetectionStoreState);
+
+    renderRow(sample({ key: 'spotify:playlist:xyz', displayName: 'Test' }), store);
+
+    const button = screen.getByRole('button', { name: /^Dedup Test$/ });
+    await act(async () => { fireEvent.click(button); });
+
+    expect(scanCollection).toHaveBeenCalledWith(
+      'spotify:playlist:xyz',
+      { kind: 'playlist', playlistUri: 'spotify:playlist:xyz' },
+    );
+  });
 });

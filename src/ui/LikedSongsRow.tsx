@@ -1,38 +1,37 @@
 /**
- * The pinned Liked Songs row (FR-003).
+ * The pinned Liked Songs row (FR-003, T024 / WP08).
  *
  * Visually and structurally distinct from `PlaylistRow`:
  * - Fixed copy ("Liked Songs" / "Your Library").
- * - Heart glyph on a Spotify-purple tile as the visual marker instead
- *   of a cover image.
- * - Carries a stable `data-row-kind="liked-songs"` attribute so the
- *   parent surface (and tests) can route to the row variant without
- *   depending on the (hashed) CSS-module classname.
+ * - Heart glyph on a Spotify-purple tile as the visual marker instead of a
+ *   cover image.
+ * - Carries a stable `data-row-kind="liked-songs"` attribute.
  *
- * Takes the same `CollectionViewModel` shape as `PlaylistRow` so
- * `LoadedView` can dispatch by `kind` without case-specific prop wiring.
- * Reads only `trackCount` off the model — name, owner, and image are
- * hardcoded because the row is system-owned.
+ * WP08 (T024): reads per-row detection state from the `DetectionStoreContext`
+ * using the sentinel key `'liked-songs'` (per data-model §8). Renders
+ * `<ScanningView>`, `<DetectionLoadedSummary>`, or `<DetectionFailedView>`
+ * below the row cells based on the row's state.
  *
- * Styling (WP02 / T010): ships its own CSS module with the same grid
- * footprint as `PlaylistRow` so the loaded list reads as one consistent
- * surface, differing only in the heart-tile cover treatment.
+ * The `DedupButton` is passed:
+ * - `collectionKey: 'liked-songs'` — the store sentinel (NOT the historical
+ *   `'spotify:collection:tracks'` literal that was used in the diagnostic era).
+ * - `request: { kind: 'liked-songs' }` — discriminated scanner payload.
+ * - `displayName: 'Liked Songs'` — hardcoded, per research §7.2.
  *
- * WP04 (FR-001 / NFR-002 / NFR-003): mounts a `<DedupButton>` in the
- * trailing grid cell using the hardcoded literals `"Liked Songs"` and
- * `"spotify:collection:tracks"` at the call site, per research §7.1.
- * The synthetic-row pattern already hardcodes the display name and
- * owner label, so the URI literal fits the same shape; threading a
- * `canonicalUri` field through `CollectionViewModel` would have a wide
- * blast radius (transform, view-model type, every consumer) for a
- * single call-site value. See ADR-0006 for the diagnostic-only click
- * contract.
+ * No adapter or port imports — enforced by `test/architecture.test.ts`.
  */
 
 import React from 'react';
 import type { CollectionViewModel } from '../domain/view-models';
 import { DedupButton } from './DedupButton';
+import { ScanningView } from './ScanningView';
+import { DetectionLoadedSummary } from './DetectionLoadedSummary';
+import { DetectionFailedView } from './DetectionFailedView';
+import { useDetectionStore } from '../store/DetectionStoreContext';
 import styles from './LikedSongsRow.module.scss';
+
+/** The sentinel collection key for Liked Songs (data-model §8). */
+const LIKED_SONGS_KEY = 'liked-songs';
 
 /** Props for the `LikedSongsRow` component. */
 export type LikedSongsRowProps = { row: CollectionViewModel };
@@ -40,12 +39,15 @@ export type LikedSongsRowProps = { row: CollectionViewModel };
 /**
  * Render the pinned Liked Songs row.
  *
- * A future iteration may swap the literal heart glyph for
- * `Spicetify.ReactComponent.IconComponent` with the `'heart'` icon name;
- * the glyph is sufficient for the current iteration and avoids a host
- * dependency in the test suite.
+ * Detection state:
+ * - `scanning` → `<ScanningView progress={…} />`
+ * - `loaded`   → `<DetectionLoadedSummary result={…} />`
+ * - `failed`   → `<DetectionFailedView reason={…} />`
+ * - `idle` / undefined → nothing extra
  */
 export function LikedSongsRow({ row }: LikedSongsRowProps) {
+  const rowState = useDetectionStore((s) => s.rows[LIKED_SONGS_KEY]);
+
   return (
     <li
       className={styles.row}
@@ -66,7 +68,20 @@ export function LikedSongsRow({ row }: LikedSongsRowProps) {
       <span className={styles.count}>
         {row.trackCount === 1 ? '1 track' : `${row.trackCount} tracks`}
       </span>
-      <DedupButton playlistName="Liked Songs" playlistUri="spotify:collection:tracks" />
+      <DedupButton
+        collectionKey={LIKED_SONGS_KEY}
+        request={{ kind: 'liked-songs' }}
+        displayName="Liked Songs"
+      />
+      {rowState?.kind === 'scanning' && (
+        <ScanningView progress={rowState.progress} />
+      )}
+      {rowState?.kind === 'loaded' && (
+        <DetectionLoadedSummary result={rowState.result} />
+      )}
+      {rowState?.kind === 'failed' && (
+        <DetectionFailedView reason={rowState.reason} />
+      )}
     </li>
   );
 }

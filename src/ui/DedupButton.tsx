@@ -1,68 +1,74 @@
 /**
- * Per-row Dedup affordance (FR-001, FR-002, NFR-001, NFR-002).
+ * Per-row Dedup button — wired to the detection store (T023 / WP08).
  *
- * Presentational React component. Accepts the host playlist's display
- * name and canonical Spotify URI as two separate string props
- * (data-model §1, research Decision 3) and renders a native
- * `<button type="button">`. On activation — mouse click, Enter, or
- * Space on the focused button — invokes `logDedupClick(name, uri)`
- * from `./dedup-click-log` which writes one diagnostic line of the
- * form `[Dedup] clicked: <name> (<uri>)` (FR-003).
+ * Replaces the prior diagnostic `logDedupClick` handler with a real
+ * `scanCollection` dispatch. The button is disabled while the row's scan is
+ * in flight (FR-013 / C-005); the `disabled` state derives from the
+ * detection store, not from a prop.
  *
  * Accessibility contract:
- *  - Visible text is the literal word "Dedup" (Decision 8).
- *  - The accessible name is `Dedup <playlistName>` via `aria-label`
- *    so screen readers announce which row's button has focus (NFR-002).
- *  - Native `<button>` is tab-focusable by default (NFR-001).
+ * - Visible text is the literal word "Dedup" (Decision 8).
+ * - The accessible name is `Dedup <displayName>` via `aria-label` so screen
+ *   readers announce which row's button has focus (NFR-002).
+ * - Native `<button>` is tab-focusable by default (NFR-001).
+ * - `disabled` when `rows[collectionKey].kind === 'scanning'` (FR-013).
  *
- * Side-effect contract:
- *  - Does NOT call any Spicetify host API.
- *  - Does NOT mutate any store, library, or playlist.
- *  - Does NOT render any user-visible confirmation.
- *  - The only side effect is the single `console.log` from
- *    `logDedupClick`. The temporary diagnostic surface is documented
- *    at `.claude/adr/0006-console-only-dedup-click-confirmation.md`
- *    (FR-007, C-001).
- *
- * The component imports only `react`, `./dedup-click-log`, and the
- * sibling `./DedupButton.module.scss` — adapter and port imports are
- * forbidden from `src/ui/` by `test/architecture.test.ts`.
+ * Architecture: imports from `./store/DetectionStoreContext` (store layer)
+ * and `./domain/detection-types` (domain layer) — no adapters, no ports,
+ * per ADR-0001.
  */
 
 import React from 'react';
-import { logDedupClick } from './dedup-click-log';
+import { useDetectionStore } from '../store/DetectionStoreContext';
+import type { ScanRequest } from '../domain/detection-types';
 import styles from './DedupButton.module.scss';
 
 /**
  * Props for {@link DedupButton}.
- *
- * Two independent string props rather than a single object so the
- * component's API is the smallest possible surface that satisfies the
- * data-model contract (no implicit derivations from a richer
- * view-model — callers pass exactly what they want logged).
  */
 export type DedupButtonProps = {
-  /** Display name of the playlist. Used verbatim in the aria-label and the log line. */
-  playlistName: string;
-  /** Canonical Spotify URI (e.g. `spotify:playlist:abc`). Logged verbatim. */
-  playlistUri: string;
+  /**
+   * Canonical key for the store row:
+   * - Liked Songs: the literal sentinel `'liked-songs'`.
+   * - Playlists: the playlist URI (e.g. `'spotify:playlist:abc'`).
+   */
+  collectionKey: string;
+  /**
+   * Discriminated payload for the scanner, forwarded verbatim to
+   * `scanCollection`. Liked Songs uses `{ kind: 'liked-songs' }`; playlists
+   * use `{ kind: 'playlist', playlistUri: <uri> }`.
+   */
+  request: ScanRequest;
+  /**
+   * Display name of the collection. Used verbatim in the `aria-label`:
+   * `Dedup <displayName>`.
+   */
+  displayName: string;
 };
 
 /**
- * Render the Dedup button for a single playlist row.
+ * Render the Dedup button for a single row.
  *
- * Activation routes through `logDedupClick` so the diagnostic format
- * lives in exactly one place (WP01 surface). Future missions replace
- * the helper body to do real work without changing this component's
- * signature.
+ * On click, dispatches `scanCollection(collectionKey, request)` via the
+ * detection store context. Disabled while the row's scan is in flight so
+ * double-click and concurrent activation are prevented at the UI layer
+ * (the store's `scanCollection` gate is the authoritative guard).
  */
-export function DedupButton({ playlistName, playlistUri }: DedupButtonProps) {
+export function DedupButton({ collectionKey, request, displayName }: DedupButtonProps) {
+  const scanCollection = useDetectionStore((s) => s.scanCollection);
+  const isScanning = useDetectionStore(
+    (s) => s.rows[collectionKey]?.kind === 'scanning',
+  );
+
   return (
     <button
       type="button"
       className={styles.button}
-      aria-label={`Dedup ${playlistName}`}
-      onClick={() => logDedupClick(playlistName, playlistUri)}
+      aria-label={`Dedup ${displayName}`}
+      disabled={isScanning}
+      onClick={() => {
+        void scanCollection(collectionKey, request);
+      }}
     >
       Dedup
     </button>

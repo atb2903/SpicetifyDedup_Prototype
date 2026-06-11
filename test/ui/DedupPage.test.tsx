@@ -15,14 +15,22 @@
 import React from 'react';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { DedupPage } from '../../src/ui/DedupPage';
 import styles from '../../src/ui/DedupPage.module.scss';
 import { PlaylistsStoreProvider } from '../../src/store/PlaylistsStoreContext';
+import { DetectionStoreProvider } from '../../src/store/DetectionStoreContext';
 import { createPlaylistsStore } from '../../src/store/playlists-store';
+import { createDetectionStore } from '../../src/store/detection-store';
 import { FakePlaylistsLoader } from '../../src/adapters/fake-playlists-loader';
 import { PlaylistsLoaderError } from '../../src/domain/errors';
+import type { DetectionScanner } from '../../src/ports/detection-scanner';
+
+/** Stub scanner that never resolves — safe for render-only tests. */
+function makeHangingScanner(): DetectionScanner {
+  return { scan: vi.fn(() => new Promise<never>(() => {})) };
+}
 
 const makeStore = (variant: 'success' | 'empty' | 'failure') => {
   const loader =
@@ -42,14 +50,26 @@ const makeStore = (variant: 'success' | 'empty' | 'failure') => {
   return { loader, store: createPlaylistsStore(loader) };
 };
 
+/**
+ * Render helper that wraps DedupPage in both required providers.
+ * The detection store uses a hanging scanner — tests do not exercise
+ * detection state directly (that is covered by DedupButton/row tests).
+ */
+function renderDedupPage(store: ReturnType<typeof createPlaylistsStore>) {
+  const detectionStore = createDetectionStore(makeHangingScanner());
+  return render(
+    <PlaylistsStoreProvider store={store}>
+      <DetectionStoreProvider store={detectionStore}>
+        <DedupPage />
+      </DetectionStoreProvider>
+    </PlaylistsStoreProvider>,
+  );
+}
+
 describe('DedupPage', () => {
   it('routes idle → IdleView (Load button present)', () => {
     const { store } = makeStore('success');
-    render(
-      <PlaylistsStoreProvider store={store}>
-        <DedupPage />
-      </PlaylistsStoreProvider>,
-    );
+    renderDedupPage(store);
     expect(
       screen.getByRole('button', { name: /load/i }),
     ).toBeInTheDocument();
@@ -58,11 +78,7 @@ describe('DedupPage', () => {
   it('routes loading → LoadingView (status role)', async () => {
     const { store } = makeStore('success');
     const triggerPromise = store.getState().triggerLoad();
-    render(
-      <PlaylistsStoreProvider store={store}>
-        <DedupPage />
-      </PlaylistsStoreProvider>,
-    );
+    renderDedupPage(store);
     expect(screen.getByRole('status')).toBeInTheDocument();
     await triggerPromise;
   });
@@ -70,22 +86,14 @@ describe('DedupPage', () => {
   it('routes loaded → LoadedView (Liked Songs row visible)', async () => {
     const { store } = makeStore('success');
     await store.getState().triggerLoad();
-    render(
-      <PlaylistsStoreProvider store={store}>
-        <DedupPage />
-      </PlaylistsStoreProvider>,
-    );
+    renderDedupPage(store);
     expect(screen.getByText('Liked Songs')).toBeInTheDocument();
   });
 
   it('routes empty → EmptyView (distinct copy, no spinner, no retry)', async () => {
     const { store } = makeStore('empty');
     await store.getState().triggerLoad();
-    render(
-      <PlaylistsStoreProvider store={store}>
-        <DedupPage />
-      </PlaylistsStoreProvider>,
-    );
+    renderDedupPage(store);
     expect(screen.getByText(/no dedup-eligible/i)).toBeInTheDocument();
     expect(screen.queryByRole('status')).toBeNull();
     expect(
@@ -96,11 +104,7 @@ describe('DedupPage', () => {
   it('routes failed → FailedView (alert role + Retry button)', async () => {
     const { store } = makeStore('failure');
     await store.getState().triggerLoad();
-    render(
-      <PlaylistsStoreProvider store={store}>
-        <DedupPage />
-      </PlaylistsStoreProvider>,
-    );
+    renderDedupPage(store);
     expect(screen.getByRole('alert')).toBeInTheDocument();
     expect(
       screen.getByRole('button', { name: /retry/i }),
@@ -115,11 +119,7 @@ describe('DedupPage', () => {
     // falls inside `.main-topBar-container`'s bounding box, which is the
     // live-client defect captured in spec §1 P1.
     const { store } = makeStore('success');
-    const { container } = render(
-      <PlaylistsStoreProvider store={store}>
-        <DedupPage />
-      </PlaylistsStoreProvider>,
-    );
+    const { container } = renderDedupPage(store);
     const pageClass = (styles as { page?: string }).page;
     expect(typeof pageClass).toBe('string');
     expect(pageClass).not.toBe('');
@@ -166,11 +166,7 @@ describe('DedupPage', () => {
 
   it('end-to-end: idle → trigger → loaded transition is visible in the DOM', async () => {
     const { store } = makeStore('success');
-    render(
-      <PlaylistsStoreProvider store={store}>
-        <DedupPage />
-      </PlaylistsStoreProvider>,
-    );
+    renderDedupPage(store);
     expect(
       screen.getByRole('button', { name: /load/i }),
     ).toBeInTheDocument();

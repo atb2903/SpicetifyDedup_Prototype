@@ -1,0 +1,26 @@
+// DetectionFailedView styling (WP07 / T022 / NFR-005 / AS-8).
+//
+// Error state at the row level. Uses an error-accent left border (same
+// treatment as the page-level FailedView) so the failed state reads as an
+// error from a single glance. Compact — does not take over the full page
+// viewport like the page-level FailedView; it sits inline with the row.
+
+@use '../styles/tokens.module' as tokens;
+@include tokens.declare;
+
+.container {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-left: 3px solid var(--dedup-error);
+  background-color: var(--dedup-card);
+  border-radius: 0 4px 4px 0;
+}
+
+.message {
+  margin: 0;
+  font-size: 13px;
+  color: var(--dedup-text);
+}

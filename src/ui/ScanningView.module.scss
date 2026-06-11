@@ -1,0 +1,29 @@
+// ScanningView styling (WP07 / T020 / NFR-006).
+//
+// Inline flex row: stage label + optional "·" separator + processed/total counter.
+// No heavy animation — the aria-live attribute on the container handles
+// screen-reader announcements; CSS focus is purely on legibility.
+
+@use '../styles/tokens.module' as tokens;
+@include tokens.declare;
+
+.container {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 12px;
+  color: var(--dedup-text);
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.label {
+  font-weight: 600;
+  color: var(--dedup-text);
+}
+
+.counter {
+  color: var(--dedup-subtext);
+  font-variant-numeric: tabular-nums;
+}

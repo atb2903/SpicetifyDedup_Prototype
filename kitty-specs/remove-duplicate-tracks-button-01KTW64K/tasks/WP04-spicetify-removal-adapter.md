@@ -284,3 +284,74 @@ spec-kitty agent action implement WP04 --agent <name>
 
 ## Activity Log
 - 2026-06-12T14:04:20Z – claude:opus:implementer:implementer – shell_pid=35335 – Started implementation via action command
+
+### 2026-06-12 — Live-client verification findings (T015, partial — DoD gate still open)
+
+**Environment:** Spotify desktop `1.2.90.451`, Spicetify `2.43.2`, run against a throwaway
+test playlist + a few disposable liked songs in the DevTools console.
+
+Findings recorded verbatim from the live trace:
+
+1. `LibraryAPI.remove({ uris })` resolves; `LibraryAPI.contains(uri)` reflects removal
+   (`[true]` before → `[false]` after). ✅
+2. `PlaylistAPI.getContents` items ALL carry a non-empty `uid` (`allHaveUid: true`).
+   Per-occurrence `uid` addressing is precise (see finding 3). The exact "same URI twice,
+   remove one uid keeps the other" end-to-end check is **pending a re-run**, but finding 3
+   proves the host keys removal by `uid`.
+3. **ATOMICITY (critical):** `PlaylistAPI.remove(playlistUri, [validOccurrence, oneStaleUid])`
+   **REJECTS THE WHOLE CALL** with `Error: "Given row id does not exist!"` and removes
+   NOTHING (the valid member was still present afterward). So `PlaylistAPI.remove` is
+   **atomic reject-whole** on a single bad member.
+4. **Stale handling (A-5) differs by surface:** `LibraryAPI.remove` of an already-absent
+   URI is a **no-op (resolves)**; `PlaylistAPI.remove` of an absent `uid` **throws**
+   `"Given row id does not exist!"`.
+5. Client UI self-sync: **pending user observation** (do not block on it).
+
+> Pending before T015 can be checked done: finding 2's repeated-URI end-to-end confirmation
+> and finding 5 (client UI self-sync observation). The orchestrator drives those final
+> confirmations; this WP does **not** mark T015 done or move to `for_review` here.
+
+**Resulting design decision (applied to `SpicetifyRemovalExecutor` this session):**
+
+`BATCH_SIZE` is **finalized at 100** (happy-path throughput). Because finding 3 shows
+`PlaylistAPI.remove` is atomic reject-whole on a single stale member, attributing a whole
+rejected batch to `failed` would over-report failures (one stale `uid` would fail up to 100
+valid removals). Instead the adapter adopts a **per-track fallback on batch rejection**: when
+a bulk batch `remove` rejects, the adapter retries each track in that batch with its own
+single-track host `remove` call — resolves → `removed`, rejects → `failed` with the rejection
+message. This is **safe** because the atomic reject removed nothing (finding 3, live-verified),
+so per-track retries cannot double-remove. `LibraryAPI.remove` is tolerant (no-op on stale,
+finding 4) so its bulk call rarely rejects and the fallback is a general safety net there;
+the fallback is applied uniformly for both `liked-songs` and `playlist` targets.
+
+**Abort semantics implemented:** `signal.aborted` is checked at each **batch boundary**
+(before starting a batch); if aborted, `remove` throws `DOMException('…','AbortError')` and
+starts no further batch. An in-progress per-track fallback for the *current* batch is allowed
+to complete (the abort guard sits at batch boundaries, not mid-fallback); no *new* batch is
+started after an abort is observed.
+
+### 2026-06-12 — Live-client verification COMPLETE (T015 — DoD gate closed)
+
+The two pending confirmations from the partial entry above are now resolved against the live
+client (same environment: Spotify `1.2.90.451`, Spicetify `2.43.2`):
+
+2. **Repeated-URI keep-other (end-to-end) — CONFIRMED.** A test playlist
+   (`spotify:playlist:5HMYWNDcOuteCFyAqBsCO8`) containing the *same track URI twice* (two
+   distinct `uid`s) was read, one occurrence removed by its `uid`, then re-read: `count: 1`
+   remaining, the *other* `uid` (`51d67e1af0be694b`) still present, the removed `uid` gone.
+   So removing one occurrence's `uid` deletes exactly that copy and keeps the other — the
+   mechanism the keep-earliest dedup relies on. Combined with finding 3 (a bogus `uid` for a
+   present URI is rejected as "row id does not exist"), the host unambiguously addresses
+   playlist removals by `uid`, not URI.
+5. **Client UI self-sync — CONFIRMED (yes, live).** After API removals, the Spotify client's
+   own playlist view reflected the updated contents on its own (the user navigated to the test
+   playlist and it already showed the post-removal state — one track remaining — with no manual
+   refresh and no extra script). So the host keeps its own UI/cache in sync after
+   `LibraryAPI`/`PlaylistAPI` `remove`. This is favorable but not load-bearing: WP05's
+   `applyRemovalOutcome` refresh recomputes the extension's *own* `DetectionResult` locally and
+   never re-reads the host, so the two cannot "fight" regardless.
+
+**All load-bearing host shapes are now live-verified** (Items 1–4). No shape drift from the
+community type defs was observed, so the T012 typings + runtime guard stand as written.
+`BATCH_SIZE` is finalized at 100 with the per-track fallback (see prior entry). T015 is
+satisfied; WP04 is cleared to enter review.

@@ -58,9 +58,9 @@ the store actions (WP05). WP07 is the final integration and needs the production
 | T009 | `RemovalExecutor` port interface | WP03 | | [D] |
 | T010 | `FakeRemovalExecutor` (scripted per-batch results, call recorder) | WP03 | | [D] |
 | T011 | `FakeRemovalExecutor` tests | WP03 | | [D] |
-| T012 | Widen `spicetify-platform.d.ts` (`remove` methods, `uid` items) | WP04 | [P] |
-| T013 | Capture `uid` in `SpicetifyTracksEnumerator` | WP04 | |
-| T014 | `SpicetifyRemovalExecutor` — dispatch, batching, partial failure, abort | WP04 | |
+| T012 | Widen `spicetify-platform.d.ts` (`remove` methods, `uid` items) | WP04 | [D] |
+| T013 | Capture `uid` in `SpicetifyTracksEnumerator` | WP04 | | [D] |
+| T014 | `SpicetifyRemovalExecutor` — dispatch, batching, partial failure, abort | WP04 | | [D] |
 | T015 | Live-client verification (mandatory DoD) | WP04 | |
 | T016 | Extend store state + inject optional `RemovalExecutor` | WP05 | |
 | T017 | `requestRemoval` / `cancelRemoval` | WP05 | |
@@ -143,9 +143,9 @@ before it reaches `done`.
 
 Subtasks:
 
-- [ ] T012 Widen `spicetify-platform.d.ts` (WP04)
-- [ ] T013 Capture `uid` in `SpicetifyTracksEnumerator` (WP04)
-- [ ] T014 `SpicetifyRemovalExecutor` (WP04)
+- [x] T012 Widen `spicetify-platform.d.ts` (WP04)
+- [x] T013 Capture `uid` in `SpicetifyTracksEnumerator` (WP04)
+- [x] T014 `SpicetifyRemovalExecutor` (WP04)
 - [ ] T015 Live-client verification (mandatory DoD) (WP04)
 
 Dependencies: WP01, WP03. Risks: host shape drift (runtime guard authoritative, ADR-0011

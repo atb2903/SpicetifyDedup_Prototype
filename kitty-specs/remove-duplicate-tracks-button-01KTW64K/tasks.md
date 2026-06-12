@@ -62,10 +62,10 @@ the store actions (WP05). WP07 is the final integration and needs the production
 | T013 | Capture `uid` in `SpicetifyTracksEnumerator` | WP04 | | [D] |
 | T014 | `SpicetifyRemovalExecutor` — dispatch, batching, partial failure, abort | WP04 | | [D] |
 | T015 | Live-client verification (mandatory DoD) | WP04 | | [D] |
-| T016 | Extend store state + inject optional `RemovalExecutor` | WP05 | |
-| T017 | `requestRemoval` / `cancelRemoval` | WP05 | |
-| T018 | `confirmRemoval` orchestration + concurrency lock | WP05 | |
-| T019 | Store tests w/ Fake — scope, concurrency, no-auto-run, 24/25/26 | WP05 | |
+| T016 | Extend store state + inject optional `RemovalExecutor` | WP05 | | [D] |
+| T017 | `requestRemoval` / `cancelRemoval` | WP05 | | [D] |
+| T018 | `confirmRemoval` orchestration + concurrency lock | WP05 | | [D] |
+| T019 | Store tests w/ Fake — scope, concurrency, no-auto-run, 24/25/26 | WP05 | | [D] |
 | T020 | `RemoveDuplicatesButton` (gating, disable, onClick) | WP06 | |
 | T021 | `RemovalConfirmDialog` (1-step + >25 2-step, copy, boundary) | WP06 | |
 | T022 | `RemovalOutcomeView` (partial-failure messaging) | WP06 | [P] |
@@ -163,10 +163,10 @@ all exercised with `FakeRemovalExecutor`.
 
 Subtasks:
 
-- [ ] T016 Extend store state + inject optional `RemovalExecutor` (WP05)
-- [ ] T017 `requestRemoval` / `cancelRemoval` (WP05)
-- [ ] T018 `confirmRemoval` orchestration + concurrency lock (WP05)
-- [ ] T019 Store tests w/ Fake (WP05)
+- [x] T016 Extend store state + inject optional `RemovalExecutor` (WP05)
+- [x] T017 `requestRemoval` / `cancelRemoval` (WP05)
+- [x] T018 `confirmRemoval` orchestration + concurrency lock (WP05)
+- [x] T019 Store tests w/ Fake (WP05)
 
 Dependencies: WP01, WP02, WP03. Risks: making `removalExecutor` required would break ~10
 existing test files — it MUST be an optional second parameter (back-compat).

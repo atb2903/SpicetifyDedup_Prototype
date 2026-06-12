@@ -1,10 +1,12 @@
 {
   "created_at": "2026-06-11T20:31:51.516233+00:00",
-  "friendly_name": "remove duplicate tracks button",
+  "friendly_name": "Remove Duplicate Tracks Button",
   "mission_id": "01KTW64KEGHY1VENB19A3141SJ",
   "mission_number": null,
   "mission_slug": "remove-duplicate-tracks-button-01KTW64K",
   "mission_type": "software-dev",
   "slug": "remove-duplicate-tracks-button-01KTW64K",
-  "target_branch": "main"
+  "target_branch": "main",
+  "vcs": "git",
+  "source_description": "add a button to remove the duplicates"
 }

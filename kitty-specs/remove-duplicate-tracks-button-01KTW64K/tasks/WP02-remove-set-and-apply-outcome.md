@@ -16,8 +16,8 @@ subtasks:
 - T006
 - T007
 - T008
-agent: "claude:opus:implementer:implementer"
-shell_pid: "21567"
+agent: "claude:opus:reviewer:reviewer"
+shell_pid: "25130"
 history:
 - timestamp: '2026-06-11T20:52:36Z'
   action: created
@@ -271,3 +271,4 @@ spec-kitty agent action implement WP02 --agent <name>
 ## Activity Log
 - 2026-06-12T13:45:45Z – claude:opus:implementer:implementer – shell_pid=21567 – Started implementation via action command
 - 2026-06-12T13:51:27Z – claude:opus:implementer:implementer – shell_pid=21567 – Ready for review
+- 2026-06-12T13:51:57Z – claude:opus:reviewer:reviewer – shell_pid=25130 – Started review via action command

@@ -15,6 +15,8 @@ subtasks:
 - T009
 - T010
 - T011
+agent: "claude:opus:implementer:implementer"
+shell_pid: "27750"
 history:
 - timestamp: '2026-06-11T20:52:36Z'
   action: created
@@ -211,3 +213,4 @@ spec-kitty agent action implement WP03 --agent <name>
 ```
 
 ## Activity Log
+- 2026-06-12T13:55:12Z – claude:opus:implementer:implementer – shell_pid=27750 – Started implementation via action command

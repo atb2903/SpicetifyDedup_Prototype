@@ -55,9 +55,9 @@ the store actions (WP05). WP07 is the final integration and needs the production
 | T006 | `computeRemoveSet` (keep-earliest, size invariant, playlist-uid, fail-loud) | WP02 | | [D] |
 | T007 | `trackRefKey` + `applyRemovalOutcome` (in-client refresh) | WP02 | | [D] |
 | T008 | Boundary/edge tests for both transforms | WP02 | | [D] |
-| T009 | `RemovalExecutor` port interface | WP03 | |
-| T010 | `FakeRemovalExecutor` (scripted per-batch results, call recorder) | WP03 | |
-| T011 | `FakeRemovalExecutor` tests | WP03 | |
+| T009 | `RemovalExecutor` port interface | WP03 | | [D] |
+| T010 | `FakeRemovalExecutor` (scripted per-batch results, call recorder) | WP03 | | [D] |
+| T011 | `FakeRemovalExecutor` tests | WP03 | | [D] |
 | T012 | Widen `spicetify-platform.d.ts` (`remove` methods, `uid` items) | WP04 | [P] |
 | T013 | Capture `uid` in `SpicetifyTracksEnumerator` | WP04 | |
 | T014 | `SpicetifyRemovalExecutor` — dispatch, batching, partial failure, abort | WP04 | |
@@ -124,9 +124,9 @@ fake records calls (target, batch boundaries) and honors scripted ok/partial/thr
 
 Subtasks:
 
-- [ ] T009 `RemovalExecutor` port interface (WP03)
-- [ ] T010 `FakeRemovalExecutor` (WP03)
-- [ ] T011 `FakeRemovalExecutor` tests (WP03)
+- [x] T009 `RemovalExecutor` port interface (WP03)
+- [x] T010 `FakeRemovalExecutor` (WP03)
+- [x] T011 `FakeRemovalExecutor` tests (WP03)
 
 Dependencies: WP01. Risks: fake diverging from the port contract (mitigate: fake test
 asserts `removed.length + failed.length === requested.length`).

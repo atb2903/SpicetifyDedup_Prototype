@@ -1,7 +1,7 @@
 {
-  "event_count": 37,
-  "last_event_id": "01KTYR7K5R7FDNMPZP2WYK6KDP",
-  "materialized_at": "2026-06-12T20:26:31.992906+00:00",
+  "event_count": 39,
+  "last_event_id": "01KTYR8HP2AF4CH008QNWVHE8M",
+  "materialized_at": "2026-06-12T20:27:03.234150+00:00",
   "mission_number": "",
   "mission_slug": "remove-duplicate-tracks-button-01KTW64K",
   "mission_type": "software-dev",
@@ -12,9 +12,9 @@
     "claimed": 0,
     "done": 0,
     "for_review": 0,
-    "in_progress": 0,
+    "in_progress": 1,
     "in_review": 0,
-    "planned": 1
+    "planned": 0
   },
   "work_packages": {
     "WP01": {
@@ -60,11 +60,11 @@
       "last_transition_at": "2026-06-12T20:26:31.992906+00:00"
     },
     "WP07": {
-      "actor": "finalize-tasks",
+      "actor": "claude:opus:implementer:implementer",
       "force_count": 1,
-      "lane": "planned",
-      "last_event_id": "01KTY0F8KAF2JM707KFM4YCFN3",
-      "last_transition_at": "2026-06-12T13:31:17.482427+00:00"
+      "lane": "in_progress",
+      "last_event_id": "01KTYR8HP2AF4CH008QNWVHE8M",
+      "last_transition_at": "2026-06-12T20:27:03.234150+00:00"
     }
   }
 }

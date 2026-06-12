@@ -266,3 +266,4 @@ spec-kitty agent action implement WP06 --agent <name>
 
 ## Activity Log
 - 2026-06-12T20:11:31Z – claude:opus:implementer:implementer – shell_pid=68964 – Started implementation via action command
+- 2026-06-12T20:22:30Z – claude:opus:implementer:implementer – shell_pid=68964 – Ready for review: removal UI (button, confirm dialog, outcome view, summary host); 1081 tests green, 100% line+branch on all four components, tsc clean

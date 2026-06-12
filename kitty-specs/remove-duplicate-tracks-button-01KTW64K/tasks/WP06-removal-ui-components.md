@@ -20,8 +20,8 @@ subtasks:
 - T021
 - T022
 - T023
-agent: "claude:opus:implementer:implementer"
-shell_pid: "68964"
+agent: "claude:opus:reviewer:reviewer"
+shell_pid: "77778"
 history:
 - timestamp: '2026-06-11T20:52:36Z'
   action: created
@@ -267,3 +267,4 @@ spec-kitty agent action implement WP06 --agent <name>
 ## Activity Log
 - 2026-06-12T20:11:31Z – claude:opus:implementer:implementer – shell_pid=68964 – Started implementation via action command
 - 2026-06-12T20:22:30Z – claude:opus:implementer:implementer – shell_pid=68964 – Ready for review: removal UI (button, confirm dialog, outcome view, summary host); 1081 tests green, 100% line+branch on all four components, tsc clean
+- 2026-06-12T20:22:58Z – claude:opus:reviewer:reviewer – shell_pid=77778 – Started review via action command

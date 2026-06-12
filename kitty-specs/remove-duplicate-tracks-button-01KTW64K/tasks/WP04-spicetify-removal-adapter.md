@@ -16,8 +16,8 @@ subtasks:
 - T013
 - T014
 - T015
-agent: "claude:opus:implementer:implementer"
-shell_pid: "35335"
+agent: "claude:opus:reviewer:reviewer"
+shell_pid: "57438"
 history:
 - timestamp: '2026-06-11T20:52:36Z'
   action: created
@@ -356,3 +356,4 @@ community type defs was observed, so the T012 typings + runtime guard stand as w
 `BATCH_SIZE` is finalized at 100 with the per-track fallback (see prior entry). T015 is
 satisfied; WP04 is cleared to enter review.
 - 2026-06-12T19:53:51Z – claude:opus:implementer:implementer – shell_pid=35335 – T012-T014 code + per-track-fallback revision + T015 live-verify (all 5 items confirmed, recorded on main)
+- 2026-06-12T19:54:02Z – claude:opus:reviewer:reviewer – shell_pid=57438 – Started review via action command

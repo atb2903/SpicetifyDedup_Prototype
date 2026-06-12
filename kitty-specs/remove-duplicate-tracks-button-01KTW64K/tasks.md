@@ -66,10 +66,10 @@ the store actions (WP05). WP07 is the final integration and needs the production
 | T017 | `requestRemoval` / `cancelRemoval` | WP05 | | [D] |
 | T018 | `confirmRemoval` orchestration + concurrency lock | WP05 | | [D] |
 | T019 | Store tests w/ Fake — scope, concurrency, no-auto-run, 24/25/26 | WP05 | | [D] |
-| T020 | `RemoveDuplicatesButton` (gating, disable, onClick) | WP06 | |
-| T021 | `RemovalConfirmDialog` (1-step + >25 2-step, copy, boundary) | WP06 | |
-| T022 | `RemovalOutcomeView` (partial-failure messaging) | WP06 | [P] |
-| T023 | `DetectionLoadedSummary` host (mount button/dialog/outcome by phase) | WP06 | |
+| T020 | `RemoveDuplicatesButton` (gating, disable, onClick) | WP06 | | [D] |
+| T021 | `RemovalConfirmDialog` (1-step + >25 2-step, copy, boundary) | WP06 | | [D] |
+| T022 | `RemovalOutcomeView` (partial-failure messaging) | WP06 | [D] |
+| T023 | `DetectionLoadedSummary` host (mount button/dialog/outcome by phase) | WP06 | | [D] |
 | T024 | App wiring — construct + inject `SpicetifyRemovalExecutor` | WP07 | |
 | T025 | Row props — pass `target`/`displayName` to summary | WP07 | |
 | T026 | ADR-0012, ADR-0013, ADR-0014 | WP07 | [P] |
@@ -182,10 +182,10 @@ the dialog; gating per AS-1/AS-2.
 
 Subtasks:
 
-- [ ] T020 `RemoveDuplicatesButton` (WP06)
-- [ ] T021 `RemovalConfirmDialog` (WP06)
-- [ ] T022 `RemovalOutcomeView` (WP06)
-- [ ] T023 `DetectionLoadedSummary` host (WP06)
+- [x] T020 `RemoveDuplicatesButton` (WP06)
+- [x] T021 `RemovalConfirmDialog` (WP06)
+- [x] T022 `RemovalOutcomeView` (WP06)
+- [x] T023 `DetectionLoadedSummary` host (WP06)
 
 Dependencies: WP01, WP05. Risks: `DetectionLoadedSummary` becomes store-aware (was pure)
 — keep the new props minimal (`target`, `displayName`) and let child components read the

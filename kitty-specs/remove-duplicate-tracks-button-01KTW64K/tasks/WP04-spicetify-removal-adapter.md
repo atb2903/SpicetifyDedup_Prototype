@@ -355,3 +355,4 @@ client (same environment: Spotify `1.2.90.451`, Spicetify `2.43.2`):
 community type defs was observed, so the T012 typings + runtime guard stand as written.
 `BATCH_SIZE` is finalized at 100 with the per-track fallback (see prior entry). T015 is
 satisfied; WP04 is cleared to enter review.
+- 2026-06-12T19:53:51Z – claude:opus:implementer:implementer – shell_pid=35335 – T012-T014 code + per-track-fallback revision + T015 live-verify (all 5 items confirmed, recorded on main)

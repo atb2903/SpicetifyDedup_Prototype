@@ -51,10 +51,10 @@ the store actions (WP05). WP07 is the final integration and needs the production
 | T002 | New `removal-types.ts` value types | WP01 | [D] |
 | T003 | New `removal-errors.ts` taxonomy + `isRemovalError` | WP01 | [D] |
 | T004 | Extend detection FSM with `RemovalState` + removal actions (ADR-0013) | WP01 | | [D] |
-| T005 | `isRemovableResult` classifier (NFR-004) | WP02 | |
-| T006 | `computeRemoveSet` (keep-earliest, size invariant, playlist-uid, fail-loud) | WP02 | |
-| T007 | `trackRefKey` + `applyRemovalOutcome` (in-client refresh) | WP02 | |
-| T008 | Boundary/edge tests for both transforms | WP02 | |
+| T005 | `isRemovableResult` classifier (NFR-004) | WP02 | | [D] |
+| T006 | `computeRemoveSet` (keep-earliest, size invariant, playlist-uid, fail-loud) | WP02 | | [D] |
+| T007 | `trackRefKey` + `applyRemovalOutcome` (in-client refresh) | WP02 | | [D] |
+| T008 | Boundary/edge tests for both transforms | WP02 | | [D] |
 | T009 | `RemovalExecutor` port interface | WP03 | |
 | T010 | `FakeRemovalExecutor` (scripted per-batch results, call recorder) | WP03 | |
 | T011 | `FakeRemovalExecutor` tests | WP03 | |
@@ -106,10 +106,10 @@ all-failed / outcome-mismatch).
 
 Subtasks:
 
-- [ ] T005 `isRemovableResult` classifier (WP02)
-- [ ] T006 `computeRemoveSet` (WP02)
-- [ ] T007 `trackRefKey` + `applyRemovalOutcome` (WP02)
-- [ ] T008 Boundary/edge tests for both transforms (WP02)
+- [x] T005 `isRemovableResult` classifier (WP02)
+- [x] T006 `computeRemoveSet` (WP02)
+- [x] T007 `trackRefKey` + `applyRemovalOutcome` (WP02)
+- [x] T008 Boundary/edge tests for both transforms (WP02)
 
 Dependencies: WP01. Risks: count-recompute drift (assert `removableTrackCount =
 duplicateTrackCount − groups.length` after collapse).

@@ -1,0 +1,124 @@
+{
+  "version": 1,
+  "mission_slug": "remove-duplicate-tracks-button-01KTW64K",
+  "mission_id": "01KTW64KEGHY1VENB19A3141SJ",
+  "mission_branch": "kitty/mission-remove-duplicate-tracks-button-01KTW64K",
+  "target_branch": "main",
+  "lanes": [
+    {
+      "lane_id": "lane-a",
+      "wp_ids": [
+        "WP01",
+        "WP02",
+        "WP03",
+        "WP04",
+        "WP05",
+        "WP06",
+        "WP07"
+      ],
+      "write_scope": [
+        ".claude/adr/0012-capture-playlist-uid-for-occurrence-removal.md",
+        ".claude/adr/0013-removal-substate-on-detection-loaded.md",
+        ".claude/adr/0014-removal-executor-port-and-partial-failure.md",
+        "README.md",
+        "src/adapters/fake-removal-executor.ts",
+        "src/adapters/spicetify-removal-executor.ts",
+        "src/adapters/spicetify-tracks-enumerator.ts",
+        "src/app.tsx",
+        "src/domain/apply-removal-outcome.ts",
+        "src/domain/detection-state.ts",
+        "src/domain/detection-types.ts",
+        "src/domain/removal-errors.ts",
+        "src/domain/removal-types.ts",
+        "src/domain/remove-set.ts",
+        "src/ports/removal-executor.ts",
+        "src/store/detection-store.ts",
+        "src/types/spicetify-platform.d.ts",
+        "src/ui/DetectionLoadedSummary.module.scss",
+        "src/ui/DetectionLoadedSummary.tsx",
+        "src/ui/LikedSongsRow.tsx",
+        "src/ui/PlaylistRow.tsx",
+        "src/ui/RemovalConfirmDialog.module.scss",
+        "src/ui/RemovalConfirmDialog.tsx",
+        "src/ui/RemovalOutcomeView.module.scss",
+        "src/ui/RemovalOutcomeView.tsx",
+        "src/ui/RemoveDuplicatesButton.module.scss",
+        "src/ui/RemoveDuplicatesButton.tsx",
+        "test/adapters/fake-removal-executor.test.ts",
+        "test/adapters/spicetify-removal-executor.test.ts",
+        "test/adapters/spicetify-tracks-enumerator.test.ts",
+        "test/app.test.tsx",
+        "test/domain/apply-removal-outcome.test.ts",
+        "test/domain/detection-state.test.ts",
+        "test/domain/removal-errors.test.ts",
+        "test/domain/remove-set.test.ts",
+        "test/store/detection-store.test.ts",
+        "test/ui/DetectionLoadedSummary.test.tsx",
+        "test/ui/LikedSongsRow.test.tsx",
+        "test/ui/PlaylistRow.test.tsx",
+        "test/ui/RemovalConfirmDialog.test.tsx",
+        "test/ui/RemovalOutcomeView.test.tsx",
+        "test/ui/RemoveDuplicatesButton.test.tsx"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "app-shell",
+        "artifact-rendering",
+        "legacy-cleanup",
+        "tests",
+        "tracker-integration",
+        "workspace"
+      ],
+      "depends_on_lanes": [],
+      "parallel_group": 0
+    }
+  ],
+  "computed_at": "2026-06-12T13:31:17.496278+00:00",
+  "computed_from": "dependency_graph+ownership",
+  "planning_artifact_wps": [],
+  "collapse_report": {
+    "events": [
+      {
+        "wp_a": "WP02",
+        "wp_b": "WP01",
+        "rule": "dependency",
+        "evidence": "WP02 depends on WP01"
+      },
+      {
+        "wp_a": "WP03",
+        "wp_b": "WP01",
+        "rule": "dependency",
+        "evidence": "WP03 depends on WP01"
+      },
+      {
+        "wp_a": "WP04",
+        "wp_b": "WP01",
+        "rule": "dependency",
+        "evidence": "WP04 depends on WP01"
+      },
+      {
+        "wp_a": "WP05",
+        "wp_b": "WP01",
+        "rule": "dependency",
+        "evidence": "WP05 depends on WP01"
+      },
+      {
+        "wp_a": "WP06",
+        "wp_b": "WP01",
+        "rule": "dependency",
+        "evidence": "WP06 depends on WP01"
+      },
+      {
+        "wp_a": "WP07",
+        "wp_b": "WP04",
+        "rule": "dependency",
+        "evidence": "WP07 depends on WP04"
+      }
+    ],
+    "total_merges": 6,
+    "independent_wps_collapsed": 0,
+    "by_rule": {
+      "dependency": 6
+    }
+  }
+}

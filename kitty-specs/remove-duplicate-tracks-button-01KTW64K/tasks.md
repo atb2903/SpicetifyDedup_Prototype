@@ -61,7 +61,7 @@ the store actions (WP05). WP07 is the final integration and needs the production
 | T012 | Widen `spicetify-platform.d.ts` (`remove` methods, `uid` items) | WP04 | [D] |
 | T013 | Capture `uid` in `SpicetifyTracksEnumerator` | WP04 | | [D] |
 | T014 | `SpicetifyRemovalExecutor` — dispatch, batching, partial failure, abort | WP04 | | [D] |
-| T015 | Live-client verification (mandatory DoD) | WP04 | |
+| T015 | Live-client verification (mandatory DoD) | WP04 | | [D] |
 | T016 | Extend store state + inject optional `RemovalExecutor` | WP05 | |
 | T017 | `requestRemoval` / `cancelRemoval` | WP05 | |
 | T018 | `confirmRemoval` orchestration + concurrency lock | WP05 | |
@@ -146,7 +146,7 @@ Subtasks:
 - [x] T012 Widen `spicetify-platform.d.ts` (WP04)
 - [x] T013 Capture `uid` in `SpicetifyTracksEnumerator` (WP04)
 - [x] T014 `SpicetifyRemovalExecutor` (WP04)
-- [ ] T015 Live-client verification (mandatory DoD) (WP04)
+- [x] T015 Live-client verification (mandatory DoD) (WP04)
 
 Dependencies: WP01, WP03. Risks: host shape drift (runtime guard authoritative, ADR-0011
 pattern); atomicity unknown until §5 — drives `BATCH_SIZE` + per-track fallback.

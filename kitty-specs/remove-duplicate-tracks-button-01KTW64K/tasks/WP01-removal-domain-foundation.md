@@ -16,8 +16,8 @@ subtasks:
 - T002
 - T003
 - T004
-shell_pid: "16264"
-agent: "claude:opus:implementer:implementer"
+shell_pid: "19798"
+agent: "claude:opus:reviewer:reviewer"
 history:
 - timestamp: '2026-06-11T20:52:36Z'
   action: created
@@ -305,3 +305,4 @@ spec-kitty agent action implement WP01 --agent <name>
 ## Activity Log
 - 2026-06-12T13:34:48Z – claude:opus:implementer:implementer – shell_pid=16264 – Assigned agent via action command
 - 2026-06-12T13:41:26Z – claude:opus:implementer:implementer – shell_pid=16264 – Ready for review
+- 2026-06-12T13:42:18Z – claude:opus:reviewer:reviewer – shell_pid=19798 – Started review via action command

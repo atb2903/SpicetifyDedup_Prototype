@@ -47,10 +47,10 @@ the store actions (WP05). WP07 is the final integration and needs the production
 
 | ID | Description | WP | Parallel |
 |----|-------------|----|----------|
-| T001 | Widen `RawTrack`/`EnrichedTrack` with optional `uid` (ADR-0012) | WP01 | |
-| T002 | New `removal-types.ts` value types | WP01 | [P] |
-| T003 | New `removal-errors.ts` taxonomy + `isRemovalError` | WP01 | [P] |
-| T004 | Extend detection FSM with `RemovalState` + removal actions (ADR-0013) | WP01 | |
+| T001 | Widen `RawTrack`/`EnrichedTrack` with optional `uid` (ADR-0012) | WP01 | | [D] |
+| T002 | New `removal-types.ts` value types | WP01 | [D] |
+| T003 | New `removal-errors.ts` taxonomy + `isRemovalError` | WP01 | [D] |
+| T004 | Extend detection FSM with `RemovalState` + removal actions (ADR-0013) | WP01 | | [D] |
 | T005 | `isRemovableResult` classifier (NFR-004) | WP02 | |
 | T006 | `computeRemoveSet` (keep-earliest, size invariant, playlist-uid, fail-loud) | WP02 | |
 | T007 | `trackRefKey` + `applyRemovalOutcome` (in-client refresh) | WP02 | |
@@ -87,10 +87,10 @@ green; architecture test clean. FSM grid exhaustive (every cell incl. ignored â†
 
 Subtasks:
 
-- [ ] T001 Widen `RawTrack`/`EnrichedTrack` with optional `uid` (WP01)
-- [ ] T002 New `removal-types.ts` value types (WP01)
-- [ ] T003 New `removal-errors.ts` taxonomy + `isRemovalError` (WP01)
-- [ ] T004 Extend detection FSM with `RemovalState` + removal actions (WP01)
+- [x] T001 Widen `RawTrack`/`EnrichedTrack` with optional `uid` (WP01)
+- [x] T002 New `removal-types.ts` value types (WP01)
+- [x] T003 New `removal-errors.ts` taxonomy + `isRemovalError` (WP01)
+- [x] T004 Extend detection FSM with `RemovalState` + removal actions (WP01)
 
 Dependencies: none. Risks: FSM cell omission (mitigate with exhaustive grid); the
 required `removal` field on `loaded` is set inside `transition` only, so no other file

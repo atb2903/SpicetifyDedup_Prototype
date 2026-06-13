@@ -141,3 +141,4 @@ doc-comment-only contract into a test-enforced one.
 ## Activity Log
 
 - 2026-06-13T22:03:45Z – claude:opus:implementer:implementer – shell_pid=83552 – Started implementation via action command
+- 2026-06-13T22:06:11Z – claude:opus:implementer:implementer – shell_pid=83552 – Ready for review — uid now survives enrichment, guard test enforces it

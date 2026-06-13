@@ -16,8 +16,8 @@ subtasks:
 - T004
 - T005
 - T006
-shell_pid: "74707"
-agent: "claude:opus:implementer:implementer"
+shell_pid: "79867"
+agent: "claude:opus:reviewer:reviewer"
 history:
 - timestamp: '2026-06-13T18:51:29Z'
   action: created
@@ -173,3 +173,4 @@ under the `hang` script. Maintain 100% branch coverage.
 
 - 2026-06-13T21:53:06Z – claude:opus:implementer:implementer – shell_pid=74707 – Assigned agent via action command
 - 2026-06-13T21:59:10Z – claude:opus:implementer:implementer – shell_pid=74707 – Ready for review — stalled code + Scheduler seam + hang fake, all TDD'd to 100%
+- 2026-06-13T21:59:39Z – claude:opus:reviewer:reviewer – shell_pid=79867 – Started review via action command

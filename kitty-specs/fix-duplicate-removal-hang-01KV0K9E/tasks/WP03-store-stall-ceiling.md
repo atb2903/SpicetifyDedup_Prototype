@@ -21,6 +21,8 @@ subtasks:
 - T009
 - T010
 - T011
+agent: "claude:opus:implementer:implementer"
+shell_pid: "91844"
 history:
 - timestamp: '2026-06-13T18:51:29Z'
   action: created
@@ -261,3 +263,7 @@ Assert the three points around the ceiling with the deterministic scheduler:
   and contract disagree.
 - **Coverage on the no-op catch:** ensure a test actually exercises the late-settle branch so the
   `.catch(() => {})` arm is covered.
+
+## Activity Log
+
+- 2026-06-13T23:33:50Z – claude:opus:implementer:implementer – shell_pid=91844 – Started implementation via action command

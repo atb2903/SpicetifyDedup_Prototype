@@ -361,3 +361,4 @@ acceptance evidence.
 ## Activity Log
 
 - 2026-06-13T09:45:54Z – claude:opus-4-8:implementer:implementer – shell_pid=26875 – Assigned agent via action command
+- 2026-06-13T09:54:44Z – claude:opus-4-8:implementer:implementer – shell_pid=26875 – Layout grid-span wrapper + width-fill + horizontalized removal; TDD red->green for both rows; gates green (typecheck, 1095 tests, 100% line+branch, architecture green); T011 live-verify DRIVEN and PASSED in client (width-fill, fewer-lines, no-overflow, edge cases, no-regression all confirmed by user). SCOPE NOTE: test/ui/LoadedView.test.tsx (outside owned_files) minimally updated because its assertion pinned the 900px cap WP02 must remove - planning-manifest gap, flagged for reviewer.

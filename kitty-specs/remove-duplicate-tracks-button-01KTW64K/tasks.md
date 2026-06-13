@@ -70,10 +70,10 @@ the store actions (WP05). WP07 is the final integration and needs the production
 | T021 | `RemovalConfirmDialog` (1-step + >25 2-step, copy, boundary) | WP06 | | [D] |
 | T022 | `RemovalOutcomeView` (partial-failure messaging) | WP06 | [D] |
 | T023 | `DetectionLoadedSummary` host (mount button/dialog/outcome by phase) | WP06 | | [D] |
-| T024 | App wiring — construct + inject `SpicetifyRemovalExecutor` | WP07 | |
-| T025 | Row props — pass `target`/`displayName` to summary | WP07 | |
-| T026 | ADR-0012, ADR-0013, ADR-0014 | WP07 | [P] |
-| T027 | README — document the Remove-duplicates action | WP07 | [P] |
+| T024 | App wiring — construct + inject `SpicetifyRemovalExecutor` | WP07 | | [D] |
+| T025 | Row props — pass `target`/`displayName` to summary | WP07 | | [D] |
+| T026 | ADR-0012, ADR-0013, ADR-0014 | WP07 | [D] |
+| T027 | README — document the Remove-duplicates action | WP07 | [D] |
 
 ---
 
@@ -202,10 +202,10 @@ updated.
 
 Subtasks:
 
-- [ ] T024 App wiring — construct + inject `SpicetifyRemovalExecutor` (WP07)
-- [ ] T025 Row props — pass `target`/`displayName` to summary (WP07)
-- [ ] T026 ADR-0012, ADR-0013, ADR-0014 (WP07)
-- [ ] T027 README — document the Remove-duplicates action (WP07)
+- [x] T024 App wiring — construct + inject `SpicetifyRemovalExecutor` (WP07)
+- [x] T025 Row props — pass `target`/`displayName` to summary (WP07)
+- [x] T026 ADR-0012, ADR-0013, ADR-0014 (WP07)
+- [x] T027 README — document the Remove-duplicates action (WP07)
 
 Dependencies: WP04, WP05, WP06. Risks: app construction must stay side-effect-free (no
 `Spicetify.*` at module load) so `test/app.test.tsx` keeps passing.

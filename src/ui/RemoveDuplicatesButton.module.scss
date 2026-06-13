@@ -1,0 +1,32 @@
+// RemoveDuplicatesButton styling (WP06 / T020 / FR-001).
+//
+// The per-row destructive affordance. Visually distinct from the neutral
+// `Dedup` pill: a solid accent fill signals the primary removal action while
+// the dialog (not this button) carries the destructive confirmation. Tokens
+// come from the shared `_tokens.module.scss` partial so host-theme drift
+// propagates without edits here.
+
+@use '../styles/tokens.module' as tokens;
+@include tokens.declare;
+
+.button {
+  background: var(--dedup-button);
+  border: 1px solid var(--dedup-button);
+  color: var(--dedup-main);
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 120ms ease, border-color 120ms ease;
+
+  &:hover {
+    background: var(--dedup-button-hover);
+    border-color: var(--dedup-button-hover);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--dedup-button);
+    outline-offset: 2px;
+  }
+}

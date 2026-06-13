@@ -52,6 +52,13 @@ export interface LibraryTrackItem {
   duration?: { milliseconds: number };
   album: { uri: string; name: string };
   artists: ReadonlyArray<{ uri: string; name: string }>;
+  /**
+   * Per-occurrence id, present for playlist items only (`PlaylistAPI.getContents`).
+   * Liked-Songs items (`LibraryAPI.getTracks`) omit it. Captured additively into
+   * `RawTrack.uid` so removal can target a specific copy of a repeated URI (ADR-0012).
+   * Not required by `isLibraryTrackItem` (Liked Songs lack it).
+   */
+  uid?: string;
 }
 
 /**
@@ -84,6 +91,11 @@ export function isLibraryTrackItem(x: unknown): x is LibraryTrackItem {
  *
  * Does NOT call `isLibraryTrackItem` first — it validates independently so the
  * error context can carry the specific missing field name.
+ *
+ * Additively captures the playlist occurrence id (`item.uid`) into
+ * `RawTrack.uid` when present as a non-empty string (ADR-0012); Liked-Songs
+ * items omit `uid` so it stays `undefined`. A `uid` is never fabricated. The
+ * matching algorithm never reads `uid` — it is removal metadata only.
  *
  * @param x - Raw item from the host.
  * @param position - Zero-based post-local-filter position to assign.
@@ -154,7 +166,13 @@ export function parseLibraryTrackItem(x: unknown, position: number): RawTrack {
     }
   }
 
-  return {
+  // Capture the playlist occurrence id additively (ADR-0012). Only a non-empty
+  // string is honored; anything else (absent, empty, non-string) leaves `uid`
+  // undefined — never fabricated.
+  const rawUid = item['uid'];
+  const uid = typeof rawUid === 'string' && rawUid.length > 0 ? rawUid : undefined;
+
+  const track: RawTrack = {
     uri,
     id,
     name,
@@ -166,6 +184,10 @@ export function parseLibraryTrackItem(x: unknown, position: number): RawTrack {
       name: typeof albumObj['name'] === 'string' ? albumObj['name'] : '',
     },
   };
+  if (uid !== undefined) {
+    track.uid = uid;
+  }
+  return track;
 }
 
 // ---------------------------------------------------------------------------

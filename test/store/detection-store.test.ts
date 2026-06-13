@@ -27,8 +27,26 @@
 import { describe, it, expect, vi } from 'vitest';
 import { createDetectionStore } from '../../src/store/detection-store';
 import { DetectionError } from '../../src/domain/detection-errors';
+import { RemovalError, isRemovalError } from '../../src/domain/removal-errors';
+import {
+  FakeRemovalExecutor,
+  FAKE_FAIL_REASON,
+  type FakeRemovalScript,
+} from '../../src/adapters/fake-removal-executor';
 import type { DetectionScanner } from '../../src/ports/detection-scanner';
-import type { DetectionResult, ProgressEvent } from '../../src/domain/detection-types';
+import type { RemovalExecutor } from '../../src/ports/removal-executor';
+import type {
+  RemovalTarget,
+  TrackRef,
+  RemovalOutcome,
+  RemovalProgressEvent,
+} from '../../src/domain/removal-types';
+import type {
+  DetectionResult,
+  DuplicateGroup,
+  EnrichedTrack,
+  ProgressEvent,
+} from '../../src/domain/detection-types';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -520,5 +538,478 @@ describe('createDetectionStore — double click within microtask', () => {
     await secondPromise;
 
     expect(store.getState().rows[key]?.kind).toBe('loaded');
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Removal flow (WP05) — requestRemoval / confirmRemoval / cancelRemoval
+// ═══════════════════════════════════════════════════════════════════════════
+
+/**
+ * Build one `EnrichedTrack` member at the given `position`. For playlist
+ * targets a `uid` is required by `computeRemoveSet`/`applyRemovalOutcome`, so
+ * derive a stable `uid` from the position when `withUid` is set.
+ */
+function makeMember(position: number, uri: string, withUid: boolean): EnrichedTrack {
+  return {
+    position,
+    uri,
+    canonicalUri: uri,
+    name: `track-${position}`,
+    artists: [{ name: 'artist' }],
+    durationMs: 200_000,
+    ...(withUid ? { uid: `uid-${position}` } : {}),
+  };
+}
+
+/**
+ * Build a `DetectionResult` whose groups together contribute exactly
+ * `removableCount` removable tracks (every group is a 2-member group → one
+ * removable each). `withUid` controls whether members carry `uid` (playlist).
+ */
+function makeRemovableResult(
+  collectionKey: string,
+  removableCount: number,
+  withUid: boolean,
+): DetectionResult {
+  const groups: DuplicateGroup[] = [];
+  let pos = 0;
+  for (let g = 0; g < removableCount; g++) {
+    const keep = makeMember(pos++, `spotify:track:${g}-keep`, withUid);
+    const dup = makeMember(pos++, `spotify:track:${g}-dup`, withUid);
+    groups.push({
+      id: `group-${g}`,
+      reason: 'same-canonical-uri',
+      members: [keep, dup],
+      defaultKeepIndex: 0,
+    });
+  }
+  const duplicateTrackCount = removableCount * 2;
+  return {
+    collectionKey,
+    completedAt: 1_717_200_000_000,
+    groups,
+    duplicateTrackCount,
+    removableTrackCount: removableCount,
+    skippedLocalCount: 0,
+    unenrichedCount: 0,
+    scannedTrackCount: duplicateTrackCount + 3,
+  };
+}
+
+/** An always-pending scanner — scans never resolve; only used for seeding. */
+function makeIdleScanner(): DetectionScanner {
+  return { scan: vi.fn(() => new Promise<DetectionResult>(() => {})) };
+}
+
+/**
+ * Build a store, seed a single `loaded` row at `key` carrying `result` by
+ * driving a real `scanCollection` against a controllable scanner that resolves
+ * with `result`. Returns the store for assertions.
+ */
+async function seedLoaded(
+  key: string,
+  result: DetectionResult,
+  executor?: RemovalExecutor,
+): Promise<ReturnType<typeof createDetectionStore>> {
+  const ctrl = makeControllableScanner();
+  const store = createDetectionStore(ctrl.scanner, executor);
+  const p = store.getState().scanCollection(key, { kind: 'liked-songs' });
+  ctrl.resolveNext(result);
+  await p;
+  const row = store.getState().rows[key];
+  if (row?.kind !== 'loaded') throw new Error('seed failed: expected loaded');
+  return store;
+}
+
+/** Read the removal phase of a row known to be `loaded`. */
+function removalPhase(
+  store: ReturnType<typeof createDetectionStore>,
+  key: string,
+): string {
+  const row = store.getState().rows[key];
+  if (row?.kind !== 'loaded') throw new Error('expected loaded row');
+  return row.removal.phase;
+}
+
+describe('createDetectionStore — removal: single-collection scope (AS-4)', () => {
+  it('confirmRemoval calls the executor exactly once, with the acted target only', async () => {
+    const fake = new FakeRemovalExecutor();
+    const keyA = 'spotify:playlist:A';
+    const keyB = 'spotify:playlist:B';
+    const store = await seedLoaded(keyA, makeRemovableResult(keyA, 2, true), fake);
+
+    store.getState().requestRemoval(keyA);
+    await store.getState().confirmRemoval(keyA);
+
+    expect(fake.calls.length).toBe(1);
+    expect(fake.calls[0]!.target).toEqual({ kind: 'playlist', playlistUri: keyA });
+    // No other row exists in this store.
+    expect(store.getState().rows[keyB]).toBeUndefined();
+  });
+});
+
+describe('createDetectionStore — removal: happy path full success (AS-7)', () => {
+  it('removes all duplicates → phase none, removableTrackCount 0, groups gone', async () => {
+    const fake = new FakeRemovalExecutor(); // default ok
+    const key = 'liked-songs';
+    const store = await seedLoaded(key, makeRemovableResult(key, 3, false), fake);
+
+    store.getState().requestRemoval(key);
+    expect(removalPhase(store, key)).toBe('confirming');
+
+    await store.getState().confirmRemoval(key);
+
+    expect(fake.calls.length).toBe(1);
+    const row = store.getState().rows[key];
+    if (row?.kind !== 'loaded') throw new Error('expected loaded');
+    expect(row.removal.phase).toBe('none');
+    expect(row.result.removableTrackCount).toBe(0);
+    expect(row.result.groups).toEqual([]);
+    // Executor was called with exactly the computed remove-set (3 dup tracks).
+    expect(fake.calls[0]!.tracks.length).toBe(3);
+  });
+});
+
+describe('createDetectionStore — removal: partial failure (AS-8 / FR-010)', () => {
+  it('keeps failed copies visible and records the partial outcome', async () => {
+    // Fail the first group's dup copy (uri spotify:track:0-dup).
+    const script: FakeRemovalScript = {
+      kind: 'partial',
+      failUris: ['spotify:track:0-dup'],
+    };
+    const fake = new FakeRemovalExecutor(script);
+    const key = 'liked-songs';
+    const store = await seedLoaded(key, makeRemovableResult(key, 2, false), fake);
+
+    store.getState().requestRemoval(key);
+    await store.getState().confirmRemoval(key);
+
+    const row = store.getState().rows[key];
+    if (row?.kind !== 'loaded') throw new Error('expected loaded');
+    expect(row.removal.phase).toBe('partial');
+    if (row.removal.phase !== 'partial') throw new Error('expected partial');
+    // The failed copy stays present: its group survives (still 2 members).
+    const stillPresent = row.result.groups.some((g) =>
+      g.members.some((m) => m.uri === 'spotify:track:0-dup'),
+    );
+    expect(stillPresent).toBe(true);
+    // Outcome on the partial state carries the failure.
+    expect(row.removal.outcome.failed.length).toBe(1);
+    expect(row.removal.outcome.failed[0]!.reason).toBe(FAKE_FAIL_REASON);
+  });
+});
+
+describe('createDetectionStore — removal: executor throws (surfaced as partial)', () => {
+  it('wraps the throw as an all-failed partial; no unhandled rejection', async () => {
+    const thrown = new RemovalError('host-unavailable', 'host gone');
+    const fake = new FakeRemovalExecutor({ kind: 'throw', error: thrown });
+    const key = 'liked-songs';
+    const store = await seedLoaded(key, makeRemovableResult(key, 2, false), fake);
+
+    store.getState().requestRemoval(key);
+    // Must resolve (not reject) — confirmRemoval surfaces the fault as partial.
+    await expect(store.getState().confirmRemoval(key)).resolves.toBeUndefined();
+
+    const row = store.getState().rows[key];
+    if (row?.kind !== 'loaded') throw new Error('expected loaded');
+    expect(row.removal.phase).toBe('partial');
+    if (row.removal.phase !== 'partial') throw new Error('expected partial');
+    // Every requested track is in failed; none removed.
+    expect(row.removal.outcome.removed.length).toBe(0);
+    expect(row.removal.outcome.failed.length).toBe(2);
+    // All groups still present (nothing actually removed).
+    expect(row.result.removableTrackCount).toBe(2);
+  });
+
+  it('wraps a non-RemovalError throw as executor-failed in the failure reasons', async () => {
+    const fake = new FakeRemovalExecutor({ kind: 'throw', error: new Error('boom') });
+    const key = 'liked-songs';
+    const store = await seedLoaded(key, makeRemovableResult(key, 1, false), fake);
+
+    store.getState().requestRemoval(key);
+    await store.getState().confirmRemoval(key);
+
+    const row = store.getState().rows[key];
+    if (row?.kind !== 'loaded' || row.removal.phase !== 'partial')
+      throw new Error('expected partial');
+    expect(row.removal.outcome.failed[0]!.reason).toContain('executor-failed');
+  });
+});
+
+describe('createDetectionStore — removal: no auto-run (FR-011 / AS-9 / C-002)', () => {
+  it('seeding a loaded row and requesting removal makes zero executor calls', async () => {
+    const fake = new FakeRemovalExecutor();
+    const key = 'liked-songs';
+    const store = await seedLoaded(key, makeRemovableResult(key, 2, false), fake);
+
+    // After setup: no executor call.
+    expect(fake.calls.length).toBe(0);
+
+    // requestRemoval alone only shows the dialog (confirming); no executor call.
+    store.getState().requestRemoval(key);
+    expect(removalPhase(store, key)).toBe('confirming');
+    expect(fake.calls.length).toBe(0);
+  });
+});
+
+describe('createDetectionStore — removal: concurrency lock (FR-012)', () => {
+  it('a second confirm during removing is a no-op — exactly one executor call', async () => {
+    // A fake whose remove never resolves, so the row stays in `removing`.
+    let resolveRemove!: (o: RemovalOutcome) => void;
+    let calls = 0;
+    const executor: RemovalExecutor = {
+      remove: vi.fn(
+        (
+          _target: RemovalTarget,
+          _tracks: ReadonlyArray<TrackRef>,
+          _signal: AbortSignal,
+          _onProgress?: (e: RemovalProgressEvent) => void,
+        ) => {
+          calls += 1;
+          return new Promise<RemovalOutcome>((res) => {
+            resolveRemove = res;
+          });
+        },
+      ),
+    };
+    const key = 'liked-songs';
+    const store = await seedLoaded(key, makeRemovableResult(key, 2, false), executor);
+
+    store.getState().requestRemoval(key);
+    const first = store.getState().confirmRemoval(key);
+    // Now in `removing` (executor pending).
+    expect(removalPhase(store, key)).toBe('removing');
+    expect(calls).toBe(1);
+
+    // A second request/confirm during removing must be ignored.
+    store.getState().requestRemoval(key);
+    await store.getState().confirmRemoval(key);
+    expect(calls).toBe(1);
+
+    // Resolve the pending removal and let the first settle.
+    resolveRemove({ removed: [], failed: [] });
+    await first;
+  });
+});
+
+describe('createDetectionStore — removal: cancel (FR-007)', () => {
+  it('requestRemoval then cancelRemoval returns to none with zero executor calls', async () => {
+    const fake = new FakeRemovalExecutor();
+    const key = 'liked-songs';
+    const store = await seedLoaded(key, makeRemovableResult(key, 2, false), fake);
+
+    store.getState().requestRemoval(key);
+    expect(removalPhase(store, key)).toBe('confirming');
+
+    store.getState().cancelRemoval(key);
+    expect(removalPhase(store, key)).toBe('none');
+    expect(fake.calls.length).toBe(0);
+  });
+});
+
+describe('createDetectionStore — removal: >25 boundary (NFR-003)', () => {
+  it('24 removable → single confirm executes', async () => {
+    const fake = new FakeRemovalExecutor();
+    const key = 'liked-songs';
+    const store = await seedLoaded(key, makeRemovableResult(key, 24, false), fake);
+
+    store.getState().requestRemoval(key);
+    await store.getState().confirmRemoval(key);
+
+    expect(fake.calls.length).toBe(1);
+    expect(removalPhase(store, key)).toBe('none');
+  });
+
+  it('25 removable → single confirm executes', async () => {
+    const fake = new FakeRemovalExecutor();
+    const key = 'liked-songs';
+    const store = await seedLoaded(key, makeRemovableResult(key, 25, false), fake);
+
+    store.getState().requestRemoval(key);
+    await store.getState().confirmRemoval(key);
+
+    expect(fake.calls.length).toBe(1);
+    expect(removalPhase(store, key)).toBe('none');
+  });
+
+  it('26 removable → first confirm goes to confirming2 (no execute); second executes', async () => {
+    const fake = new FakeRemovalExecutor();
+    const key = 'liked-songs';
+    const store = await seedLoaded(key, makeRemovableResult(key, 26, false), fake);
+
+    store.getState().requestRemoval(key);
+    await store.getState().confirmRemoval(key);
+    // First confirm: bulk → confirming2, NOT executed.
+    expect(removalPhase(store, key)).toBe('confirming2');
+    expect(fake.calls.length).toBe(0);
+
+    // Second confirm executes.
+    await store.getState().confirmRemoval(key);
+    expect(fake.calls.length).toBe(1);
+    expect(removalPhase(store, key)).toBe('none');
+  });
+});
+
+describe('createDetectionStore — removal: confirmRemoval no-op guards', () => {
+  it('confirmRemoval on a non-loaded (idle) row is a no-op', async () => {
+    const fake = new FakeRemovalExecutor();
+    const store = createDetectionStore(makeIdleScanner(), fake);
+    await store.getState().confirmRemoval('absent-key');
+    expect(fake.calls.length).toBe(0);
+    expect(store.getState().rows['absent-key']).toBeUndefined();
+  });
+
+  it('confirmRemoval from removal phase none is a no-op (no dialog open)', async () => {
+    const fake = new FakeRemovalExecutor();
+    const key = 'liked-songs';
+    const store = await seedLoaded(key, makeRemovableResult(key, 2, false), fake);
+
+    // No requestRemoval first → phase is `none`.
+    await store.getState().confirmRemoval(key);
+    expect(fake.calls.length).toBe(0);
+    expect(removalPhase(store, key)).toBe('none');
+  });
+
+  it('requestRemoval / cancelRemoval on a non-loaded row are inert (FSM ignores)', async () => {
+    const fake = new FakeRemovalExecutor();
+    const store = createDetectionStore(makeIdleScanner(), fake);
+    store.getState().requestRemoval('absent-key');
+    store.getState().cancelRemoval('absent-key');
+    expect(fake.calls.length).toBe(0);
+    expect(store.getState().rows['absent-key']?.kind).toBe('idle');
+  });
+});
+
+describe('createDetectionStore — removal: progress dispatch', () => {
+  it('forwards executor onProgress into the removing phase before completion', async () => {
+    let resolveRemove!: (o: RemovalOutcome) => void;
+    let progressCb: ((e: RemovalProgressEvent) => void) | undefined;
+    const executor: RemovalExecutor = {
+      remove: vi.fn(
+        (
+          _t: RemovalTarget,
+          _tracks: ReadonlyArray<TrackRef>,
+          _s: AbortSignal,
+          onProgress?: (e: RemovalProgressEvent) => void,
+        ) => {
+          progressCb = onProgress;
+          return new Promise<RemovalOutcome>((res) => {
+            resolveRemove = res;
+          });
+        },
+      ),
+    };
+    const key = 'liked-songs';
+    const store = await seedLoaded(key, makeRemovableResult(key, 2, false), executor);
+
+    store.getState().requestRemoval(key);
+    const p = store.getState().confirmRemoval(key);
+
+    progressCb!({ removedSoFar: 1, total: 2 });
+    const row = store.getState().rows[key];
+    if (row?.kind !== 'loaded' || row.removal.phase !== 'removing')
+      throw new Error('expected removing');
+    expect(row.removal.progress).toEqual({ removedSoFar: 1, total: 2 });
+
+    resolveRemove({
+      removed: [{ uri: 'spotify:track:0-dup' }, { uri: 'spotify:track:1-dup' }],
+      failed: [],
+    });
+    await p;
+    expect(removalPhase(store, key)).toBe('none');
+  });
+});
+
+describe('createDetectionStore — removal: abort swallow', () => {
+  it('an AbortError from the executor is swallowed (no failure dispatch)', async () => {
+    let rejectRemove!: (e: unknown) => void;
+    const executor: RemovalExecutor = {
+      remove: vi.fn(
+        () =>
+          new Promise<RemovalOutcome>((_res, rej) => {
+            rejectRemove = rej;
+          }),
+      ),
+    };
+    const key = 'liked-songs';
+    const store = await seedLoaded(key, makeRemovableResult(key, 2, false), executor);
+
+    store.getState().requestRemoval(key);
+    const p = store.getState().confirmRemoval(key);
+    expect(removalPhase(store, key)).toBe('removing');
+
+    rejectRemove(new DOMException('aborted', 'AbortError'));
+    await p;
+
+    // Abort swallowed: row stays in `removing` (no failure dispatch).
+    expect(removalPhase(store, key)).toBe('removing');
+  });
+
+  it('reset() during a removal aborts it; the late settle is a no-op (own-entry guard)', async () => {
+    let resolveRemove!: (o: RemovalOutcome) => void;
+    let lastSignal: AbortSignal | undefined;
+    const executor: RemovalExecutor = {
+      remove: vi.fn(
+        (_t: RemovalTarget, _tr: ReadonlyArray<TrackRef>, signal: AbortSignal) => {
+          lastSignal = signal;
+          return new Promise<RemovalOutcome>((res) => {
+            resolveRemove = res;
+          });
+        },
+      ),
+    };
+    const key = 'liked-songs';
+    const store = await seedLoaded(key, makeRemovableResult(key, 2, false), executor);
+
+    store.getState().requestRemoval(key);
+    const p = store.getState().confirmRemoval(key);
+    expect(removalPhase(store, key)).toBe('removing');
+
+    // reset() aborts the removal controller and clears all rows.
+    store.getState().reset();
+    expect(lastSignal!.aborted).toBe(true);
+    expect(store.getState().rows).toEqual({});
+
+    // The executor resolves late (it never observed the abort) — the finally's
+    // own-entry guard sees the controller is no longer owned and does nothing;
+    // the row stays cleared.
+    resolveRemove({
+      removed: [{ uri: 'spotify:track:0-dup' }, { uri: 'spotify:track:1-dup' }],
+      failed: [],
+    });
+    await p;
+    // The late `removeComplete` targets the now-absent (idle) row; the FSM
+    // ignores it (no loaded result reappears). The row never returns to
+    // `loaded` — the removal did not silently complete after reset.
+    expect(store.getState().rows[key]?.kind).not.toBe('loaded');
+  });
+});
+
+describe('createDetectionStore — removal: optional-executor back-compat', () => {
+  it('createDetectionStore(scanner) constructs; request/cancel work without an executor', async () => {
+    const key = 'liked-songs';
+    // No executor passed at all.
+    const ctrl = makeControllableScanner();
+    const store = createDetectionStore(ctrl.scanner);
+    const p = store.getState().scanCollection(key, { kind: 'liked-songs' });
+    ctrl.resolveNext(makeRemovableResult(key, 2, false));
+    await p;
+
+    store.getState().requestRemoval(key);
+    expect(removalPhase(store, key)).toBe('confirming');
+    store.getState().cancelRemoval(key);
+    expect(removalPhase(store, key)).toBe('none');
+  });
+
+  it('confirmRemoval that would execute fails loud when no executor is configured', async () => {
+    const key = 'liked-songs';
+    const store = await seedLoaded(key, makeRemovableResult(key, 2, false));
+
+    store.getState().requestRemoval(key);
+    // ≤25 → would fall through to execute → fail loud (no executor).
+    await expect(store.getState().confirmRemoval(key)).rejects.toSatisfy(
+      (e: unknown) => isRemovalError(e) && e.code === 'executor-failed',
+    );
   });
 });

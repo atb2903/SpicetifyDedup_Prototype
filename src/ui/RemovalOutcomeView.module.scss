@@ -1,0 +1,13 @@
+// RemovalOutcomeView styling (WP06 / T022 / FR-010 / AS-8).
+//
+// A single muted-error line shown beneath the summary when a removal finished
+// with failures. Tokens come from the shared `_tokens.module.scss` partial.
+
+@use '../styles/tokens.module' as tokens;
+@include tokens.declare;
+
+.outcome {
+  margin: 0;
+  font-size: 12px;
+  color: var(--dedup-error);
+}

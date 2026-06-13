@@ -1,0 +1,62 @@
+// RemovalConfirmDialog styling (WP06 / T021 / FR-005 / NFR-001).
+//
+// An inline confirmation card hosted beneath the row summary. The destructive
+// `Remove` control is visually distinct (error accent) from the neutral
+// `Cancel`, but Cancel — not Remove — receives initial focus so the
+// destructive action is never a single-keypress default (NFR-001). Tokens come
+// from the shared `_tokens.module.scss` partial.
+
+@use '../styles/tokens.module' as tokens;
+@include tokens.declare;
+
+.dialog {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid var(--dedup-card-hover);
+  border-radius: 8px;
+  background: var(--dedup-card);
+}
+
+.message {
+  margin: 0;
+  font-size: 14px;
+  color: var(--dedup-text);
+}
+
+.actions {
+  display: flex;
+  gap: 8px;
+}
+
+.cancel {
+  background: transparent;
+  border: 1px solid var(--dedup-card-hover);
+  color: var(--dedup-text);
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  cursor: pointer;
+
+  &:focus-visible {
+    outline: 2px solid var(--dedup-button);
+    outline-offset: 2px;
+  }
+}
+
+.remove {
+  background: var(--dedup-error);
+  border: 1px solid var(--dedup-error);
+  color: var(--dedup-text);
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+
+  &:focus-visible {
+    outline: 2px solid var(--dedup-error);
+    outline-offset: 2px;
+  }
+}

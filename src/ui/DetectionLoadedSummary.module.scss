@@ -32,3 +32,19 @@
   font-size: 12px;
   color: var(--dedup-subtext);
 }
+
+// Removal surface region (WP06 / T023): the button / dialog / progress /
+// outcome stack under the summary copy.
+.removal {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.progress {
+  margin: 0;
+  font-size: 12px;
+  color: var(--dedup-subtext);
+}

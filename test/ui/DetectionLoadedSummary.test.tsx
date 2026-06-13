@@ -14,10 +14,19 @@
  */
 
 import React from 'react';
-import { describe, it, expect } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { describe, it, expect, vi } from 'vitest';
+import { render, screen, fireEvent, act } from '@testing-library/react';
 import { DetectionLoadedSummary } from '../../src/ui/DetectionLoadedSummary';
 import type { DetectionResult } from '../../src/ui/DetectionLoadedSummary';
+import { DetectionStoreProvider } from '../../src/store/DetectionStoreContext';
+import {
+  createDetectionStore,
+  type DetectionStoreState,
+} from '../../src/store/detection-store';
+import { FakeRemovalExecutor } from '../../src/adapters/fake-removal-executor';
+import type { DetectionScanner } from '../../src/ports/detection-scanner';
+import type { DetectionResult as DomainDetectionResult } from '../../src/domain/detection-types';
+import type { StoreApi } from 'zustand/vanilla';
 
 // Helper to build a minimal DetectionResult
 function makeResult(
@@ -254,5 +263,285 @@ describe('DetectionLoadedSummary', () => {
       );
       expect(container.firstChild).not.toBeNull();
     });
+  });
+});
+
+// ===========================================================================
+// Removal host (T023) — store-aware phase rendering + 24/25/26 boundary.
+// ===========================================================================
+
+const KEY = 'liked-songs';
+const REQUEST = { kind: 'liked-songs' as const };
+const TARGET = { kind: 'liked-songs' as const };
+
+/** Build `count` distinct two-member groups → `removableTrackCount = count`. */
+function makeDomainGroups(count: number) {
+  return Array.from({ length: count }, (_, i) => ({
+    id: `group-${i}`,
+    reason: 'name-artist-duration' as const,
+    members: [
+      {
+        position: i * 2,
+        uri: `spotify:track:a${i}`,
+        canonicalUri: `spotify:track:a${i}`,
+        name: `Track ${i}`,
+        artists: [{ name: 'Artist' }],
+        durationMs: 180000,
+      },
+      {
+        position: i * 2 + 1,
+        uri: `spotify:track:b${i}`,
+        canonicalUri: `spotify:track:b${i}`,
+        name: `Track ${i}`,
+        artists: [{ name: 'Artist' }],
+        durationMs: 181000,
+      },
+    ],
+    defaultKeepIndex: 0,
+  }));
+}
+
+function makeDomainResult(removableCount: number): DomainDetectionResult {
+  return {
+    collectionKey: KEY,
+    completedAt: 1000,
+    groups: makeDomainGroups(removableCount),
+    duplicateTrackCount: removableCount * 2,
+    removableTrackCount: removableCount,
+    skippedLocalCount: 0,
+    unenrichedCount: 0,
+    scannedTrackCount: removableCount * 2,
+  } as DomainDetectionResult;
+}
+
+function makeScanner(result: DomainDetectionResult): DetectionScanner {
+  return { scan: vi.fn(() => Promise.resolve(result)) };
+}
+
+async function seedLoaded(
+  removableCount: number,
+  executor = new FakeRemovalExecutor(),
+): Promise<StoreApi<DetectionStoreState>> {
+  const store = createDetectionStore(
+    makeScanner(makeDomainResult(removableCount)),
+    executor,
+  );
+  await act(async () => {
+    await store.getState().scanCollection(KEY, REQUEST);
+  });
+  return store;
+}
+
+/** The summary result prop derived from the seeded store row. */
+function resultFor(removableCount: number): DetectionResult {
+  return makeResult({
+    groups: makeDomainGroups(removableCount) as unknown as DetectionResult['groups'],
+    duplicateTrackCount: removableCount * 2,
+    removableTrackCount: removableCount,
+  });
+}
+
+function renderHost(
+  store: StoreApi<DetectionStoreState>,
+  removableCount: number,
+) {
+  return render(
+    <DetectionStoreProvider store={store}>
+      <DetectionLoadedSummary
+        result={resultFor(removableCount)}
+        collectionKey={KEY}
+        target={TARGET}
+        displayName="Liked Songs"
+      />
+    </DetectionStoreProvider>,
+  );
+}
+
+describe('DetectionLoadedSummary — removal host (T023)', () => {
+  it('back-compat: store-aware row not activated when removal props absent', () => {
+    // No provider, no removal props → renders without throwing (no store read).
+    const { container } = render(
+      <DetectionLoadedSummary result={resultFor(2)} />,
+    );
+    expect(container.querySelector('button')).toBeNull();
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  });
+
+  it('removal props present but store row absent → surface renders quiescent (no button, no dialog)', () => {
+    // Fresh store: no row entry for KEY (idle). The surface mounts (props
+    // present) but `row?.kind === 'loaded'` is false → phase defaults to none,
+    // the button self-gates to null, and no dialog/outcome shows.
+    const store = createDetectionStore(
+      makeScanner(makeDomainResult(2)),
+      new FakeRemovalExecutor(),
+    );
+    renderHost(store, 2);
+    expect(
+      screen.queryByRole('button', { name: /Remove duplicates from/ }),
+    ).not.toBeInTheDocument();
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(screen.queryByRole('status')).not.toBeInTheDocument();
+  });
+
+  it('phase none + count > 0 → button shown, no dialog', async () => {
+    const store = await seedLoaded(2);
+    renderHost(store, 2);
+    expect(
+      screen.getByRole('button', { name: /Remove duplicates from Liked Songs/ }),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  });
+
+  it('phase confirming → step-1 dialog; confirm → confirmRemoval; cancel → cancelRemoval', async () => {
+    const store = await seedLoaded(2);
+    const confirmSpy = vi.fn();
+    const cancelSpy = vi.fn();
+    const { confirmRemoval, cancelRemoval } = store.getState();
+    store.setState({
+      ...store.getState(),
+      confirmRemoval: (k: string) => {
+        confirmSpy(k);
+        return confirmRemoval(k);
+      },
+      cancelRemoval: (k: string) => {
+        cancelSpy(k);
+        cancelRemoval(k);
+      },
+    } as DetectionStoreState);
+
+    renderHost(store, 2);
+    await act(async () => {
+      store.getState().requestRemoval(KEY);
+    });
+    const dialog = screen.getByRole('dialog');
+    expect(dialog.textContent).toMatch(/Remove 2 tracks/);
+
+    // Cancel path
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /^Cancel$/ }));
+    });
+    expect(cancelSpy).toHaveBeenCalledWith(KEY);
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+
+    // Re-open + confirm path
+    await act(async () => {
+      store.getState().requestRemoval(KEY);
+    });
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /^Remove$/ }));
+    });
+    expect(confirmSpy).toHaveBeenCalledWith(KEY);
+  });
+
+  it('phase confirming2 → step-2 dialog for a bulk delete (> 25)', async () => {
+    const store = await seedLoaded(26);
+    renderHost(store, 26);
+    await act(async () => {
+      store.getState().requestRemoval(KEY);
+      await store.getState().confirmRemoval(KEY); // 26 > 25 → confirming2
+    });
+    const dialog = screen.getByRole('dialog');
+    expect(dialog.textContent).toMatch(/Confirm removal of 26 tracks/);
+  });
+
+  it('phase removing → progress indicator; button hidden', async () => {
+    // Executor that never resolves → row stuck in `removing`.
+    const store = createDetectionStore(makeScanner(makeDomainResult(2)), {
+      remove: vi.fn(() => new Promise<never>(() => {})),
+    });
+    await act(async () => {
+      await store.getState().scanCollection(KEY, REQUEST);
+    });
+    renderHost(store, 2);
+    await act(async () => {
+      store.getState().requestRemoval(KEY);
+      void store.getState().confirmRemoval(KEY);
+    });
+    expect(screen.getByRole('status')).toHaveTextContent(/Removing/);
+    expect(
+      screen.queryByRole('button', { name: /Remove duplicates from/ }),
+    ).not.toBeInTheDocument();
+  });
+
+  it('phase removing → shows removedSoFar/total when a progress event is present', async () => {
+    const store = createDetectionStore(makeScanner(makeDomainResult(2)), {
+      remove: vi.fn((_t, _tracks, _sig, onProgress?: (e: { removedSoFar: number; total: number }) => void) => {
+        onProgress?.({ removedSoFar: 1, total: 2 });
+        return new Promise<never>(() => {});
+      }),
+    });
+    await act(async () => {
+      await store.getState().scanCollection(KEY, REQUEST);
+    });
+    renderHost(store, 2);
+    await act(async () => {
+      store.getState().requestRemoval(KEY);
+      void store.getState().confirmRemoval(KEY);
+    });
+    expect(screen.getByRole('status')).toHaveTextContent('Removing… 1/2');
+  });
+
+  it('phase partial → outcome view shown; button shown again (retry)', async () => {
+    const store = await seedLoaded(
+      2,
+      new FakeRemovalExecutor({ kind: 'partial', failUris: ['spotify:track:b0'] }),
+    );
+    renderHost(store, 2);
+    await act(async () => {
+      store.getState().requestRemoval(KEY);
+      await store.getState().confirmRemoval(KEY);
+    });
+    expect(screen.getByRole('status')).toHaveTextContent(/partially failed/i);
+    expect(
+      screen.getByRole('button', { name: /Remove duplicates from Liked Songs/ }),
+    ).toBeInTheDocument();
+  });
+});
+
+describe('DetectionLoadedSummary — 24/25/26 boundary through the UI', () => {
+  it.each([24, 25])(
+    'count %i reaches removing after one confirm (no step-2 dialog)',
+    async (count) => {
+      const store = await seedLoaded(count, new FakeRemovalExecutor({ kind: 'ok' }));
+      renderHost(store, count);
+      await act(async () => {
+        store.getState().requestRemoval(KEY);
+      });
+      // step-1 dialog visible
+      expect(screen.getByRole('dialog').textContent).toMatch(
+        new RegExp(`Remove ${count} tracks`),
+      );
+      await act(async () => {
+        await store.getState().confirmRemoval(KEY);
+      });
+      // ≤25 → executed in one confirm; FakeRemovalExecutor `ok` → clean finish,
+      // phase returns to `none` (no second dialog ever shown).
+      const row = store.getState().rows[KEY];
+      expect(row?.kind === 'loaded' && row.removal.phase).toBe('none');
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    },
+  );
+
+  it('count 26 shows the step-2 dialog before removing', async () => {
+    const store = await seedLoaded(26, new FakeRemovalExecutor({ kind: 'ok' }));
+    renderHost(store, 26);
+    await act(async () => {
+      store.getState().requestRemoval(KEY);
+    });
+    // First confirm → does NOT remove yet; shows the bulk reconfirmation.
+    await act(async () => {
+      await store.getState().confirmRemoval(KEY);
+    });
+    const row = store.getState().rows[KEY];
+    expect(row?.kind === 'loaded' && row.removal.phase).toBe('confirming2');
+    expect(screen.getByRole('dialog').textContent).toMatch(
+      /Confirm removal of 26 tracks/,
+    );
+    // Second confirm → executes; clean finish → none.
+    await act(async () => {
+      await store.getState().confirmRemoval(KEY);
+    });
+    const after = store.getState().rows[KEY];
+    expect(after?.kind === 'loaded' && after.removal.phase).toBe('none');
   });
 });

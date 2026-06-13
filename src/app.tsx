@@ -7,12 +7,20 @@
  * Singleton construction order (module load, side-effect-free):
  * 1. `productionPlaylistsStore` — backed by `SpicetifyPlaylistsLoader`.
  * 2. `productionDetectionStore` — backed by `createDetectionScanner`
- *    (which composes `SpicetifyTracksEnumerator` + `InlineCatalogEnricher`).
+ *    (which composes `SpicetifyTracksEnumerator` + `InlineCatalogEnricher`)
+ *    and the `SpicetifyRemovalExecutor` (injected as the second argument so the
+ *    per-row removal flow can mutate the live library — WP07 / T024).
+ *
+ * `app.tsx` is the ONLY place authorized to instantiate production adapters
+ * (ADR-0001); rows import the store context + domain types only.
  *
  * All adapter constructors are side-effect-free at construction time:
- * no `Spicetify.*` access happens until the user triggers an action. This
- * preserves the test environment's ability to import `src/app.tsx` without
- * Spicetify globals (verified by `test/app.test.tsx`).
+ * no `Spicetify.*` access happens until the user triggers an action. The
+ * `SpicetifyRemovalExecutor` reads `globalThis.Spicetify.Platform` lazily
+ * (per-call), exactly like `SpicetifyTracksEnumerator`, so constructing it at
+ * module load touches no host global. This preserves the test environment's
+ * ability to import `src/app.tsx` without Spicetify globals (verified by
+ * `test/app.test.tsx`).
  *
  * Provider order: `PlaylistsStoreProvider` → `DetectionStoreProvider` →
  * `RouteResetProvider` → `DedupPage`. `RouteResetProvider` reads from both
@@ -32,6 +40,7 @@ import { InlineCatalogEnricher } from './adapters/inline-catalog-enricher';
 import { createDetectionScanner } from './adapters/detection-scanner';
 import { createDetectionStore } from './store/detection-store';
 import { DetectionStoreProvider } from './store/DetectionStoreContext';
+import { SpicetifyRemovalExecutor } from './adapters/spicetify-removal-executor';
 
 /** Production playlists store — uses the Spicetify rootlist/library APIs. */
 const productionPlaylistsStore = createPlaylistsStore(new SpicetifyPlaylistsLoader());
@@ -46,7 +55,17 @@ const detectionScanner = createDetectionScanner(
   new SpicetifyTracksEnumerator(),
   new InlineCatalogEnricher(),
 );
-const productionDetectionStore = createDetectionStore(detectionScanner);
+
+/**
+ * Production removal executor — mutates the live library via the Spicetify
+ * Platform APIs. Side-effect-free at construction (reads
+ * `globalThis.Spicetify.Platform` lazily, per host call).
+ */
+const removalExecutor = new SpicetifyRemovalExecutor();
+const productionDetectionStore = createDetectionStore(
+  detectionScanner,
+  removalExecutor,
+);
 
 const App = () => (
   <PlaylistsStoreProvider store={productionPlaylistsStore}>

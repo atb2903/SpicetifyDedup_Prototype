@@ -1,23 +1,46 @@
 /**
- * DetectionLoadedSummary (WP07 / T021 / FR-009 / AS-1 / AS-2).
+ * DetectionLoadedSummary (WP07 / T021; removal host added in WP06 / T023).
  *
- * Presentational component that renders the per-row detection result summary.
- * Pure: props in → JSX out; no store imports, no port imports.
+ * Renders the per-row detection result summary and — when the removal props
+ * are supplied — hosts the removal surface (button / confirm dialog / outcome /
+ * progress) by removal phase.
  *
- * Render rules:
+ * Summary render rules (unchanged):
  * - `result.groups.length === 0` → "No duplicates found" (AS-1 verbatim phrase).
  * - Otherwise → "{N} duplicate group(s) · {M} track(s) to remove".
  * - Secondary annotations (only when non-zero):
  *   - `skippedLocalCount > 0` → "Skipped {N} local file(s)"
  *   - `unenrichedCount > 0`   → "{N} track(s) couldn't be looked up"
  *
- * Architecture: `src/ui/` may import from `src/domain/` but MUST NOT import
- * from `src/adapters/` or `src/ports/` (enforced by `test/architecture.test.ts`).
+ * Removal host (T023): the three removal props (`collectionKey`, `target`,
+ * `displayName`) are **optional**. The existing `{ result }`-only callers
+ * (`PlaylistRow`/`LikedSongsRow`, owned by WP07) keep compiling and render
+ * exactly as before — no store access, no removal UI. When all three are
+ * present, the component becomes store-aware: it reads the row's removal phase
+ * from `useDetectionStore` and mounts, by phase:
+ * - always: the existing summary copy.
+ * - `RemoveDuplicatesButton` (self-gates on visibility).
+ * - `confirming`  → `RemovalConfirmDialog step={1}`.
+ * - `confirming2` → `RemovalConfirmDialog step={2}` (bulk, > 25 only).
+ * - `removing`    → a non-blocking progress indicator (NFR-002); shows
+ *   `removedSoFar/total` when a `RemovalProgressEvent` is present, else
+ *   indeterminate.
+ * - `partial`     → `RemovalOutcomeView` (and the button is visible again for retry).
  *
- * Callers: WP08 wires this component into the row components.
+ * Architecture: `src/ui/` may import from `src/domain/` and the store context
+ * but MUST NOT import from `src/adapters/` or `src/ports/` (enforced by
+ * `test/architecture.test.ts`).
+ *
+ * Callers: WP08/WP07 wires this component into the row components, threading
+ * the removal props (T025).
  */
 
 import React from 'react';
+import { useDetectionStore } from '../store/DetectionStoreContext';
+import type { RemovalTarget } from '../domain/removal-types';
+import { RemoveDuplicatesButton } from './RemoveDuplicatesButton';
+import { RemovalConfirmDialog } from './RemovalConfirmDialog';
+import { RemovalOutcomeView } from './RemovalOutcomeView';
 import styles from './DetectionLoadedSummary.module.scss';
 
 // ---------------------------------------------------------------------------
@@ -67,10 +90,24 @@ export type DetectionResult = {
 
 /**
  * Props for {@link DetectionLoadedSummary}.
+ *
+ * `result` is required. The three removal props are **optional** and only
+ * take effect together: when all three are present and the store row is
+ * `loaded`, the removal surface is hosted; otherwise the component renders the
+ * pure summary exactly as before (back-compat for `{ result }`-only callers).
  */
 export type DetectionLoadedSummaryProps = {
   /** The detection result to summarise. */
   result: DetectionResult;
+  /**
+   * Canonical store-row key (`'liked-songs'` or a playlist URI). Required to
+   * activate the removal host; absent for legacy summary-only callers.
+   */
+  collectionKey?: string;
+  /** The single collection a removal would target. Forwarded to the button. */
+  target?: RemovalTarget;
+  /** Display name used in the button's accessible name and dialog copy. */
+  displayName?: string;
 };
 
 // ---------------------------------------------------------------------------
@@ -78,21 +115,27 @@ export type DetectionLoadedSummaryProps = {
 // ---------------------------------------------------------------------------
 
 /**
- * Render a summary of a completed detection result.
+ * Render a summary of a completed detection result and, when removal props are
+ * supplied, the phase-driven removal surface beneath it.
  *
- * Shows either "No duplicates found" (AS-1) or the group and removable-track
- * counts (AS-2), followed by optional secondary annotations for local-file
- * skips and catalog-lookup failures.
- *
- * @param props - `{ result: DetectionResult }`
- * @returns A `<div>` containing the summary copy.
+ * @param props - `{ result, collectionKey?, target?, displayName? }`.
+ * @returns A `<div>` containing the summary copy (and removal surface).
  */
 export function DetectionLoadedSummary({
   result,
+  collectionKey,
+  target,
+  displayName,
 }: DetectionLoadedSummaryProps): React.ReactElement {
   const { groups, removableTrackCount, skippedLocalCount, unenrichedCount } =
     result;
   const isEmpty = groups.length === 0;
+
+  // Activate the removal host only when all three removal props are present.
+  const hasRemoval =
+    collectionKey !== undefined &&
+    target !== undefined &&
+    displayName !== undefined;
 
   return (
     <div className={styles.container}>
@@ -114,6 +157,88 @@ export function DetectionLoadedSummary({
         <p className={styles.annotation}>
           {`${unenrichedCount} ${unenrichedCount === 1 ? "track" : "tracks"} couldn’t be looked up`}
         </p>
+      )}
+      {hasRemoval && (
+        <RemovalSurface
+          collectionKey={collectionKey}
+          target={target}
+          displayName={displayName}
+          removableTrackCount={removableTrackCount}
+        />
+      )}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Removal surface (store-aware) — extracted so the store hooks run only when
+// the removal props are present (Rules of Hooks: the parent must not call
+// `useDetectionStore` conditionally).
+// ---------------------------------------------------------------------------
+
+/**
+ * The store-aware removal region. Reads the row's removal phase and renders the
+ * button, confirmation dialog, progress indicator, or outcome view accordingly.
+ *
+ * Mounted by {@link DetectionLoadedSummary} only when all removal props exist,
+ * so its `useDetectionStore` calls are never conditional.
+ *
+ * @param props - removal props plus the `removableTrackCount` for the dialog count.
+ * @returns The removal region JSX.
+ */
+function RemovalSurface({
+  collectionKey,
+  target,
+  displayName,
+  removableTrackCount,
+}: {
+  collectionKey: string;
+  target: RemovalTarget;
+  displayName: string;
+  removableTrackCount: number;
+}): React.ReactElement {
+  const confirmRemoval = useDetectionStore((s) => s.confirmRemoval);
+  const cancelRemoval = useDetectionStore((s) => s.cancelRemoval);
+  // The full row (so phase + the `partial` outcome + `removing` progress are
+  // all available from one selection).
+  const row = useDetectionStore((s) => s.rows[collectionKey]);
+
+  const removal = row?.kind === 'loaded' ? row.removal : undefined;
+  const phase = removal?.phase ?? 'none';
+
+  return (
+    <div className={styles.removal}>
+      <RemoveDuplicatesButton
+        collectionKey={collectionKey}
+        target={target}
+        displayName={displayName}
+      />
+      {(phase === 'confirming' || phase === 'confirming2') && (
+        <RemovalConfirmDialog
+          collectionName={displayName}
+          count={removableTrackCount}
+          step={phase === 'confirming' ? 1 : 2}
+          onConfirm={() => {
+            void confirmRemoval(collectionKey);
+          }}
+          onCancel={() => {
+            cancelRemoval(collectionKey);
+          }}
+        />
+      )}
+      {phase === 'removing' && (
+        <p
+          role="status"
+          aria-live="polite"
+          className={styles.progress}
+        >
+          {removal?.phase === 'removing' && removal.progress !== undefined
+            ? `Removing… ${removal.progress.removedSoFar}/${removal.progress.total}`
+            : 'Removing…'}
+        </p>
+      )}
+      {removal?.phase === 'partial' && (
+        <RemovalOutcomeView outcome={removal.outcome} />
       )}
     </div>
   );

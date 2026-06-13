@@ -787,6 +787,64 @@ describe('parseLibraryTrackItem — ternary fallbacks', () => {
   });
 });
 
+// ---------------------------------------------------------------------------
+// parseLibraryTrackItem — uid capture (ADR-0012, additive)
+// ---------------------------------------------------------------------------
+
+describe('parseLibraryTrackItem — uid capture (ADR-0012)', () => {
+  it('sets RawTrack.uid from a non-empty string item.uid (playlist item)', () => {
+    const item = makeItem(1, { uid: 'abc' });
+    const result = parseLibraryTrackItem(item, 0);
+    expect(result.uid).toBe('abc');
+  });
+
+  it('leaves uid undefined when item.uid is absent (Liked-Songs item)', () => {
+    const item = makeItem(1); // no uid field
+    const result = parseLibraryTrackItem(item, 0);
+    expect(result.uid).toBeUndefined();
+  });
+
+  it('leaves uid undefined when item.uid is an empty string (no fabrication)', () => {
+    const item = makeItem(1, { uid: '' });
+    const result = parseLibraryTrackItem(item, 0);
+    expect(result.uid).toBeUndefined();
+  });
+
+  it('leaves uid undefined when item.uid is a non-string (no fabrication)', () => {
+    const item = makeItem(1, { uid: 42 });
+    const result = parseLibraryTrackItem(item, 0);
+    expect(result.uid).toBeUndefined();
+  });
+});
+
+describe('SpicetifyTracksEnumerator — uid flows through a playlist page', () => {
+  it('carries item.uid into RawTrack.uid end-to-end via getContents', async () => {
+    const platform = makePlatform({
+      getContents: async () => ({
+        items: [
+          makeItem(1, { uid: 'uid-aaa' }),
+          makeItem(2, { uid: 'uid-bbb' }),
+        ],
+        totalLength: 2,
+        offset: 0,
+        limit: 200,
+      }),
+    });
+    const enumerator = new SpicetifyTracksEnumerator(platform);
+    const result = await enumerator.enumerate(playlistRequest(), neverAborted(), vi.fn());
+    expect(result.map((t) => t.uid)).toEqual(['uid-aaa', 'uid-bbb']);
+  });
+
+  it('Liked-Songs items leave uid undefined end-to-end via getTracks', async () => {
+    const platform = makePlatform({
+      getTracks: async () => makePage(2, 2),
+    });
+    const enumerator = new SpicetifyTracksEnumerator(platform);
+    const result = await enumerator.enumerate(likedRequest(), neverAborted(), vi.fn());
+    expect(result.every((t) => t.uid === undefined)).toBe(true);
+  });
+});
+
 describe('parseLibraryTrackItem — additional branches', () => {
   it('throws enumerator-failed for non-object input (null)', () => {
     let err: unknown;

@@ -98,17 +98,21 @@ describe('src/app.tsx', () => {
     vi.stubGlobal('Spicetify', {
       Platform: new Proxy({}, { get: platformSpy }),
     });
-    // Just importing and constructing the App should not call platformSpy.
-    const callsBefore = platformSpy.mock.calls.length;
+    // Just importing and constructing the App (incl. the removal executor,
+    // WP07/T024) must not read any property off `Spicetify.Platform`.
     await import('../src/app');
-    // Construction of singletons happened at module load — if it accessed
-    // Platform, platformSpy would have been called.
-    // We allow RootlistAPI / LibraryAPI accesses triggered by the import of
-    // the store modules, but construction must not call getTracks/getContents.
-    // The simplest assertion: rendering renders without throwing.
+    expect(platformSpy).not.toHaveBeenCalled();
+    // And it must still render, including the now-injected removal executor.
     const { default: App } = await import('../src/app');
     expect(() => render(<App />)).not.toThrow();
     // The Load button is present — no host call was triggered at construction.
     expect(screen.getByRole('button', { name: /load/i })).toBeInTheDocument();
+  });
+
+  it('T024 — imports with NO Spicetify global at all without throwing (removal executor side-effect-free)', async () => {
+    // No `Spicetify` global is stubbed: a truly headless import. Every
+    // production adapter — including the WP07-injected SpicetifyRemovalExecutor
+    // — must construct lazily, so module load cannot touch `globalThis.Spicetify`.
+    await expect(import('../src/app')).resolves.toBeDefined();
   });
 });

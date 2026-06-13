@@ -56,6 +56,19 @@ export type RawTrack = {
    * `unenriched`.
    */
   durationMs: number | null;
+  /**
+   * Playlist item occurrence id. Present for playlist tracks (from
+   * `PlaylistAPI.getContents` items); `undefined` for Liked Songs tracks,
+   * which are addressed by URI alone. Carried unchanged through enrichment
+   * so removal can target a specific occurrence of a repeated URI. (ADR-0012)
+   *
+   * Invariant: a non-empty string when present; `undefined` only for
+   * Liked-Songs-origin tracks. The enumerator never fabricates a `uid`.
+   * Algorithm-neutral: the matching algorithm must not read this field —
+   * it participates in neither the same-canonical-URI nor the
+   * name+artist+duration rule. Metadata for removal only.
+   */
+  uid?: string;
 };
 
 // ── §1.2 — EnrichedTrack ─────────────────────────────────────────────────────
@@ -98,6 +111,13 @@ export type EnrichedTrack = {
    * when their durations differ by ≤ 2000 ms.
    */
   durationMs: number;
+  /**
+   * Mirrors `RawTrack.uid`; preserved verbatim through enrichment so
+   * removal can address a specific occurrence of a repeated playlist URI.
+   * `undefined` for Liked-Songs-origin tracks. Algorithm-neutral — the
+   * matching algorithm must not read this field. (ADR-0012)
+   */
+  uid?: string;
 };
 
 // ── §3.1 — DuplicateGroup ────────────────────────────────────────────────────

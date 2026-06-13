@@ -1,7 +1,10 @@
 /**
  * Exhaustive test of the DetectionState FSM transition table.
  *
- * data-model.md §5.3 defines 4 states × 5 actions = 20 cells.
+ * data-model.md §5.3 defines 4 states × 5 scan actions = 20 cells.
+ * data-model.md §5.1 adds the removal sub-FSM on `loaded.removal`:
+ * 5 removal phases × 6 removal actions = 30 cells, plus the `confirmFirst`
+ * boundary booleans and the non-loaded ignores.
  * One `it()` per cell; every "ignored" cell asserts reference equality.
  */
 import { describe, it, expect } from 'vitest';
@@ -9,9 +12,15 @@ import {
   transition,
   type DetectionState,
   type DetectionAction,
+  type RemovalState,
 } from '../../src/domain/detection-state';
 import { DetectionError } from '../../src/domain/detection-errors';
 import type { ProgressEvent, DetectionResult } from '../../src/domain/detection-types';
+import type {
+  RemovalOutcome,
+  RemovalProgressEvent,
+  TrackRef,
+} from '../../src/domain/removal-types';
 
 // ── Shared fixtures ───────────────────────────────────────────────────────────
 
@@ -34,13 +43,40 @@ const DETECTION_RESULT: DetectionResult = {
 
 const DETECTION_ERROR = new DetectionError('network-failure', 'host unreachable');
 
+// A non-empty result so removeComplete's new result is distinguishable from
+// the pre-removal one by reference.
+const REMOVAL_RESULT: DetectionResult = {
+  collectionKey: 'liked-songs',
+  completedAt: 1_700_000_000_001,
+  groups: [],
+  duplicateTrackCount: 0,
+  removableTrackCount: 0,
+  skippedLocalCount: 0,
+  unenrichedCount: 0,
+  scannedTrackCount: 50,
+};
+
+const TRACK_REF: TrackRef = { uri: 'spotify:track:abc' };
+
+const REMOVAL_PROGRESS: RemovalProgressEvent = { removedSoFar: 3, total: 10 };
+
+const OUTCOME_ALL_OK: RemovalOutcome = {
+  removed: [TRACK_REF],
+  failed: [],
+};
+
+const OUTCOME_PARTIAL: RemovalOutcome = {
+  removed: [],
+  failed: [{ track: TRACK_REF, reason: 'host rejected' }],
+};
+
 // Initial scanning state used for "from scanning" tests
 function makeScanningState(): DetectionState {
   return { kind: 'scanning', progress: PROGRESS_EVENT };
 }
 
-function makeLoadedState(): DetectionState {
-  return { kind: 'loaded', result: DETECTION_RESULT };
+function makeLoadedState(removal: RemovalState = { phase: 'none' }): DetectionState {
+  return { kind: 'loaded', result: DETECTION_RESULT, removal };
 }
 
 function makeFailedState(): DetectionState {
@@ -105,12 +141,13 @@ describe('DetectionState FSM — full 4×5 transition grid', () => {
       }
     });
 
-    it('cell [scanning, complete] → loaded (carries result)', () => {
+    it('cell [scanning, complete] → loaded (carries result, removal phase=none)', () => {
       const before = makeScanningState();
       const after = transition(before, { type: 'complete', result: DETECTION_RESULT });
       expect(after.kind).toBe('loaded');
       if (after.kind === 'loaded') {
         expect(after.result).toBe(DETECTION_RESULT);
+        expect(after.removal).toEqual({ phase: 'none' });
       }
     });
 
@@ -262,10 +299,254 @@ describe('DetectionAction union — every variant is exercised at the value leve
       { type: 'complete', result: DETECTION_RESULT },
       { type: 'fail', reason: DETECTION_ERROR },
       { type: 'cancel' },
+      { type: 'removeRequest' },
+      { type: 'confirmFirst', requiresSecondConfirm: false },
+      { type: 'confirmSecond' },
+      { type: 'removeCancel' },
+      { type: 'removeProgress', event: REMOVAL_PROGRESS },
+      { type: 'removeComplete', result: REMOVAL_RESULT, outcome: OUTCOME_ALL_OK },
     ];
     for (const action of actions) {
       const next = transition({ kind: 'idle' }, action);
       expect(next.kind).toBeDefined();
     }
   });
+});
+
+// ── Removal sub-FSM (data-model.md §5.1) ──────────────────────────────────────
+
+/**
+ * Helper: assert `after` is `loaded` and return its `removal` phase. Fails the
+ * test if `after` is not `loaded`.
+ */
+function loadedRemoval(state: DetectionState): RemovalState {
+  expect(state.kind).toBe('loaded');
+  if (state.kind !== 'loaded') throw new Error('expected loaded');
+  return state.removal;
+}
+
+// The six removal actions, used to drive the non-loaded ignore sweep.
+const REMOVAL_ACTIONS: DetectionAction[] = [
+  { type: 'removeRequest' },
+  { type: 'confirmFirst', requiresSecondConfirm: false },
+  { type: 'confirmSecond' },
+  { type: 'removeCancel' },
+  { type: 'removeProgress', event: REMOVAL_PROGRESS },
+  { type: 'removeComplete', result: REMOVAL_RESULT, outcome: OUTCOME_ALL_OK },
+];
+
+describe('Removal sub-FSM — full 5×6 grid on loaded.removal', () => {
+  // ── from removal phase `none` ───────────────────────────────────────────────
+  describe('from loaded.removal=none', () => {
+    it('cell [none, removeRequest] → confirming', () => {
+      const after = transition(makeLoadedState({ phase: 'none' }), { type: 'removeRequest' });
+      expect(loadedRemoval(after)).toEqual({ phase: 'confirming' });
+    });
+    it('cell [none, confirmFirst] → ignored (same reference)', () => {
+      const before = makeLoadedState({ phase: 'none' });
+      expect(transition(before, { type: 'confirmFirst', requiresSecondConfirm: false })).toBe(before);
+    });
+    it('cell [none, confirmSecond] → ignored (same reference)', () => {
+      const before = makeLoadedState({ phase: 'none' });
+      expect(transition(before, { type: 'confirmSecond' })).toBe(before);
+    });
+    it('cell [none, removeCancel] → ignored (same reference)', () => {
+      const before = makeLoadedState({ phase: 'none' });
+      expect(transition(before, { type: 'removeCancel' })).toBe(before);
+    });
+    it('cell [none, removeProgress] → ignored (same reference)', () => {
+      const before = makeLoadedState({ phase: 'none' });
+      expect(transition(before, { type: 'removeProgress', event: REMOVAL_PROGRESS })).toBe(before);
+    });
+    it('cell [none, removeComplete] → ignored (same reference)', () => {
+      const before = makeLoadedState({ phase: 'none' });
+      expect(transition(before, { type: 'removeComplete', result: REMOVAL_RESULT, outcome: OUTCOME_ALL_OK })).toBe(before);
+    });
+  });
+
+  // ── from removal phase `confirming` ─────────────────────────────────────────
+  describe('from loaded.removal=confirming', () => {
+    it('cell [confirming, removeRequest] → ignored (FR-012 concurrency, same reference)', () => {
+      const before = makeLoadedState({ phase: 'confirming' });
+      expect(transition(before, { type: 'removeRequest' })).toBe(before);
+    });
+    it('cell [confirming, confirmFirst{false}] → removing', () => {
+      const after = transition(makeLoadedState({ phase: 'confirming' }), { type: 'confirmFirst', requiresSecondConfirm: false });
+      expect(loadedRemoval(after)).toEqual({ phase: 'removing' });
+    });
+    it('cell [confirming, confirmFirst{true}] → confirming2', () => {
+      const after = transition(makeLoadedState({ phase: 'confirming' }), { type: 'confirmFirst', requiresSecondConfirm: true });
+      expect(loadedRemoval(after)).toEqual({ phase: 'confirming2' });
+    });
+    it('cell [confirming, confirmSecond] → ignored (same reference)', () => {
+      const before = makeLoadedState({ phase: 'confirming' });
+      expect(transition(before, { type: 'confirmSecond' })).toBe(before);
+    });
+    it('cell [confirming, removeCancel] → none', () => {
+      const after = transition(makeLoadedState({ phase: 'confirming' }), { type: 'removeCancel' });
+      expect(loadedRemoval(after)).toEqual({ phase: 'none' });
+    });
+    it('cell [confirming, removeProgress] → ignored (same reference)', () => {
+      const before = makeLoadedState({ phase: 'confirming' });
+      expect(transition(before, { type: 'removeProgress', event: REMOVAL_PROGRESS })).toBe(before);
+    });
+    it('cell [confirming, removeComplete] → ignored (same reference)', () => {
+      const before = makeLoadedState({ phase: 'confirming' });
+      expect(transition(before, { type: 'removeComplete', result: REMOVAL_RESULT, outcome: OUTCOME_ALL_OK })).toBe(before);
+    });
+  });
+
+  // ── from removal phase `confirming2` ────────────────────────────────────────
+  describe('from loaded.removal=confirming2', () => {
+    it('cell [confirming2, removeRequest] → ignored (same reference)', () => {
+      const before = makeLoadedState({ phase: 'confirming2' });
+      expect(transition(before, { type: 'removeRequest' })).toBe(before);
+    });
+    it('cell [confirming2, confirmFirst] → ignored (same reference)', () => {
+      const before = makeLoadedState({ phase: 'confirming2' });
+      expect(transition(before, { type: 'confirmFirst', requiresSecondConfirm: true })).toBe(before);
+    });
+    it('cell [confirming2, confirmSecond] → removing', () => {
+      const after = transition(makeLoadedState({ phase: 'confirming2' }), { type: 'confirmSecond' });
+      expect(loadedRemoval(after)).toEqual({ phase: 'removing' });
+    });
+    it('cell [confirming2, removeCancel] → none', () => {
+      const after = transition(makeLoadedState({ phase: 'confirming2' }), { type: 'removeCancel' });
+      expect(loadedRemoval(after)).toEqual({ phase: 'none' });
+    });
+    it('cell [confirming2, removeProgress] → ignored (same reference)', () => {
+      const before = makeLoadedState({ phase: 'confirming2' });
+      expect(transition(before, { type: 'removeProgress', event: REMOVAL_PROGRESS })).toBe(before);
+    });
+    it('cell [confirming2, removeComplete] → ignored (same reference)', () => {
+      const before = makeLoadedState({ phase: 'confirming2' });
+      expect(transition(before, { type: 'removeComplete', result: REMOVAL_RESULT, outcome: OUTCOME_ALL_OK })).toBe(before);
+    });
+  });
+
+  // ── from removal phase `removing` ───────────────────────────────────────────
+  describe('from loaded.removal=removing', () => {
+    it('cell [removing, removeRequest] → ignored (FR-012, same reference)', () => {
+      const before = makeLoadedState({ phase: 'removing' });
+      expect(transition(before, { type: 'removeRequest' })).toBe(before);
+    });
+    it('cell [removing, confirmFirst] → ignored (same reference)', () => {
+      const before = makeLoadedState({ phase: 'removing' });
+      expect(transition(before, { type: 'confirmFirst', requiresSecondConfirm: false })).toBe(before);
+    });
+    it('cell [removing, confirmSecond] → ignored (same reference)', () => {
+      const before = makeLoadedState({ phase: 'removing' });
+      expect(transition(before, { type: 'confirmSecond' })).toBe(before);
+    });
+    it('cell [removing, removeCancel] → ignored (same reference)', () => {
+      const before = makeLoadedState({ phase: 'removing' });
+      expect(transition(before, { type: 'removeCancel' })).toBe(before);
+    });
+    it('cell [removing, removeProgress] → removing carrying the new progress', () => {
+      const before = makeLoadedState({ phase: 'removing' });
+      const after = transition(before, { type: 'removeProgress', event: REMOVAL_PROGRESS });
+      expect(after).not.toBe(before);
+      const removal = loadedRemoval(after);
+      expect(removal.phase).toBe('removing');
+      if (removal.phase === 'removing') {
+        expect(removal.progress).toBe(REMOVAL_PROGRESS); // event by reference
+      }
+    });
+    it('cell [removing, removeComplete{failed=[]}] → loaded(result, none)', () => {
+      const before = makeLoadedState({ phase: 'removing' });
+      const after = transition(before, { type: 'removeComplete', result: REMOVAL_RESULT, outcome: OUTCOME_ALL_OK });
+      expect(after.kind).toBe('loaded');
+      if (after.kind === 'loaded') {
+        expect(after.result).toBe(REMOVAL_RESULT);
+        expect(after.removal).toEqual({ phase: 'none' });
+      }
+    });
+    it('cell [removing, removeComplete{failed≠[]}] → loaded(result, partial carrying outcome)', () => {
+      const before = makeLoadedState({ phase: 'removing' });
+      const after = transition(before, { type: 'removeComplete', result: REMOVAL_RESULT, outcome: OUTCOME_PARTIAL });
+      expect(after.kind).toBe('loaded');
+      if (after.kind === 'loaded') {
+        expect(after.result).toBe(REMOVAL_RESULT);
+        expect(after.removal.phase).toBe('partial');
+        if (after.removal.phase === 'partial') {
+          expect(after.removal.outcome).toBe(OUTCOME_PARTIAL);
+        }
+      }
+    });
+  });
+
+  // ── from removal phase `partial` ────────────────────────────────────────────
+  describe('from loaded.removal=partial', () => {
+    const partial: RemovalState = { phase: 'partial', outcome: OUTCOME_PARTIAL };
+    it('cell [partial, removeRequest] → confirming (retry)', () => {
+      const after = transition(makeLoadedState(partial), { type: 'removeRequest' });
+      expect(loadedRemoval(after)).toEqual({ phase: 'confirming' });
+    });
+    it('cell [partial, confirmFirst] → ignored (same reference)', () => {
+      const before = makeLoadedState(partial);
+      expect(transition(before, { type: 'confirmFirst', requiresSecondConfirm: false })).toBe(before);
+    });
+    it('cell [partial, confirmSecond] → ignored (same reference)', () => {
+      const before = makeLoadedState(partial);
+      expect(transition(before, { type: 'confirmSecond' })).toBe(before);
+    });
+    it('cell [partial, removeCancel] → ignored (same reference)', () => {
+      const before = makeLoadedState(partial);
+      expect(transition(before, { type: 'removeCancel' })).toBe(before);
+    });
+    it('cell [partial, removeProgress] → ignored (same reference)', () => {
+      const before = makeLoadedState(partial);
+      expect(transition(before, { type: 'removeProgress', event: REMOVAL_PROGRESS })).toBe(before);
+    });
+    it('cell [partial, removeComplete] → ignored (same reference)', () => {
+      const before = makeLoadedState(partial);
+      expect(transition(before, { type: 'removeComplete', result: REMOVAL_RESULT, outcome: OUTCOME_ALL_OK })).toBe(before);
+    });
+  });
+});
+
+// ── confirmFirst boundary booleans (FR-006; count mapping tested in WP05) ─────
+
+describe('Removal sub-FSM — confirmFirst discriminator branches', () => {
+  it('requiresSecondConfirm=false from confirming → removing (no second dialog)', () => {
+    const after = transition(makeLoadedState({ phase: 'confirming' }), { type: 'confirmFirst', requiresSecondConfirm: false });
+    expect(loadedRemoval(after)).toEqual({ phase: 'removing' });
+  });
+  it('requiresSecondConfirm=true from confirming → confirming2 (second dialog)', () => {
+    const after = transition(makeLoadedState({ phase: 'confirming' }), { type: 'confirmFirst', requiresSecondConfirm: true });
+    expect(loadedRemoval(after)).toEqual({ phase: 'confirming2' });
+  });
+});
+
+// ── removeComplete failed-length branch (explicit) ───────────────────────────
+
+describe('Removal sub-FSM — removeComplete failed-length branch', () => {
+  it('empty failed → removal.phase === none', () => {
+    const after = transition(makeLoadedState({ phase: 'removing' }), { type: 'removeComplete', result: REMOVAL_RESULT, outcome: OUTCOME_ALL_OK });
+    expect(loadedRemoval(after).phase).toBe('none');
+  });
+  it('non-empty failed → removal.phase === partial carrying the outcome', () => {
+    const after = transition(makeLoadedState({ phase: 'removing' }), { type: 'removeComplete', result: REMOVAL_RESULT, outcome: OUTCOME_PARTIAL });
+    const removal = loadedRemoval(after);
+    expect(removal.phase).toBe('partial');
+    if (removal.phase === 'partial') expect(removal.outcome).toBe(OUTCOME_PARTIAL);
+  });
+});
+
+// ── Removal actions from non-loaded states are ignored (by reference) ────────
+
+describe('Removal sub-FSM — non-loaded states ignore every removal action', () => {
+  const nonLoaded: Array<{ name: string; make: () => DetectionState }> = [
+    { name: 'idle', make: () => ({ kind: 'idle' }) },
+    { name: 'scanning', make: makeScanningState },
+    { name: 'failed', make: makeFailedState },
+  ];
+  for (const { name, make } of nonLoaded) {
+    for (const action of REMOVAL_ACTIONS) {
+      it(`[${name}, ${action.type}] → input by reference`, () => {
+        const before = make();
+        expect(transition(before, action)).toBe(before);
+      });
+    }
+  }
 });

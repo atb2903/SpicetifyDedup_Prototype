@@ -313,3 +313,95 @@ describe('PlaylistRow — T024 detection state rendering', () => {
     );
   });
 });
+
+// ─── T025 — removal surface wiring (WP07) ─────────────────────────────────────
+
+/** Seed a `loaded` row carrying `removableTrackCount` removable tracks. */
+function seedLoaded(
+  store: ReturnType<typeof createDetectionStore>,
+  key: string,
+  removableTrackCount: number,
+): void {
+  const result = {
+    collectionKey: key,
+    completedAt: 1000,
+    groups: [
+      {
+        id: 'g1',
+        reason: 'same-canonical-uri',
+        members: [
+          { position: 0, uri: `${key}:t0`, canonicalUri: `${key}:t0`, name: 'Dup', artists: [{ name: 'A' }], durationMs: 1000 },
+          { position: 1, uri: `${key}:t1`, canonicalUri: `${key}:t1`, name: 'Dup', artists: [{ name: 'A' }], durationMs: 1000 },
+        ],
+        defaultKeepIndex: 0,
+      },
+    ],
+    duplicateTrackCount: removableTrackCount + 1,
+    removableTrackCount,
+    skippedLocalCount: 0,
+    unenrichedCount: 0,
+    scannedTrackCount: removableTrackCount + 1,
+  } as unknown as DetectionResult;
+  store.setState({
+    ...store.getState(),
+    rows: {
+      ...store.getState().rows,
+      [key]: { kind: 'loaded', result, removal: { phase: 'none' } },
+    },
+  } as DetectionStoreState);
+}
+
+describe('PlaylistRow — T025 removal surface', () => {
+  it('renders the Remove-duplicates button in a loaded row with removable tracks', () => {
+    const store = createDetectionStore(makeHangingScanner());
+    seedLoaded(store, 'spotify:playlist:abc', 3);
+    renderRow(sample({ key: 'spotify:playlist:abc', displayName: 'My Playlist' }), store);
+
+    expect(
+      screen.getByRole('button', { name: /^Remove duplicates from My Playlist$/ }),
+    ).toBeInTheDocument();
+  });
+
+  it('clicking Remove duplicates opens the confirm dialog for that collection', async () => {
+    const store = createDetectionStore(makeHangingScanner());
+    seedLoaded(store, 'spotify:playlist:abc', 3);
+    renderRow(sample({ key: 'spotify:playlist:abc', displayName: 'My Playlist' }), store);
+
+    const removeBtn = screen.getByRole('button', {
+      name: /^Remove duplicates from My Playlist$/,
+    });
+    await act(async () => { fireEvent.click(removeBtn); });
+
+    expect(
+      screen.getByRole('dialog', { name: /Confirm removal from My Playlist/ }),
+    ).toBeInTheDocument();
+  });
+
+  it('single-collection scope: clicking Playlist A does not surface a dialog on another row', async () => {
+    const store = createDetectionStore(makeHangingScanner());
+    seedLoaded(store, 'spotify:playlist:A', 3);
+    seedLoaded(store, 'liked-songs', 3);
+    render(
+      <DetectionStoreProvider store={store}>
+        <ul>
+          <PlaylistRow row={sample({ key: 'spotify:playlist:A', displayName: 'Playlist A' })} />
+        </ul>
+      </DetectionStoreProvider>,
+    );
+
+    const removeBtn = screen.getByRole('button', {
+      name: /^Remove duplicates from Playlist A$/,
+    });
+    await act(async () => { fireEvent.click(removeBtn); });
+
+    // Exactly one dialog, and it belongs to Playlist A only.
+    const dialogs = screen.getAllByRole('dialog');
+    expect(dialogs).toHaveLength(1);
+    expect(
+      screen.getByRole('dialog', { name: /Confirm removal from Playlist A/ }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole('dialog', { name: /Confirm removal from Liked Songs/ }),
+    ).not.toBeInTheDocument();
+  });
+});

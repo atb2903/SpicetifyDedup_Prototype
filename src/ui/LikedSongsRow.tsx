@@ -41,7 +41,10 @@ export type LikedSongsRowProps = { row: CollectionViewModel };
  *
  * Detection state:
  * - `scanning` → `<ScanningView progress={…} />`
- * - `loaded`   → `<DetectionLoadedSummary result={…} />`
+ * - `loaded`   → `<DetectionLoadedSummary result={…} … />` with the removal
+ *               props (`collectionKey='liked-songs'`, `target={{kind:'liked-songs'}}`,
+ *               `displayName='Liked Songs'`) threaded so the per-row removal
+ *               surface mounts (WP07 / T025).
  * - `failed`   → `<DetectionFailedView reason={…} />`
  * - `idle` / undefined → nothing extra
  */
@@ -77,7 +80,12 @@ export function LikedSongsRow({ row }: LikedSongsRowProps) {
         <ScanningView progress={rowState.progress} />
       )}
       {rowState?.kind === 'loaded' && (
-        <DetectionLoadedSummary result={rowState.result} />
+        <DetectionLoadedSummary
+          result={rowState.result}
+          collectionKey={LIKED_SONGS_KEY}
+          target={{ kind: 'liked-songs' }}
+          displayName="Liked Songs"
+        />
       )}
       {rowState?.kind === 'failed' && (
         <DetectionFailedView reason={rowState.reason} />

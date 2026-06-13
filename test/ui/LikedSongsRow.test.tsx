@@ -255,3 +255,66 @@ describe('LikedSongsRow — T024 detection state rendering', () => {
     );
   });
 });
+
+// ─── T025 — removal surface wiring (WP07) ─────────────────────────────────────
+
+/** Seed the Liked Songs `loaded` row carrying `removableTrackCount` removable tracks. */
+function seedLoaded(
+  store: ReturnType<typeof createDetectionStore>,
+  removableTrackCount: number,
+): void {
+  const result = {
+    collectionKey: 'liked-songs',
+    completedAt: 1000,
+    groups: [
+      {
+        id: 'g1',
+        reason: 'same-canonical-uri',
+        members: [
+          { position: 0, uri: 'spotify:track:t0', canonicalUri: 'spotify:track:t0', name: 'Dup', artists: [{ name: 'A' }], durationMs: 1000 },
+          { position: 1, uri: 'spotify:track:t1', canonicalUri: 'spotify:track:t1', name: 'Dup', artists: [{ name: 'A' }], durationMs: 1000 },
+        ],
+        defaultKeepIndex: 0,
+      },
+    ],
+    duplicateTrackCount: removableTrackCount + 1,
+    removableTrackCount,
+    skippedLocalCount: 0,
+    unenrichedCount: 0,
+    scannedTrackCount: removableTrackCount + 1,
+  } as unknown as DetectionResult;
+  store.setState({
+    ...store.getState(),
+    rows: {
+      ...store.getState().rows,
+      'liked-songs': { kind: 'loaded', result, removal: { phase: 'none' } },
+    },
+  } as DetectionStoreState);
+}
+
+describe('LikedSongsRow — T025 removal surface', () => {
+  it('renders the Remove-duplicates button in a loaded row with removable tracks', () => {
+    const store = createDetectionStore(makeHangingScanner());
+    seedLoaded(store, 3);
+    renderRow(sample(), store);
+
+    expect(
+      screen.getByRole('button', { name: /^Remove duplicates from Liked Songs$/ }),
+    ).toBeInTheDocument();
+  });
+
+  it('clicking Remove duplicates opens the confirm dialog for Liked Songs', async () => {
+    const store = createDetectionStore(makeHangingScanner());
+    seedLoaded(store, 3);
+    renderRow(sample(), store);
+
+    const removeBtn = screen.getByRole('button', {
+      name: /^Remove duplicates from Liked Songs$/,
+    });
+    await act(async () => { fireEvent.click(removeBtn); });
+
+    expect(
+      screen.getByRole('dialog', { name: /Confirm removal from Liked Songs/ }),
+    ).toBeInTheDocument();
+  });
+});

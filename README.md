@@ -25,8 +25,29 @@ load. The page renders five state views — idle, loading, list, empty,
 and failed — each with intentional visual styling so a reader can
 distinguish them at a glance.
 
-This iteration is strictly read-only. Track enumeration, duplicate
-detection, and library mutation arrive in later iterations.
+Each listed collection can be **scanned** for duplicates from its row.
+A scan enumerates the collection's tracks in-client and reports the
+duplicate groups it finds; collections with removable duplicates then
+expose a **Remove duplicates** action (see below).
+
+## Remove duplicates
+
+After a collection is scanned, a per-row **Remove duplicates** button
+appears whenever that collection has removable duplicates. Pressing it
+keeps the **earliest copy** of each duplicate group and removes the
+rest — from **that collection only**. Each row acts on its own
+collection; removing duplicates in one playlist never touches Liked
+Songs or any other row.
+
+Nothing runs automatically. The button opens a confirmation that names
+the collection and the **exact number** of tracks to be removed. When a
+removal would delete **more than 25** tracks, a second confirmation is
+required before anything is changed.
+
+If some removals fail (for example, a track that is no longer present),
+the failures are surfaced and the copies that could not be removed stay
+visible in the row. The row updates in-client to reflect what was
+actually removed — there is no automatic re-scan.
 
 ## Prerequisites
 

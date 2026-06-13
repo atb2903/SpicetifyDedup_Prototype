@@ -17,6 +17,8 @@ subtasks:
 - T012
 - T013
 - T014
+agent: "claude:opus:implementer:implementer"
+shell_pid: "99364"
 history:
 - timestamp: '2026-06-13T18:51:29Z'
   action: created
@@ -157,3 +159,7 @@ user clicks; capture the transcript into `reverify-evidence.md`.
   without a captured transcript (per the repo's live-verification-required protocol).
 - **Reason-prefix coupling** — if WP03 changed the `stalled:` reason convention, update the view's
   `isStalled` derivation and its test in lock-step.
+
+## Activity Log
+
+- 2026-06-13T23:45:52Z – claude:opus:implementer:implementer – shell_pid=99364 – Started implementation via action command

@@ -21,8 +21,8 @@ subtasks:
 - T009
 - T010
 - T011
-agent: "claude:opus:implementer:implementer"
-shell_pid: "91844"
+agent: "claude:opus:reviewer:reviewer"
+shell_pid: "96880"
 history:
 - timestamp: '2026-06-13T18:51:29Z'
   action: created
@@ -268,3 +268,4 @@ Assert the three points around the ceiling with the deterministic scheduler:
 
 - 2026-06-13T23:33:50Z – claude:opus:implementer:implementer – shell_pid=91844 – Started implementation via action command
 - 2026-06-13T23:41:37Z – claude:opus:implementer:implementer – shell_pid=91844 – Ready for review — compute-once catch hardening + stall ceiling, both hangs now terminate to partial
+- 2026-06-13T23:42:12Z – claude:opus:reviewer:reviewer – shell_pid=96880 – Started review via action command

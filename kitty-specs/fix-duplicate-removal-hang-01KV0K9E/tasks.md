@@ -46,9 +46,9 @@ live.
 | T001 | Live-capture the failing removal call on the 2-song repro (instrumented console) | WP01 | | [D] |
 | T002 | Classify captured behavior vs research R-1 table; fix the functional root cause if it is not a pure hang | WP01 | | [D] |
 | T003 | Author ADR-0017 (root cause + stall-ceiling guard) + committed diagnosis-evidence.md | WP01 | | [D] |
-| T004 | Add `'stalled'` to `RemovalErrorCode` (+ test) | WP02 | [P] |
-| T005 | Create `src/ports/scheduler.ts` — `Scheduler` seam + `defaultScheduler` (+ test) | WP02 | [P] |
-| T006 | Add `{ kind: 'hang' }` to `FakeRemovalScript` (+ test) | WP02 | [P] |
+| T004 | Add `'stalled'` to `RemovalErrorCode` (+ test) | WP02 | [D] |
+| T005 | Create `src/ports/scheduler.ts` — `Scheduler` seam + `defaultScheduler` (+ test) | WP02 | [D] |
+| T006 | Add `{ kind: 'hang' }` to `FakeRemovalScript` (+ test) | WP02 | [D] |
 | T007 | Failing tests: (a) a `computeRemoveSet` failure leaves the row `removing` (the real hang); (b) a never-settling executor leaves it `removing` (the ceiling) | WP03 | |
 | T008 | `STALL_CEILING_MS` + pure `raceStallCeiling` helper (deadline-wins tie-break) | WP03 | |
 | T009 | Catch hardening (compute once; compute-failure → terminal `partial`, never re-thrown) + inject `scheduler` & wrap `executor.remove`; stall → `RemovalError('stalled')` → `partial` | WP03 | |
@@ -107,9 +107,9 @@ with its own tests at 100% line/branch.
 
 **Included subtasks:**
 
-- [ ] T004 Add `'stalled'` to `RemovalErrorCode` (+ test) (WP02)
-- [ ] T005 Create `src/ports/scheduler.ts` — `Scheduler` seam + `defaultScheduler` (+ test) (WP02)
-- [ ] T006 Add `{ kind: 'hang' }` to `FakeRemovalScript` (+ test) (WP02)
+- [x] T004 Add `'stalled'` to `RemovalErrorCode` (+ test) (WP02)
+- [x] T005 Create `src/ports/scheduler.ts` — `Scheduler` seam + `defaultScheduler` (+ test) (WP02)
+- [x] T006 Add `{ kind: 'hang' }` to `FakeRemovalScript` (+ test) (WP02)
 
 **Parallel opportunities.** T004/T005/T006 touch three different files and may be done in any
 order within the WP.

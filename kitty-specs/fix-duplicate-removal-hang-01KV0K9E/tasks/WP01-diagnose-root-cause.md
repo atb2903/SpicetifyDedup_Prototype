@@ -162,3 +162,4 @@ thread**: the live-confirmed root cause *and* the stall-ceiling guard (store-lev
 ## Activity Log
 
 - 2026-06-13T21:17:36Z – claude:opus:planner:implementer – shell_pid=65947 – Started implementation via action command
+- 2026-06-13T21:46:57Z – claude:opus:planner:implementer – shell_pid=65947 – Live diagnosis complete: root cause is enricher uid-drop (Defect B, WP05) + confirmRemoval catch re-throw (Defect A, WP03), NOT a never-settling promise. Plan/tasks revised.

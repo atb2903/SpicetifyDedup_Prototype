@@ -267,3 +267,4 @@ Assert the three points around the ceiling with the deterministic scheduler:
 ## Activity Log
 
 - 2026-06-13T23:33:50Z – claude:opus:implementer:implementer – shell_pid=91844 – Started implementation via action command
+- 2026-06-13T23:41:37Z – claude:opus:implementer:implementer – shell_pid=91844 – Ready for review — compute-once catch hardening + stall ceiling, both hangs now terminate to partial

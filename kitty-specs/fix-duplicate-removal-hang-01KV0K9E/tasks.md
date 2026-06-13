@@ -54,8 +54,8 @@ live.
 | T009 | Catch hardening (compute once; compute-failure → terminal `partial`, never re-thrown) + inject `scheduler` & wrap `executor.remove`; stall → `RemovalError('stalled')` → `partial` | WP03 | |
 | T010 | Boundary tests (under / at / over the ceiling) | WP03 | |
 | T011 | Stall-vs-cancel pair + compute-failure-vs-cancel + concurrency/late-settle tests | WP03 | |
-| T015 | Propagate `uid` onto `EnrichedTrack` in `inline-catalog-enricher.ts` (Defect B fix) | WP05 | [P] |
-| T016 | Failing-first guard test: `uid` survives enrichment for a playlist track; stays `undefined` for Liked-Songs | WP05 | [P] |
+| T015 | Propagate `uid` onto `EnrichedTrack` in `inline-catalog-enricher.ts` (Defect B fix) | WP05 | [D] |
+| T016 | Failing-first guard test: `uid` survives enrichment for a playlist track; stays `undefined` for Liked-Songs | WP05 | [D] |
 | T012 | `RemovalOutcomeView`: plain-language timed-out copy for the stalled outcome | WP04 | |
 | T013 | Integration test: real store + real enricher → a `uid`-carrying duplicate is actually removed; `hang` fake + fake scheduler → terminates to `partial` | WP04 | |
 | T014 | Live re-verification on the 2-song repro (SC-001..SC-004) + transcript | WP04 | |
@@ -177,8 +177,8 @@ the enricher.
 
 **Included subtasks:**
 
-- [ ] T015 Propagate `uid` onto `EnrichedTrack` in `inline-catalog-enricher.ts` (WP05)
-- [ ] T016 Failing-first guard test: `uid` survives enrichment (playlist) / absent (Liked-Songs) (WP05)
+- [x] T015 Propagate `uid` onto `EnrichedTrack` in `inline-catalog-enricher.ts` (WP05)
+- [x] T016 Failing-first guard test: `uid` survives enrichment (playlist) / absent (Liked-Songs) (WP05)
 
 **Dependencies / risks.** The doc comment claiming "preserved verbatim through enrichment" was not
 enforced — the test upgrade is the guard against silent re-regression. Keep it a pure adapter

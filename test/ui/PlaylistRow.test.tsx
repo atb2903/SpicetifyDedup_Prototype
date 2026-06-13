@@ -14,7 +14,7 @@
 
 import React from 'react';
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { render, screen, fireEvent, act } from '@testing-library/react';
+import { render, screen, fireEvent, act, within } from '@testing-library/react';
 import { PlaylistRow } from '../../src/ui/PlaylistRow';
 import type { CollectionViewModel } from '../../src/domain/view-models';
 import { DetectionStoreProvider } from '../../src/store/DetectionStoreContext';
@@ -402,6 +402,98 @@ describe('PlaylistRow — T025 removal surface', () => {
     ).toBeInTheDocument();
     expect(
       screen.queryByRole('dialog', { name: /Confirm removal from Liked Songs/ }),
+    ).not.toBeInTheDocument();
+  });
+});
+
+// ─── WP02 / T005 — full-width detail wrapper ──────────────────────────────────
+
+describe('PlaylistRow — detail wrapper', () => {
+  it('scanning state renders ScanningView inside the row-detail wrapper', async () => {
+    const scanner = makeHangingScanner();
+    const store = createDetectionStore(scanner);
+    renderRow(sample({ key: 'spotify:playlist:abc' }), store);
+
+    await act(async () => {
+      void store.getState().scanCollection('spotify:playlist:abc', {
+        kind: 'playlist',
+        playlistUri: 'spotify:playlist:abc',
+      });
+    });
+
+    const detail = screen.getByTestId('row-detail');
+    expect(detail).toBeInTheDocument();
+    expect(within(detail).getByRole('status')).toBeInTheDocument();
+  });
+
+  it('loaded state renders the summary inside the row-detail wrapper', async () => {
+    let resolveResult!: (r: DetectionResult) => void;
+    const scanner: DetectionScanner = {
+      scan: vi.fn(() => new Promise<DetectionResult>((resolve) => { resolveResult = resolve; })),
+    };
+    const store = createDetectionStore(scanner);
+    renderRow(sample({ key: 'spotify:playlist:abc' }), store);
+
+    await act(async () => {
+      const p = store.getState().scanCollection('spotify:playlist:abc', {
+        kind: 'playlist',
+        playlistUri: 'spotify:playlist:abc',
+      });
+      resolveResult({
+        collectionKey: 'spotify:playlist:abc',
+        completedAt: 1000,
+        groups: [],
+        duplicateTrackCount: 0,
+        removableTrackCount: 0,
+        skippedLocalCount: 0,
+        unenrichedCount: 0,
+        scannedTrackCount: 5,
+      });
+      await p;
+    });
+
+    const detail = screen.getByTestId('row-detail');
+    expect(within(detail).getByText(/No duplicates found/i)).toBeInTheDocument();
+  });
+
+  it('failed state renders the alert inside the row-detail wrapper', async () => {
+    const scanner: DetectionScanner = {
+      scan: vi.fn(() => Promise.reject(new DetectionError('network-failure', 'Test'))),
+    };
+    const store = createDetectionStore(scanner);
+    renderRow(sample({ key: 'spotify:playlist:abc' }), store);
+
+    await act(async () => {
+      await store.getState().scanCollection('spotify:playlist:abc', {
+        kind: 'playlist',
+        playlistUri: 'spotify:playlist:abc',
+      });
+    });
+
+    const detail = screen.getByTestId('row-detail');
+    expect(within(detail).getByRole('alert')).toBeInTheDocument();
+  });
+
+  it('FR-005 — name, owner, count, and Dedup button remain present outside the wrapper', () => {
+    const store = createDetectionStore(makeHangingScanner());
+    seedLoaded(store, 'spotify:playlist:abc', 3);
+    renderRow(sample({ key: 'spotify:playlist:abc', displayName: 'My Playlist', owner: { kind: 'other', displayName: 'friend' }, trackCount: 1000 }), store);
+
+    // Existing content still present.
+    expect(screen.getByText('My Playlist')).toBeInTheDocument();
+    expect(screen.getByText(/by friend/i)).toBeInTheDocument();
+    expect(screen.getByText(/^1000 tracks$/i)).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: /^Dedup My Playlist$/ }),
+    ).toBeInTheDocument();
+
+    // And they live OUTSIDE the detail wrapper.
+    const detail = screen.getByTestId('row-detail');
+    expect(within(detail).queryByText('My Playlist')).not.toBeInTheDocument();
+    expect(within(detail).queryByText(/by friend/i)).not.toBeInTheDocument();
+    expect(within(detail).queryByText(/^1000 tracks$/i)).not.toBeInTheDocument();
+    expect(
+      within(detail).queryByRole('button', { name: /^Dedup My Playlist$/ }),
     ).not.toBeInTheDocument();
   });
 });

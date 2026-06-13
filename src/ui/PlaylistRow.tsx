@@ -10,6 +10,14 @@
  * `<DetectionFailedView>` below the row cells based on the row's state.
  * The `idle` state (undefined row entry) renders nothing extra.
  *
+ * WP02 (T006 / FR-003 / FR-004): the three conditional detection children are
+ * wrapped in a single always-rendered `<div className={styles.detail}>` that
+ * spans every grid column (`grid-column: 1 / -1`). Without it the detection
+ * child flows into the implicit grid row's 48px first column and is squeezed
+ * line-by-line; the spanning wrapper lets the summary / scanning line / error
+ * use the full row width. The wrapper is unconditional (empty in `idle`), so
+ * no branch is added.
+ *
  * No adapter or port imports — enforced by `test/architecture.test.ts`.
  * Domain imports (types) and store imports (context hooks) are allowed.
  */
@@ -70,20 +78,22 @@ export function PlaylistRow({ row }: PlaylistRowProps) {
         request={{ kind: 'playlist', playlistUri: collectionKey }}
         displayName={row.displayName}
       />
-      {rowState?.kind === 'scanning' && (
-        <ScanningView progress={rowState.progress} />
-      )}
-      {rowState?.kind === 'loaded' && (
-        <DetectionLoadedSummary
-          result={rowState.result}
-          collectionKey={collectionKey}
-          target={{ kind: 'playlist', playlistUri: collectionKey }}
-          displayName={row.displayName}
-        />
-      )}
-      {rowState?.kind === 'failed' && (
-        <DetectionFailedView reason={rowState.reason} />
-      )}
+      <div className={styles.detail} data-testid="row-detail">
+        {rowState?.kind === 'scanning' && (
+          <ScanningView progress={rowState.progress} />
+        )}
+        {rowState?.kind === 'loaded' && (
+          <DetectionLoadedSummary
+            result={rowState.result}
+            collectionKey={collectionKey}
+            target={{ kind: 'playlist', playlistUri: collectionKey }}
+            displayName={row.displayName}
+          />
+        )}
+        {rowState?.kind === 'failed' && (
+          <DetectionFailedView reason={rowState.reason} />
+        )}
+      </div>
     </li>
   );
 }

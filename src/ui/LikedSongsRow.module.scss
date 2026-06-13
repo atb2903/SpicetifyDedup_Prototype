@@ -65,3 +65,13 @@
   color: var(--dedup-subtext);
   white-space: nowrap;
 }
+
+// WP02 (FR-003 / FR-004): the detection child (scanning / loaded summary /
+// failed) lives here. Spanning all grid columns stops it flowing into the
+// implicit row's 48px first column where it was squeezed line-by-line; the
+// summary / progress / error now read across the full row width. `min-width: 0`
+// lets the contents shrink on narrow windows so there is no horizontal overflow.
+.detail {
+  grid-column: 1 / -1;
+  min-width: 0;
+}

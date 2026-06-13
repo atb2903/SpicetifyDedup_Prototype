@@ -12,6 +12,13 @@
  * `<ScanningView>`, `<DetectionLoadedSummary>`, or `<DetectionFailedView>`
  * below the row cells based on the row's state.
  *
+ * WP02 (T008 / FR-003 / FR-004): the three conditional detection children are
+ * wrapped in a single always-rendered `<div className={styles.detail}>` that
+ * spans every grid column (`grid-column: 1 / -1`), so the summary / scanning
+ * line / error use the full row width instead of being squeezed into the
+ * implicit grid row's 48px first column. The wrapper is unconditional (empty
+ * in `idle`), adding no branch.
+ *
  * The `DedupButton` is passed:
  * - `collectionKey: 'liked-songs'` — the store sentinel (NOT the historical
  *   `'spotify:collection:tracks'` literal that was used in the diagnostic era).
@@ -76,20 +83,22 @@ export function LikedSongsRow({ row }: LikedSongsRowProps) {
         request={{ kind: 'liked-songs' }}
         displayName="Liked Songs"
       />
-      {rowState?.kind === 'scanning' && (
-        <ScanningView progress={rowState.progress} />
-      )}
-      {rowState?.kind === 'loaded' && (
-        <DetectionLoadedSummary
-          result={rowState.result}
-          collectionKey={LIKED_SONGS_KEY}
-          target={{ kind: 'liked-songs' }}
-          displayName="Liked Songs"
-        />
-      )}
-      {rowState?.kind === 'failed' && (
-        <DetectionFailedView reason={rowState.reason} />
-      )}
+      <div className={styles.detail} data-testid="row-detail">
+        {rowState?.kind === 'scanning' && (
+          <ScanningView progress={rowState.progress} />
+        )}
+        {rowState?.kind === 'loaded' && (
+          <DetectionLoadedSummary
+            result={rowState.result}
+            collectionKey={LIKED_SONGS_KEY}
+            target={{ kind: 'liked-songs' }}
+            displayName="Liked Songs"
+          />
+        )}
+        {rowState?.kind === 'failed' && (
+          <DetectionFailedView reason={rowState.reason} />
+        )}
+      </div>
     </li>
   );
 }

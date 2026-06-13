@@ -35,10 +35,13 @@
 
 // Removal surface region (WP06 / T023): the button / dialog / progress /
 // outcome stack under the summary copy.
+// WP02 (FR-004 / NFR-002): flow the controls horizontally (wrapping when
+// they overflow) so the removal surface reads across the available width
+// rather than as a tall vertical column.
 .removal {
   display: flex;
-  flex-direction: column;
-  align-items: flex-start;
+  flex-flow: row wrap; // was: column — read across the width (NFR-002)
+  align-items: center; // was: flex-start
   gap: 8px;
   margin-top: 4px;
 }

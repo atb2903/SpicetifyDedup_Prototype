@@ -11,7 +11,7 @@
 
 import React from 'react';
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { render, screen, fireEvent, act } from '@testing-library/react';
+import { render, screen, fireEvent, act, within } from '@testing-library/react';
 import { LikedSongsRow } from '../../src/ui/LikedSongsRow';
 import type { CollectionViewModel } from '../../src/domain/view-models';
 import { DetectionStoreProvider } from '../../src/store/DetectionStoreContext';
@@ -316,5 +316,88 @@ describe('LikedSongsRow — T025 removal surface', () => {
     expect(
       screen.getByRole('dialog', { name: /Confirm removal from Liked Songs/ }),
     ).toBeInTheDocument();
+  });
+});
+
+// ─── WP02 / T007 — full-width detail wrapper ──────────────────────────────────
+
+describe('LikedSongsRow — detail wrapper', () => {
+  it('scanning state renders ScanningView inside the row-detail wrapper', async () => {
+    const scanner = makeHangingScanner();
+    const store = createDetectionStore(scanner);
+    renderRow(sample(), store);
+
+    await act(async () => {
+      void store.getState().scanCollection('liked-songs', { kind: 'liked-songs' });
+    });
+
+    const detail = screen.getByTestId('row-detail');
+    expect(detail).toBeInTheDocument();
+    expect(within(detail).getByRole('status')).toBeInTheDocument();
+  });
+
+  it('loaded state renders the summary inside the row-detail wrapper', async () => {
+    let resolveResult!: (r: DetectionResult) => void;
+    const scanner: DetectionScanner = {
+      scan: vi.fn(() => new Promise<DetectionResult>((resolve) => { resolveResult = resolve; })),
+    };
+    const store = createDetectionStore(scanner);
+    renderRow(sample(), store);
+
+    await act(async () => {
+      const p = store.getState().scanCollection('liked-songs', { kind: 'liked-songs' });
+      resolveResult({
+        collectionKey: 'liked-songs',
+        completedAt: 1000,
+        groups: [],
+        duplicateTrackCount: 0,
+        removableTrackCount: 0,
+        skippedLocalCount: 0,
+        unenrichedCount: 0,
+        scannedTrackCount: 5,
+      });
+      await p;
+    });
+
+    const detail = screen.getByTestId('row-detail');
+    expect(within(detail).getByText(/No duplicates found/i)).toBeInTheDocument();
+  });
+
+  it('failed state renders the alert inside the row-detail wrapper', async () => {
+    const scanner: DetectionScanner = {
+      scan: vi.fn(() => Promise.reject(new DetectionError('enumerator-failed', 'Test'))),
+    };
+    const store = createDetectionStore(scanner);
+    renderRow(sample(), store);
+
+    await act(async () => {
+      await store.getState().scanCollection('liked-songs', { kind: 'liked-songs' });
+    });
+
+    const detail = screen.getByTestId('row-detail');
+    expect(within(detail).getByRole('alert')).toBeInTheDocument();
+  });
+
+  it('FR-005 — name, owner, count, and Dedup button remain present outside the wrapper', () => {
+    const store = createDetectionStore(makeHangingScanner());
+    seedLoaded(store, 3);
+    renderRow(sample({ trackCount: 50000 }), store);
+
+    // Existing content still present.
+    expect(screen.getByText('Liked Songs')).toBeInTheDocument();
+    expect(screen.getByText('Your Library')).toBeInTheDocument();
+    expect(screen.getByText(/^50000 tracks$/i)).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: /^Dedup Liked Songs$/ }),
+    ).toBeInTheDocument();
+
+    // And they live OUTSIDE the detail wrapper.
+    const detail = screen.getByTestId('row-detail');
+    expect(within(detail).queryByText('Liked Songs')).not.toBeInTheDocument();
+    expect(within(detail).queryByText('Your Library')).not.toBeInTheDocument();
+    expect(within(detail).queryByText(/^50000 tracks$/i)).not.toBeInTheDocument();
+    expect(
+      within(detail).queryByRole('button', { name: /^Dedup Liked Songs$/ }),
+    ).not.toBeInTheDocument();
   });
 });

@@ -1,9 +1,11 @@
-// LoadedView styling (WP02 / T010 / FR-003).
+// LoadedView styling (WP02 / FR-003 / NFR-001).
 //
 // The `<ul>` container removes the default browser bullet markers (rows
-// own their own iconography) and constrains the list to a readable
-// max-width so very long playlist counts do not stretch the entire page
-// width. Padding/margin reset puts the rows flush with the page chrome.
+// own their own iconography) and fills the content-area width so results
+// occupy the available horizontal space (FR-003 / NFR-001) instead of
+// leaving an empty right band on wide windows. Padding/margin reset puts
+// the rows flush with the page chrome; the page wrapper
+// (`DedupPage.module.scss .page`) already supplies the gutters.
 
 @use '../styles/tokens.module' as tokens;
 @include tokens.declare;
@@ -12,5 +14,6 @@
   list-style: none;
   margin: 0;
   padding: 0;
-  max-width: 900px;
+  max-width: none; // was: 900px — fill the content area (NFR-001)
+  width: 100%;
 }

@@ -211,13 +211,14 @@ describe('LoadedView', () => {
     // (~1.6s) but flaps against the 5s default under full-suite parallel load.
   }, 20000);
 
-  // WP02 / T010 / FR-003: the loaded view's `<ul>` container has its own
-  // styling (no default browser bullet markers, a max-width or padding
-  // treatment) so it reads visually distinct from the four other state
-  // views. Asserts the `list-style` shorthand is `none` and the list is
-  // width-constrained — happy-dom does not expand to the `listStyleType`
-  // longhand, so we use the shorthand string the CSS module sets.
-  it('FR-003 — Loaded view list container has list-style: none (styled list)', async () => {
+  // WP02 / FR-003 / NFR-001: the loaded view's `<ul>` container has its own
+  // styling (no default browser bullet markers) and now FILLS the content-area
+  // width — the former `max-width: 900px` cap was removed so results occupy the
+  // available horizontal space (no empty right band on wide windows). Asserts
+  // the `list-style` shorthand is `none` and the list fills its container width
+  // (`max-width: none`; `width: 100%`) — happy-dom does not expand to the
+  // `listStyleType` longhand, so we use the shorthand string the CSS module sets.
+  it('FR-003 — Loaded view list container has list-style: none and fills width', async () => {
     const loader = new FakePlaylistsLoader({
       kind: 'success',
       playlists: [pl('spotify:playlist:a', 'A')],
@@ -230,8 +231,8 @@ describe('LoadedView', () => {
     expect(list).not.toBeNull();
     const cs = getComputedStyle(list);
     expect(cs.listStyle).toBe('none');
-    expect(cs.maxWidth).not.toBe('');
-    expect(cs.maxWidth).not.toBe('none');
+    expect(cs.maxWidth).toBe('none'); // cap removed (NFR-001)
+    expect(cs.width).toBe('100%'); // fills the content area
   });
 });
 

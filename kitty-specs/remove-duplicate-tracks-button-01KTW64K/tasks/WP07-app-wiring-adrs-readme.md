@@ -17,8 +17,8 @@ subtasks:
 - T025
 - T026
 - T027
-agent: "claude:opus:implementer:implementer"
-shell_pid: "80690"
+agent: "claude:opus:reviewer:reviewer"
+shell_pid: "7301"
 history:
 - timestamp: '2026-06-11T20:52:36Z'
   action: created
@@ -220,3 +220,4 @@ spec-kitty agent action implement WP07 --agent <name>
 ## Activity Log
 - 2026-06-12T20:27:03Z – claude:opus:implementer:implementer – shell_pid=80690 – Started implementation via action command
 - 2026-06-13T08:32:07Z – claude:opus:implementer:implementer – shell_pid=80690 – T024 app wiring + T025 row props + T026 ADRs(0012/13/14) + T027 README done; typecheck clean; 1087 tests pass at 100% line/branch/func coverage
+- 2026-06-13T08:32:15Z – claude:opus:reviewer:reviewer – shell_pid=7301 – Started review via action command

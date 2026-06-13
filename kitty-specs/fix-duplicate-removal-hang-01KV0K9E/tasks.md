@@ -43,9 +43,9 @@ live.
 
 | ID | Description | WP | Parallel |
 |----|-------------|----|----------|
-| T001 | Live-capture the failing removal call on the 2-song repro (instrumented console) | WP01 | |
-| T002 | Classify captured behavior vs research R-1 table; fix the functional root cause if it is not a pure hang | WP01 | |
-| T003 | Author ADR-0017 (root cause + stall-ceiling guard) + committed diagnosis-evidence.md | WP01 | |
+| T001 | Live-capture the failing removal call on the 2-song repro (instrumented console) | WP01 | | [D] |
+| T002 | Classify captured behavior vs research R-1 table; fix the functional root cause if it is not a pure hang | WP01 | | [D] |
+| T003 | Author ADR-0017 (root cause + stall-ceiling guard) + committed diagnosis-evidence.md | WP01 | | [D] |
 | T004 | Add `'stalled'` to `RemovalErrorCode` (+ test) | WP02 | [P] |
 | T005 | Create `src/ports/scheduler.ts` — `Scheduler` seam + `defaultScheduler` (+ test) | WP02 | [P] |
 | T006 | Add `{ kind: 'hang' }` to `FakeRemovalScript` (+ test) | WP02 | [P] |
@@ -79,9 +79,9 @@ from "rejects"; `diagnosis-evidence.md` (committed) carries the captured `CALLED
 
 **Included subtasks:**
 
-- [ ] T001 Live-capture the failing removal call on the 2-song repro (WP01)
-- [ ] T002 Classify captured behavior vs research R-1 table; fix the functional root cause if not a pure hang (WP01)
-- [ ] T003 Author ADR-0017 + committed diagnosis-evidence.md (WP01)
+- [x] T001 Live-capture the failing removal call on the 2-song repro (WP01)
+- [x] T002 Classify captured behavior vs research R-1 table; fix the functional root cause if not a pure hang (WP01)
+- [x] T003 Author ADR-0017 + committed diagnosis-evidence.md (WP01)
 
 **Dependencies / risks.** Requires a live Spotify desktop client with Spicetify (driver
 protocol). If diagnosis reveals a *non-hang* root cause (reject / wrong call shape / bad `uid`),

@@ -49,11 +49,11 @@ live.
 | T004 | Add `'stalled'` to `RemovalErrorCode` (+ test) | WP02 | [D] |
 | T005 | Create `src/ports/scheduler.ts` — `Scheduler` seam + `defaultScheduler` (+ test) | WP02 | [D] |
 | T006 | Add `{ kind: 'hang' }` to `FakeRemovalScript` (+ test) | WP02 | [D] |
-| T007 | Failing tests: (a) a `computeRemoveSet` failure leaves the row `removing` (the real hang); (b) a never-settling executor leaves it `removing` (the ceiling) | WP03 | |
-| T008 | `STALL_CEILING_MS` + pure `raceStallCeiling` helper (deadline-wins tie-break) | WP03 | |
-| T009 | Catch hardening (compute once; compute-failure → terminal `partial`, never re-thrown) + inject `scheduler` & wrap `executor.remove`; stall → `RemovalError('stalled')` → `partial` | WP03 | |
-| T010 | Boundary tests (under / at / over the ceiling) | WP03 | |
-| T011 | Stall-vs-cancel pair + compute-failure-vs-cancel + concurrency/late-settle tests | WP03 | |
+| T007 | Failing tests: (a) a `computeRemoveSet` failure leaves the row `removing` (the real hang); (b) a never-settling executor leaves it `removing` (the ceiling) | WP03 | | [D] |
+| T008 | `STALL_CEILING_MS` + pure `raceStallCeiling` helper (deadline-wins tie-break) | WP03 | | [D] |
+| T009 | Catch hardening (compute once; compute-failure → terminal `partial`, never re-thrown) + inject `scheduler` & wrap `executor.remove`; stall → `RemovalError('stalled')` → `partial` | WP03 | | [D] |
+| T010 | Boundary tests (under / at / over the ceiling) | WP03 | | [D] |
+| T011 | Stall-vs-cancel pair + compute-failure-vs-cancel + concurrency/late-settle tests | WP03 | | [D] |
 | T015 | Propagate `uid` onto `EnrichedTrack` in `inline-catalog-enricher.ts` (Defect B fix) | WP05 | [D] |
 | T016 | Failing-first guard test: `uid` survives enrichment for a playlist track; stays `undefined` for Liked-Songs | WP05 | [D] |
 | T012 | `RemovalOutcomeView`: plain-language timed-out copy for the stalled outcome | WP04 | |
@@ -144,11 +144,11 @@ pairs green; coverage 100%.
 
 **Included subtasks:**
 
-- [ ] T007 Failing tests: compute-failure hang + never-settling hang both leave `removing` (WP03)
-- [ ] T008 `STALL_CEILING_MS` + pure `raceStallCeiling` helper (deadline-wins) (WP03)
-- [ ] T009 Catch hardening (compute once) + inject `scheduler` & wrap `executor.remove`; stall → `RemovalError('stalled')` → `partial` (WP03)
-- [ ] T010 Boundary tests (under / at / over the ceiling) (WP03)
-- [ ] T011 Stall-vs-cancel + compute-failure-vs-cancel + concurrency/late-settle tests (WP03)
+- [x] T007 Failing tests: compute-failure hang + never-settling hang both leave `removing` (WP03)
+- [x] T008 `STALL_CEILING_MS` + pure `raceStallCeiling` helper (deadline-wins) (WP03)
+- [x] T009 Catch hardening (compute once) + inject `scheduler` & wrap `executor.remove`; stall → `RemovalError('stalled')` → `partial` (WP03)
+- [x] T010 Boundary tests (under / at / over the ceiling) (WP03)
+- [x] T011 Stall-vs-cancel + compute-failure-vs-cancel + concurrency/late-settle tests (WP03)
 
 **Dependencies / risks.** Crux risk: neither a stall nor a compute failure may take the
 `AbortError`-swallow branch (that would re-create the bug). Distinct `RemovalError`s and their

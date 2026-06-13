@@ -14,8 +14,8 @@ created_at: '2026-06-13T20:30:00Z'
 subtasks:
 - T015
 - T016
-agent: "claude:opus:implementer:implementer"
-shell_pid: "83552"
+agent: "claude:opus:reviewer:reviewer"
+shell_pid: "86461"
 history:
 - timestamp: '2026-06-13T20:30:00Z'
   action: created
@@ -142,3 +142,4 @@ doc-comment-only contract into a test-enforced one.
 
 - 2026-06-13T22:03:45Z – claude:opus:implementer:implementer – shell_pid=83552 – Started implementation via action command
 - 2026-06-13T22:06:11Z – claude:opus:implementer:implementer – shell_pid=83552 – Ready for review — uid now survives enrichment, guard test enforces it
+- 2026-06-13T22:06:37Z – claude:opus:reviewer:reviewer – shell_pid=86461 – Started review via action command

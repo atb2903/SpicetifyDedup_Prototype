@@ -8,11 +8,15 @@ requirement_refs:
 planning_base_branch: main
 merge_target_branch: main
 branch_strategy: Planning artifacts for this feature were generated on main. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into main unless the human explicitly redirects the landing branch.
+base_branch: kitty/mission-dedup-ui-layout-icon-polish-01KV03WR
+base_commit: 01584a58c373d5d3484d7fc24812c3f09c14d1a7
+created_at: '2026-06-13T09:38:59.280408+00:00'
 subtasks:
 - T001
 - T002
 - T003
 - T004
+shell_pid: '23297'
 history:
 - 2026-06-13T09:28:03Z — created by /spec-kitty.tasks
 authoritative_surface: src/css/

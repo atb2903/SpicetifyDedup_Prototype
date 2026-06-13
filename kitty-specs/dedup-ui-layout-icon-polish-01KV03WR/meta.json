@@ -6,5 +6,7 @@
   "mission_slug": "dedup-ui-layout-icon-polish-01KV03WR",
   "mission_type": "software-dev",
   "slug": "dedup-ui-layout-icon-polish-01KV03WR",
-  "target_branch": "main"
+  "target_branch": "main",
+  "vcs": "git",
+  "vcs_locked_at": "2026-06-13T09:38:59.221820+00:00"
 }

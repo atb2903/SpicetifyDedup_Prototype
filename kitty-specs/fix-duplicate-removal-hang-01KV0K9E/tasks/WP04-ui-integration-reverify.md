@@ -3,7 +3,9 @@ work_package_id: WP04
 title: Stalled UI message, integration test & live re-verification
 dependencies:
 - WP03
+- WP05
 requirement_refs:
+- FR-002
 - FR-003
 - FR-006
 - FR-008
@@ -42,8 +44,11 @@ Three deliverables:
 
 1. **`RemovalOutcomeView`** renders a "timed-out" message when the outcome is a stall, keeping the
    generic partial copy otherwise.
-2. **Integration test** drives the real store + `FakeRemovalExecutor` `hang` + a fake scheduler and
-   asserts termination to `partial` with truthful counts and no false success.
+2. **Integration test** drives the **real** store + **real** enricher and asserts **both**
+   guarantees: (a) a duplicate carrying a host `uid` is *actually removed* on the happy path (proves
+   Defect B / WP05 fixed — `computeRemoveSet` no longer throws and `PlaylistAPI.remove` is reached);
+   and (b) a `FakeRemovalExecutor` `hang` + fake scheduler *terminates* to `partial` with truthful
+   counts and no false success (proves Defect A + ceiling / WP03).
 3. **Live re-verification** transcript captured into `reverify-evidence.md`.
 
 ## Context — read first
@@ -89,14 +94,24 @@ outcome → the timed-out copy. Assert `role="status"` and that no stack/`Remova
 **Steps.**
 
 1. Create `test/integration/removal-termination.test.ts`.
-2. Wire the real `createDetectionStore(scanner, new FakeRemovalExecutor({ kind: 'hang' }), fakeScheduler)`,
-   drive a `loaded` row with one duplicate to `removing`, advance the scheduler past
-   `STALL_CEILING_MS`, flush.
-3. Assert: row leaves `removing` → `partial`; `result.removableTrackCount` unchanged (nothing
+2. **Happy path (Defect B — WP05 proof).** Build the pipeline through the **real enricher**: feed
+   `RawTrack`s for a playlist duplicate group where each member carries a host `uid` (mirror the live
+   shape, e.g. `uid: '610a666b423c78e4'`), run them through the real `InlineCatalogEnricher` + the
+   real detector so the `loaded` result's group members carry `uid`. Wire
+   `createDetectionStore(scanner, new FakeRemovalExecutor({ kind: 'ok' }), fakeScheduler)`, drive the
+   row to `removing`, flush. Assert: `computeRemoveSet` did **not** throw, the executor **recorded a
+   `remove` call whose `TrackRef` carries the `uid`** (the request reached the seam with the
+   occurrence id), the row reaches a **success** terminal state (`none`), and the duplicate count
+   drops by one. This is the regression guard that the enricher fix actually unblocks removal — it
+   would fail against the pre-WP05 enricher (`computeRemoveSet` throwing).
+3. **Stall path (Defect A + ceiling — WP03 proof).** Wire the real store with
+   `new FakeRemovalExecutor({ kind: 'hang' })` + a fake scheduler, drive a `loaded` row with one
+   duplicate (valid `uid`) to `removing`, advance the scheduler past `STALL_CEILING_MS`, flush.
+   Assert: row leaves `removing` → `partial`; `result.removableTrackCount` unchanged (nothing
    removed); the row is **never** `none` (no false success — FR-007); the executor recorded the
    `hang` call (the request reached the seam).
-4. Add the success-path counterpart for contrast: a `hang` that *would* settle under the ceiling is
-   covered in WP03 unit tests; here, focus on the end-to-end stall termination.
+4. Both paths must use the **real** `createDetectionStore` and real enricher (black-box,
+   DIRECTIVE_036) — not a mocked `confirmRemoval`.
 
 ### T014 — Live re-verification (SC-001..SC-004 / C-004)
 
@@ -120,8 +135,10 @@ user clicks; capture the transcript into `reverify-evidence.md`.
 
 - [ ] `RemovalOutcomeView` shows the timed-out copy for a stall and the generic copy otherwise;
       `RemovalOutcomeView.test.tsx` green at 100% for both branches; no raw stack in the message.
-- [ ] `removal-termination.test.ts` drives the real store to `partial` under a never-settling
-      executor, asserts unchanged counts and no `none`.
+- [ ] `removal-termination.test.ts` (real store + real enricher) proves **both**: (a) a
+      `uid`-carrying duplicate is actually removed on the happy path (executor `TrackRef` carries the
+      `uid`; row → success; count drops) — the WP05 regression guard; (b) a never-settling executor
+      terminates to `partial` with unchanged counts and no `none` — the WP03 guard.
 - [ ] `npm run typecheck` clean; `npm run test:coverage` 100% line/branch.
 - [ ] `reverify-evidence.md` committed with the live transcript covering SC-001..SC-004.
 

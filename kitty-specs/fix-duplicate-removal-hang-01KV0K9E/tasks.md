@@ -5,25 +5,37 @@
 **Generated:** 2026-06-13 from [spec.md](./spec.md) + [plan.md](./plan.md) + [research.md](./research.md) +
 [data-model.md](./data-model.md) + [contracts/removal-termination.md](./contracts/removal-termination.md)
 
-This is a **bug fix + one resilience seam**, deliberately reusing existing types/states (no new
-FSM phase, no new port). The work is small and the WPs are sequenced linearly so the live
-root-cause diagnosis lands (and is documented) before the fix code does — honoring C-003 (TDD)
-and C-004 (live evidence before the fix is accepted).
+This is a **two-defect bug fix + one resilience seam**, reusing existing types/states (no new FSM
+phase, no new port). WP01 (live diagnosis) **relocated the root cause** away from the original
+never-settling-promise hypothesis: the functional fault is the enricher dropping `uid` (WP05) and
+the hang is the store's catch re-throwing a `computeRemoveSet` failure (WP03). The WPs honor C-003
+(TDD) and C-004 (live evidence before — and after — the fix).
 
 ## Execution order & dependency graph
 
 ```
-WP01 (diagnosis + ADR)  →  WP02 (foundation)  →  WP03 (store stall ceiling)  →  WP04 (UI + integration + re-verify)
-   live, gating            code_change            code_change (the fix)         code_change + live re-verify
+                          ┌────────────────────────────────────────┐
+WP01 (diagnosis + ADR) ───┤                                        │
+   live, gating  [DONE]    ├─► WP02 (foundation) ─► WP03 (catch fix ├─► WP04 (UI + integration
+                          └─► WP05 (enricher uid fix) ──────────────┘    + live re-verify)
+                              code_change (Defect B)   + stall ceiling)   code_change + live
 ```
 
-Linear chain — each WP depends on the previous. One worktree/lane per WP.
+- **WP05** (enricher `uid` fix) depends only on WP01 — independent of WP02/WP03, can run in
+  parallel with WP02.
+- **WP03** (catch hardening + ceiling) depends on WP02.
+- **WP04** depends on **both WP03 and WP05** (the integration test proves a real `uid`-carrying
+  removal succeeds *and* a stall terminates).
+
+One worktree/lane per WP; file-level SRP keeps owned_files disjoint (C-005).
 
 ## MVP / critical path
 
-The fix is **WP03** (the stall ceiling in `confirmRemoval`). WP01 gates it with the confirmed
-root cause; WP02 provides the type/seam scaffolding WP03 imports; WP04 surfaces the failure to
-the user and proves termination end-to-end + live.
+Two fixes share the critical path: **WP05** makes removal actually delete (Defect B → FR-002/
+FR-003), and **WP03** makes a failing removal terminate instead of hanging (Defect A → FR-004/
+FR-006) and adds the NFR-001 ceiling. WP01 gated both with live evidence; WP02 supplies the ceiling
+scaffolding WP03 imports; WP04 surfaces the failure copy and proves the whole thing end-to-end +
+live.
 
 ---
 
@@ -37,13 +49,15 @@ the user and proves termination end-to-end + live.
 | T004 | Add `'stalled'` to `RemovalErrorCode` (+ test) | WP02 | [P] |
 | T005 | Create `src/ports/scheduler.ts` — `Scheduler` seam + `defaultScheduler` (+ test) | WP02 | [P] |
 | T006 | Add `{ kind: 'hang' }` to `FakeRemovalScript` (+ test) | WP02 | [P] |
-| T007 | Failing regression test: never-settling removal must leave `removing` | WP03 | |
+| T007 | Failing tests: (a) a `computeRemoveSet` failure leaves the row `removing` (the real hang); (b) a never-settling executor leaves it `removing` (the ceiling) | WP03 | |
 | T008 | `STALL_CEILING_MS` + pure `raceStallCeiling` helper (deadline-wins tie-break) | WP03 | |
-| T009 | Inject `scheduler`; wrap `executor.remove` in the ceiling; stall → `RemovalError('stalled')` → `partial` | WP03 | |
+| T009 | Catch hardening (compute once; compute-failure → terminal `partial`, never re-thrown) + inject `scheduler` & wrap `executor.remove`; stall → `RemovalError('stalled')` → `partial` | WP03 | |
 | T010 | Boundary tests (under / at / over the ceiling) | WP03 | |
-| T011 | Stall-vs-cancel pair + concurrency/late-settle tests | WP03 | |
+| T011 | Stall-vs-cancel pair + compute-failure-vs-cancel + concurrency/late-settle tests | WP03 | |
+| T015 | Propagate `uid` onto `EnrichedTrack` in `inline-catalog-enricher.ts` (Defect B fix) | WP05 | [P] |
+| T016 | Failing-first guard test: `uid` survives enrichment for a playlist track; stays `undefined` for Liked-Songs | WP05 | [P] |
 | T012 | `RemovalOutcomeView`: plain-language timed-out copy for the stalled outcome | WP04 | |
-| T013 | Integration test: real store + `hang` fake + fake scheduler → terminates to `partial` | WP04 | |
+| T013 | Integration test: real store + real enricher → a `uid`-carrying duplicate is actually removed; `hang` fake + fake scheduler → terminates to `partial` | WP04 | |
 | T014 | Live re-verification on the 2-song repro (SC-001..SC-004) + transcript | WP04 | |
 
 ---
@@ -104,35 +118,73 @@ order within the WP.
 
 ---
 
-## WP03 — Stall ceiling in `confirmRemoval` (the fix)
+## WP03 — Catch hardening (the hang fix) + stall ceiling in `confirmRemoval`
 
 **Prompt:** [tasks/WP03-store-stall-ceiling.md](./tasks/WP03-store-stall-ceiling.md)
 **Priority:** P0 (critical path) · **Mode:** code_change
-**Requirements:** FR-002, FR-003, FR-004, FR-005, FR-007, FR-009, FR-010
+**Requirements:** FR-004, FR-006, FR-007, FR-009, FR-010, NFR-001, NFR-002
 Dependencies: WP02.
 
-**Goal.** Bound the `await removalExecutor.remove(...)` in `confirmRemoval` with an injected-
-scheduler deadline. On stall: `controller.abort()` + raise `RemovalError('stalled')`, which flows
-through the **existing** non-`AbortError` catch into an all-failed `partial`. No new FSM
-state/action; confirmations untouched.
+**Goal (Defect A + NFR-001).** Two coupled changes in `confirmRemoval`:
+1. **Catch hardening (the actual hang fix).** Compute the remove-set **once** (before/outside the
+   fragile catch) and ensure a `computeRemoveSet` failure surfaces as a **terminal** all-failed
+   `partial` — never re-thrown. The live root cause is the catch re-invoking `computeRemoveSet`
+   (line 378) and re-throwing, leaving the row `removing` forever.
+2. **Stall ceiling (defense-in-depth).** Bound the `await removalExecutor.remove(...)` with an
+   injected-scheduler deadline; on stall `controller.abort()` + raise `RemovalError('stalled')`,
+   which flows through the **same** non-`AbortError` catch into an all-failed `partial`.
 
-**Independent test.** The T007 regression test (never-settling executor + advance scheduler past
-`STALL_CEILING_MS`) drives the row out of `removing` into `partial`; boundary suite (under/at/over)
-green; stall-vs-cancel pair green; coverage 100%.
+No new FSM state/action; confirmations untouched. (FR-002/FR-003/FR-005 — *removal actually
+deletes* — are delivered by **WP05**, not here; WP03 makes a *failing* removal terminate.)
+
+**Independent test.** T007a (a `computeRemoveSet` failure leaves `removing` today) and T007b
+(never-settling executor past `STALL_CEILING_MS`) both drive the row out of `removing` into
+`partial`; boundary suite (under/at/over) green; stall-vs-cancel and compute-failure-vs-cancel
+pairs green; coverage 100%.
 
 **Included subtasks:**
 
-- [ ] T007 Failing regression test: never-settling removal must leave `removing` (WP03)
+- [ ] T007 Failing tests: compute-failure hang + never-settling hang both leave `removing` (WP03)
 - [ ] T008 `STALL_CEILING_MS` + pure `raceStallCeiling` helper (deadline-wins) (WP03)
-- [ ] T009 Inject `scheduler`; wrap `executor.remove`; stall → `RemovalError('stalled')` → `partial` (WP03)
+- [ ] T009 Catch hardening (compute once) + inject `scheduler` & wrap `executor.remove`; stall → `RemovalError('stalled')` → `partial` (WP03)
 - [ ] T010 Boundary tests (under / at / over the ceiling) (WP03)
-- [ ] T011 Stall-vs-cancel pair + concurrency/late-settle tests (WP03)
+- [ ] T011 Stall-vs-cancel + compute-failure-vs-cancel + concurrency/late-settle tests (WP03)
 
-**Dependencies / risks.** Crux risk: a stall must NOT take the `AbortError`-swallow branch (that
-would re-create the bug). The distinct `RemovalError('stalled')` and its dedicated test are the
-guard. Late executor settlement after the deadline must not surface as an unhandled rejection.
+**Dependencies / risks.** Crux risk: neither a stall nor a compute failure may take the
+`AbortError`-swallow branch (that would re-create the bug). Distinct `RemovalError`s and their
+dedicated tests are the guard. Late executor settlement after the deadline must not surface as an
+unhandled rejection.
 
-**Est. prompt size:** ~340 lines.
+**Est. prompt size:** ~360 lines.
+
+---
+
+## WP05 — Enricher `uid` propagation (the functional fix)
+
+**Prompt:** [tasks/WP05-enricher-uid-propagation.md](./tasks/WP05-enricher-uid-propagation.md)
+**Priority:** P0 (critical path) · **Mode:** code_change
+**Requirements:** FR-002, FR-003, FR-005
+Dependencies: WP01. *(Independent of WP02/WP03 — may run in parallel with WP02.)*
+
+**Goal (Defect B).** Restore the ADR-0012 contract that the inline enricher silently regressed:
+copy `t.uid` onto the `EnrichedTrack` built in `inline-catalog-enricher.ts:97-104`. Playlist items
+carry a non-empty `uid`; Liked-Songs items have none (`undefined`). This is the fix that makes
+removal actually delete the duplicate (without it `computeRemoveSet` fails loud on every playlist).
+
+**Independent test.** A failing-first guard test asserts `uid` survives enrichment for a playlist
+track (and is absent for Liked-Songs); `npm run typecheck` clean; `npm run test:coverage` 100% on
+the enricher.
+
+**Included subtasks:**
+
+- [ ] T015 Propagate `uid` onto `EnrichedTrack` in `inline-catalog-enricher.ts` (WP05)
+- [ ] T016 Failing-first guard test: `uid` survives enrichment (playlist) / absent (Liked-Songs) (WP05)
+
+**Dependencies / risks.** The doc comment claiming "preserved verbatim through enrichment" was not
+enforced — the test upgrade is the guard against silent re-regression. Keep it a pure adapter
+change: no port/store/domain edits.
+
+**Est. prompt size:** ~150 lines.
 
 ---
 
@@ -140,16 +192,19 @@ guard. Late executor settlement after the deadline must not surface as an unhand
 
 **Prompt:** [tasks/WP04-ui-integration-reverify.md](./tasks/WP04-ui-integration-reverify.md)
 **Priority:** P1 · **Mode:** code_change
-**Requirements:** FR-003, FR-006, FR-008
-Dependencies: WP03.
+**Requirements:** FR-002, FR-003, FR-006, FR-008
+Dependencies: WP03, WP05.
 
 **Goal.** Surface the stall as plain-language "timed-out" copy in `RemovalOutcomeView` (NFR-004),
-prove the termination guarantee end-to-end through the real store (DIRECTIVE_036), and re-verify
-the whole flow live on the 2-song repro (SC-001..SC-004).
+prove **both** guarantees end-to-end through the real store + real enricher (DIRECTIVE_036) — (a) a
+`uid`-carrying duplicate is *actually removed* (Defect B fixed), and (b) a hung removal *terminates*
+to `partial` (Defect A + ceiling) — and re-verify the whole flow live on the 2-song repro
+(SC-001..SC-004), including a forced stall.
 
 **Independent test.** UI test renders both the generic-partial and the timed-out copy; the
-integration test terminates a hung removal to `partial` with unchanged counts and never `none`;
-live re-verify transcript captured.
+integration test (real store + real enricher) removes a duplicate by its `uid` on the happy path
+and terminates a hung removal to `partial` with unchanged counts and never `none`; live re-verify
+transcript captured.
 
 **Included subtasks:**
 
@@ -168,20 +223,20 @@ all-failed outcome. Live re-verify needs the live client (driver protocol).
 
 | Requirement | WP | Notes |
 |---|---|---|
-| FR-001 | WP01 | live root-cause identification |
-| FR-002, FR-003, FR-005 | WP03 (+ WP04 live) | deletion actually takes effect / exactly one of two |
-| FR-004 | WP02, WP03 | always reaches a terminal state |
-| FR-006 | WP02, WP03, WP04 | explicit failure state + plain-language surface |
-| FR-007 | WP03 | no false success (stall → `partial`, never `none`) |
+| FR-001 | WP01 | live root-cause identification (Defect A + B) |
+| FR-002, FR-003, FR-005 | **WP05** (+ WP04 integration + live) | enricher `uid` fix makes deletion actually take effect / exactly one of two |
+| FR-004 | WP03 | catch hardening + ceiling → always reaches a terminal state |
+| FR-006 | WP03, WP04 | explicit failure state + plain-language surface |
+| FR-007 | WP03 | no false success (stall/compute-failure → `partial`, never `none`) |
 | FR-008 | WP04 | retry/dismiss via existing `partial → confirming` edge |
 | FR-009 | WP03 | in-flight lock re-asserted across the stall path |
 | FR-010 | WP03 | confirmations not bypassed/weakened |
-| NFR-001 | WP03 | stall ceiling (hang guard, not SLA) |
-| NFR-002 | WP03 | boundary tests under/at/over + 100% coverage |
+| NFR-001 | WP02, WP03 | stall ceiling (hang guard, not SLA) — defense-in-depth |
+| NFR-002 | WP03, WP05 | boundary tests under/at/over + `uid` guard + 100% coverage |
 | NFR-003 | WP01 | ADR-0017 |
 | NFR-004 | WP04 | plain-language UI, no raw stack |
-| C-001 | WP01/WP03 | Platform APIs only, never `api.spotify.com` |
+| C-001 | WP01/WP03/WP05 | Platform APIs only, never `api.spotify.com` |
 | C-002 | WP03 | no silent mutation; confirmations intact |
-| C-003 | WP03 | failing test observed before fix |
+| C-003 | WP03, WP05 | failing test observed before each fix |
 | C-004 | WP01/WP04 | live evidence before fix accepted + live re-verify |
-| C-005 | all | TS strict + file-level SRP |
+| C-005 | all | TS strict + file-level SRP (WP05 ≠ WP03 keeps layers disjoint) |

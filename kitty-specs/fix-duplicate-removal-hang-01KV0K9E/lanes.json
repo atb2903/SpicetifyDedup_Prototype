@@ -9,18 +9,21 @@
       "lane_id": "lane-a",
       "wp_ids": [
         "WP02",
+        "WP05",
         "WP03",
         "WP04"
       ],
       "write_scope": [
         "kitty-specs/fix-duplicate-removal-hang-01KV0K9E/reverify-evidence.md",
         "src/adapters/fake-removal-executor.ts",
+        "src/adapters/inline-catalog-enricher.ts",
         "src/domain/removal-errors.ts",
         "src/ports/scheduler.ts",
         "src/store/detection-store.ts",
         "src/ui/RemovalOutcomeView.module.scss",
         "src/ui/RemovalOutcomeView.tsx",
         "test/adapters/fake-removal-executor.test.ts",
+        "test/adapters/inline-catalog-enricher.test.ts",
         "test/domain/removal-errors.test.ts",
         "test/integration/removal-termination.test.ts",
         "test/ports/scheduler.test.ts",
@@ -70,12 +73,19 @@
         "wp_b": "WP03",
         "rule": "dependency",
         "evidence": "WP04 depends on WP03"
+      },
+      {
+        "wp_a": "WP05",
+        "wp_b": "WP02",
+        "rule": "co-lane",
+        "evidence": "WP05 (enricher uid fix) is independent of WP02 but co-laned with WP02/WP03/WP04 to keep WP04's WP05 dependency intra-lane; WP04 depends on WP05"
       }
     ],
-    "total_merges": 2,
+    "total_merges": 3,
     "independent_wps_collapsed": 0,
     "by_rule": {
-      "dependency": 2
+      "dependency": 2,
+      "co-lane": 1
     }
   }
 }

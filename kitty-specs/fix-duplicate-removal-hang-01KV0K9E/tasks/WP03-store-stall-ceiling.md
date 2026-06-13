@@ -1,16 +1,16 @@
 ---
 work_package_id: WP03
-title: Stall ceiling in confirmRemoval (the fix)
+title: Catch hardening (hang fix) + stall ceiling in confirmRemoval
 dependencies:
 - WP02
 requirement_refs:
-- FR-002
-- FR-003
 - FR-004
-- FR-005
+- FR-006
 - FR-007
 - FR-009
 - FR-010
+- NFR-001
+- NFR-002
 planning_base_branch: main
 merge_target_branch: main
 branch_strategy: Planning artifacts for this feature were generated on main. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into main unless the human explicitly redirects the landing branch.
@@ -33,19 +33,37 @@ owned_files:
 tags: []
 ---
 
-# WP03 — Stall ceiling in `confirmRemoval` (the fix)
+# WP03 — Catch hardening (the hang fix) + stall ceiling in `confirmRemoval`
+
+> **Revised after WP01 live diagnosis.** The original framing of this WP ("bound the `await`") was
+> based on a never-settling-promise hypothesis that live evidence **falsified**:
+> `PlaylistAPI.remove` is never called. The real hang is **Defect A** — see
+> [`../diagnosis-evidence.md`](../diagnosis-evidence.md) and ADR-0017. The functional "removal
+> actually deletes" fix (FR-002/FR-003/FR-005) now lives in **WP05** (the enricher), not here.
 
 ## Objective
 
-Bound the `await removalExecutor.remove(...)` inside `confirmRemoval` with an injected-scheduler
-deadline so a hung host call can never leave the row in `removing` forever (NFR-001, FR-004). On
-stall: `controller.abort()` to stop further batches **and** raise `RemovalError('stalled', …)`,
-which flows through the **existing** non-`AbortError` catch (`detection-store.ts:371-395`) into an
-**all-failed `partial`**. No new FSM state, no new action, confirmations untouched.
+Two coupled changes in `confirmRemoval`, both keeping the row out of a permanent `removing` state:
 
-This is the crux WP. The single hardest constraint: **a stall must NOT take the `AbortError`-
+1. **Catch hardening — the actual hang fix (Defect A · FR-004/FR-006).** Today `confirmRemoval`
+   calls `computeRemoveSet` in the `try` (line 350) **and again** in the `catch` (line 378). When
+   the first call throws (e.g. `malformed-result`/`playlist-member-missing-uid`), the catch's
+   recompute throws the *same* error a second time — now **inside the catch** — so it escapes
+   `confirmRemoval` uncaught, the terminal `removeComplete` never dispatches, and the row stays
+   `removing` forever. **Fix:** compute the remove-set **once** (before/outside the fragile catch),
+   reuse it in the catch, so any `computeRemoveSet` failure surfaces as a **terminal** all-failed
+   `partial` — never re-thrown.
+
+2. **Stall ceiling — defense-in-depth (NFR-001).** Bound the `await removalExecutor.remove(...)`
+   with an injected-scheduler deadline so a *future* hung host call can never spin forever. On
+   stall: `controller.abort()` to stop further batches **and** raise `RemovalError('stalled', …)`.
+
+Both faults flow through the **existing** non-`AbortError` catch (`detection-store.ts:371-395`) into
+an **all-failed `partial`**. No new FSM state, no new action, confirmations untouched.
+
+The single hardest constraint: **neither a stall nor a compute-failure may take the `AbortError`-
 swallow branch** (`detection-store.ts:363`) — that branch is reserved for user cancel/reset and
-returns without a terminal dispatch; a stall going there would re-create the exact bug.
+returns without a terminal dispatch; either fault going there would re-create the exact bug.
 
 ## Context — read first
 
@@ -67,25 +85,38 @@ returns without a terminal dispatch; a stall going there would re-create the exa
 
 ## Subtasks
 
-### T007 — Failing regression test (C-003 / DIRECTIVE_034)
+### T007 — Failing regression tests (C-003 / DIRECTIVE_034)
 
-**Purpose.** Reproduce the hang at the store level and prove it fails before the fix.
+**Purpose.** Reproduce **both** hang sources at the store level and prove they fail before the fix.
 
-**Steps.**
+**T007a — the actual repro (compute-failure hang · Defect A).** This is the bug WP01 confirmed
+live and the primary thing this WP fixes.
 
-1. In `test/store/detection-store.test.ts`, add a deterministic fake scheduler helper
-   (`makeFakeScheduler()`) exposing `advance(ms)` that fires due timers and `pending` count.
+1. In `test/store/detection-store.test.ts`, drive a `loaded` row whose result makes
+   `computeRemoveSet` throw — the realistic case is a **playlist** duplicate group member missing
+   `uid` (mirror the live repro: build the detection result with a playlist target and a removable
+   member whose `uid` is `undefined`, so `computeRemoveSet` throws
+   `malformed-result/playlist-member-missing-uid`).
+2. Request → confirm to reach `removing`, then `await flush()`.
+3. `expect(removalPhase(store, key)).toBe('partial')` **and** assert no unhandled rejection escaped.
+4. Run it and **watch it fail** — today the catch re-computes `computeRemoveSet`, re-throws, and the
+   row stays `removing` (the uncaught-in-promise hang). Record the observation in the WP history/PR
+   notes.
+
+**T007b — the ceiling repro (never-settling hang · NFR-001 defense-in-depth).**
+
+1. Add a deterministic fake scheduler helper (`makeFakeScheduler()`) exposing `advance(ms)` that
+   fires due timers and a `pending` count.
 2. Build the store with the new 3-arg form:
    ```ts
    const exec = new FakeRemovalExecutor({ kind: 'hang' });   // never settles
    const scheduler = makeFakeScheduler();
    const store = createDetectionStore(scanner, exec, scheduler);
    ```
-3. Drive a `loaded` row with ≥1 removable duplicate to `removing` (request → confirm).
+3. Drive a `loaded` row with ≥1 removable duplicate (with a valid `uid`, so `computeRemoveSet`
+   succeeds and the executor is actually reached) to `removing`.
 4. `scheduler.advance(STALL_CEILING_MS); await flush();` then
-   `expect(removalPhase(store, key)).toBe('partial')`.
-5. Run `npm run test:run -- test/store/detection-store.test.ts` and **watch it fail** (today the
-   row stays `removing`). Record that observation in the WP history/PR notes.
+   `expect(removalPhase(store, key)).toBe('partial')`. **Watch it fail** before the ceiling exists.
 
 ### T008 — `STALL_CEILING_MS` + the `raceStallCeiling` helper
 
@@ -122,12 +153,26 @@ scheduler deadline (data-model §4).
    - Attach a no-op `.catch(() => {})` to the `work` arm so a late rejection after the deadline does
      not become an unhandled rejection.
 
-### T009 — Wire the ceiling into `confirmRemoval`
+### T009 — Catch hardening (Defect A) + wire the ceiling into `confirmRemoval`
 
-**Purpose.** Inject the scheduler and wrap the executor await; route the stall to the existing
-all-failed `partial` path with stall-specific messaging (NFR-004).
+**Purpose.** The two coupled production changes: (i) compute the remove-set **once** so a
+`computeRemoveSet` failure terminates instead of escaping the catch (the actual hang fix), and (ii)
+inject the scheduler and wrap the executor await so a never-settling call is bounded; route both
+faults to the existing all-failed `partial` path with fault-specific messaging (NFR-004).
 
-**Steps.**
+**Steps — catch hardening (do this first; it is what fixes the live repro):**
+
+a. Compute `computeRemoveSet(result, target)` **once** and structure the function so the `catch`
+   block **never calls `computeRemoveSet` again** (today it re-calls it at line 378 and re-throws,
+   escaping uncaught → the hang). Reuse the already-computed `removeSet` when building the all-failed
+   outcome; if the compute itself throws, route it into the same all-failed-`partial` path without
+   re-deriving.
+b. A compute failure is a `RemovalError` (satisfies `isRemovalError`) → it takes the
+   **non-`AbortError`** catch → all-failed `partial`; it must **never** take the `AbortError`-swallow
+   branch. Counts stay unchanged (FR-007 truthful).
+c. Re-run T007a — it must now pass (row → `partial`, no uncaught rejection).
+
+**Steps — ceiling wiring:**
 
 1. Add the 3rd optional parameter (data-model §3), back-compat with all existing callers:
    ```ts
@@ -169,11 +214,14 @@ Assert the three points around the ceiling with the deterministic scheduler:
 - **over** — never settles → advance past the ceiling → `stalled` → all-failed `partial`;
   `result.removableTrackCount` unchanged (nothing removed — FR-007 truthful counts).
 
-### T011 — Stall-vs-cancel + concurrency / late-settle
+### T011 — Stall-vs-cancel + compute-failure-vs-cancel + concurrency / late-settle
 
 - **Stall ≠ cancel (research §R-4):** (a) stall → `partial` (terminal); (b) `reset()` mid-removal →
   executor throws `AbortError` → **swallowed** → row cleared by `reset` (NOT `partial`). Asserts the
   two abort sources stay distinguishable.
+- **Compute-failure ≠ cancel (Defect A):** a `computeRemoveSet` failure → `partial` (terminal,
+  never re-thrown, never `removing`); a `reset()` still clears the row. Confirms the hardened catch
+  routes a pre-executor throw to the non-`AbortError` path, not the swallow branch.
 - **No double-fire (FR-009):** a second `confirmRemoval(key)` while one is in flight is rejected by
   the existing `removalControllers` lock — re-assert this holds across the stall path.
 - **Late settle ignored:** after the deadline fires, settle the (previously hung) work promise and
@@ -183,13 +231,19 @@ Assert the three points around the ceiling with the deterministic scheduler:
 
 ## Definition of Done
 
-- [ ] T007 observed failing before the fix, passing after (recorded).
+- [ ] T007a (compute-failure hang) **and** T007b (never-settling hang) observed failing before the
+      fix, passing after (recorded).
+- [ ] **Catch hardening:** `confirmRemoval` computes `computeRemoveSet` once; the `catch` never
+      re-invokes it; a `computeRemoveSet` failure → terminal all-failed `partial`, never re-thrown,
+      never leaving `removing` (the Defect A fix — FR-004/FR-006).
 - [ ] `STALL_CEILING_MS` + `raceStallCeiling` implemented; bound lives only in the store.
-- [ ] Stall → all-failed `partial` via the existing non-Abort catch; never the swallow branch;
-      never a `none` (no false success — FR-007).
-- [ ] Boundary suite (under/at/over) + stall-vs-cancel + no-double-fire + late-settle all green.
+- [ ] Stall and compute-failure → all-failed `partial` via the existing non-Abort catch; never the
+      swallow branch; never a `none` (no false success — FR-007).
+- [ ] Boundary suite (under/at/over) + stall-vs-cancel + compute-failure-vs-cancel + no-double-fire
+      + late-settle all green.
 - [ ] `npm run typecheck` clean; `npm run test:coverage` 100% line/branch on the store.
 - [ ] Existing callers (`app.tsx`, other store tests) still compile (3rd param is optional).
+- [ ] Scope check: WP03 does **not** touch the enricher (Defect B / FR-002/003/005 belong to WP05).
 
 ## Reviewer guidance
 

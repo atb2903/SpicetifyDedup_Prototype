@@ -51,8 +51,9 @@ the user and proves termination end-to-end + live.
 ## WP01 — Live diagnosis & root-cause ADR-0017
 
 **Prompt:** [tasks/WP01-diagnose-root-cause.md](./tasks/WP01-diagnose-root-cause.md)
-**Priority:** P0 (gating) · **Depends on:** none · **Mode:** planning_artifact
+**Priority:** P0 (gating) · **Mode:** planning_artifact
 **Requirements:** FR-001, NFR-003, C-004
+Dependencies: none.
 
 **Goal.** Confirm — with live evidence on the minimal 2-song duplicate playlist — exactly which
 host removal call hangs (or rejects), and document the root cause **and** the chosen stall-ceiling
@@ -79,8 +80,9 @@ the functional fix is folded into WP03 — the ceiling is still required by NFR-
 ## WP02 — Termination foundation (stalled code · scheduler seam · hang fake)
 
 **Prompt:** [tasks/WP02-termination-foundation.md](./tasks/WP02-termination-foundation.md)
-**Priority:** P0 · **Depends on:** WP01 · **Mode:** code_change
+**Priority:** P0 · **Mode:** code_change
 **Requirements:** FR-004, FR-006
+Dependencies: WP01.
 
 **Goal.** Land the three small, independent scaffolding pieces the fix imports: the `'stalled'`
 error code, the injectable `Scheduler` timer seam, and the `'hang'` fake-executor script — each
@@ -105,8 +107,9 @@ order within the WP.
 ## WP03 — Stall ceiling in `confirmRemoval` (the fix)
 
 **Prompt:** [tasks/WP03-store-stall-ceiling.md](./tasks/WP03-store-stall-ceiling.md)
-**Priority:** P0 (critical path) · **Depends on:** WP02 · **Mode:** code_change
+**Priority:** P0 (critical path) · **Mode:** code_change
 **Requirements:** FR-002, FR-003, FR-004, FR-005, FR-007, FR-009, FR-010
+Dependencies: WP02.
 
 **Goal.** Bound the `await removalExecutor.remove(...)` in `confirmRemoval` with an injected-
 scheduler deadline. On stall: `controller.abort()` + raise `RemovalError('stalled')`, which flows
@@ -136,8 +139,9 @@ guard. Late executor settlement after the deadline must not surface as an unhand
 ## WP04 — Stalled UI message · integration · live re-verification
 
 **Prompt:** [tasks/WP04-ui-integration-reverify.md](./tasks/WP04-ui-integration-reverify.md)
-**Priority:** P1 · **Depends on:** WP03 · **Mode:** code_change
+**Priority:** P1 · **Mode:** code_change
 **Requirements:** FR-003, FR-006, FR-008
+Dependencies: WP03.
 
 **Goal.** Surface the stall as plain-language "timed-out" copy in `RemovalOutcomeView` (NFR-004),
 prove the termination guarantee end-to-end through the real store (DIRECTIVE_036), and re-verify

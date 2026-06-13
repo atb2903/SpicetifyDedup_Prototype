@@ -8,50 +8,23 @@
     {
       "lane_id": "lane-a",
       "wp_ids": [
-        "WP02"
-      ],
-      "write_scope": [
-        "src/adapters/fake-removal-executor.ts",
-        "src/domain/removal-errors.ts",
-        "src/ports/scheduler.ts",
-        "test/adapters/fake-removal-executor.test.ts",
-        "test/domain/removal-errors.test.ts",
-        "test/ports/scheduler.test.ts"
-      ],
-      "predicted_surfaces": [
-        "api",
-        "legacy-cleanup",
-        "tests"
-      ],
-      "depends_on_lanes": [],
-      "parallel_group": 0
-    },
-    {
-      "lane_id": "lane-b",
-      "wp_ids": [
-        "WP03"
-      ],
-      "write_scope": [
-        "src/store/detection-store.ts",
-        "test/store/detection-store.test.ts"
-      ],
-      "predicted_surfaces": [
-        "api",
-        "legacy-cleanup"
-      ],
-      "depends_on_lanes": [],
-      "parallel_group": 0
-    },
-    {
-      "lane_id": "lane-c",
-      "wp_ids": [
+        "WP02",
+        "WP03",
         "WP04"
       ],
       "write_scope": [
         "kitty-specs/fix-duplicate-removal-hang-01KV0K9E/reverify-evidence.md",
+        "src/adapters/fake-removal-executor.ts",
+        "src/domain/removal-errors.ts",
+        "src/ports/scheduler.ts",
+        "src/store/detection-store.ts",
         "src/ui/RemovalOutcomeView.module.scss",
         "src/ui/RemovalOutcomeView.tsx",
+        "test/adapters/fake-removal-executor.test.ts",
+        "test/domain/removal-errors.test.ts",
         "test/integration/removal-termination.test.ts",
+        "test/ports/scheduler.test.ts",
+        "test/store/detection-store.test.ts",
         "test/ui/RemovalOutcomeView.test.tsx"
       ],
       "predicted_surfaces": [
@@ -79,9 +52,30 @@
       "parallel_group": 0
     }
   ],
-  "computed_at": "2026-06-13T18:58:19.943702+00:00",
+  "computed_at": "2026-06-13T18:59:41.144610+00:00",
   "computed_from": "dependency_graph+ownership",
   "planning_artifact_wps": [
     "WP01"
-  ]
+  ],
+  "collapse_report": {
+    "events": [
+      {
+        "wp_a": "WP03",
+        "wp_b": "WP02",
+        "rule": "dependency",
+        "evidence": "WP03 depends on WP02"
+      },
+      {
+        "wp_a": "WP04",
+        "wp_b": "WP03",
+        "rule": "dependency",
+        "evidence": "WP04 depends on WP03"
+      }
+    ],
+    "total_merges": 2,
+    "independent_wps_collapsed": 0,
+    "by_rule": {
+      "dependency": 2
+    }
+  }
 }

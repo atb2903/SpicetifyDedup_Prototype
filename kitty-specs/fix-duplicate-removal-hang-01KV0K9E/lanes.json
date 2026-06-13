@@ -1,0 +1,87 @@
+{
+  "version": 1,
+  "mission_slug": "fix-duplicate-removal-hang-01KV0K9E",
+  "mission_id": "01KV0K9EDFY9YS3HM5BM1N07QG",
+  "mission_branch": "kitty/mission-fix-duplicate-removal-hang-01KV0K9E",
+  "target_branch": "main",
+  "lanes": [
+    {
+      "lane_id": "lane-a",
+      "wp_ids": [
+        "WP02"
+      ],
+      "write_scope": [
+        "src/adapters/fake-removal-executor.ts",
+        "src/domain/removal-errors.ts",
+        "src/ports/scheduler.ts",
+        "test/adapters/fake-removal-executor.test.ts",
+        "test/domain/removal-errors.test.ts",
+        "test/ports/scheduler.test.ts"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "legacy-cleanup",
+        "tests"
+      ],
+      "depends_on_lanes": [],
+      "parallel_group": 0
+    },
+    {
+      "lane_id": "lane-b",
+      "wp_ids": [
+        "WP03"
+      ],
+      "write_scope": [
+        "src/store/detection-store.ts",
+        "test/store/detection-store.test.ts"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "legacy-cleanup"
+      ],
+      "depends_on_lanes": [],
+      "parallel_group": 0
+    },
+    {
+      "lane_id": "lane-c",
+      "wp_ids": [
+        "WP04"
+      ],
+      "write_scope": [
+        "kitty-specs/fix-duplicate-removal-hang-01KV0K9E/reverify-evidence.md",
+        "src/ui/RemovalOutcomeView.module.scss",
+        "src/ui/RemovalOutcomeView.tsx",
+        "test/integration/removal-termination.test.ts",
+        "test/ui/RemovalOutcomeView.test.tsx"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "artifact-rendering",
+        "legacy-cleanup",
+        "tests"
+      ],
+      "depends_on_lanes": [],
+      "parallel_group": 0
+    },
+    {
+      "lane_id": "lane-planning",
+      "wp_ids": [
+        "WP01"
+      ],
+      "write_scope": [
+        ".claude/adr/0017-removal-hang-root-cause-and-stall-ceiling.md",
+        "kitty-specs/fix-duplicate-removal-hang-01KV0K9E/diagnosis-evidence.md"
+      ],
+      "predicted_surfaces": [
+        "planning"
+      ],
+      "depends_on_lanes": [],
+      "parallel_group": 0
+    }
+  ],
+  "computed_at": "2026-06-13T18:58:19.943702+00:00",
+  "computed_from": "dependency_graph+ownership",
+  "planning_artifact_wps": [
+    "WP01"
+  ]
+}

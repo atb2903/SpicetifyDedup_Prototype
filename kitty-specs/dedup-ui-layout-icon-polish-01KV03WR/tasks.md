@@ -38,7 +38,7 @@ can be implemented first. Both branch from `main`.
 | T008 | [green] `LikedSongsRow.tsx` wrap + `LikedSongsRow.module.scss` `.detail` | WP02 | | [D] |
 | T009 | `LoadedView.module.scss` — remove the `max-width: 900px` cap; fill content-area width | WP02 | | [D] |
 | T010 | `DetectionLoadedSummary.module.scss` — horizontalize the `.removal` stacking | WP02 | | [D] |
-| T011 | Write ADR-0016 (grid-span `.detail` wrapper), run gates, drive layout live-verification | WP02 | |
+| T011 | Write ADR-0016 (grid-span `.detail` wrapper), run gates, drive layout live-verification | WP02 | | [D] |
 
 The `[P]` marker indicates parallel-safe work; it is **not** a status marker.
 Status is tracked by the per-WP checkbox rows below.
@@ -111,7 +111,7 @@ do not guess); active-state recolor failing (mitigated: keep `currentColor`).
 - [x] T008 [green] `LikedSongsRow.tsx` wrap + `LikedSongsRow.module.scss` `.detail` (WP02)
 - [x] T009 `LoadedView.module.scss` — remove the `max-width: 900px` cap; fill content-area width (WP02)
 - [x] T010 `DetectionLoadedSummary.module.scss` — horizontalize the `.removal` stacking (WP02)
-- [ ] T011 Write ADR-0016 (grid-span `.detail` wrapper), run gates, drive layout live-verification (WP02)
+- [x] T011 Write ADR-0016 (grid-span `.detail` wrapper), run gates, drive layout live-verification (WP02)
 
 **Implementation sketch** (TDD throughout):
 1. Red: add `PlaylistRow` tests asserting a `.detail` wrapper (full-width, by

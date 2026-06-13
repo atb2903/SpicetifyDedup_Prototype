@@ -1,10 +1,12 @@
 {
   "created_at": "2026-06-13T13:38:39.180188+00:00",
-  "friendly_name": "fix duplicate removal hang",
+  "friendly_name": "Fix indefinite hang on duplicate removal",
   "mission_id": "01KV0K9EDFY9YS3HM5BM1N07QG",
   "mission_number": null,
   "mission_slug": "fix-duplicate-removal-hang-01KV0K9E",
   "mission_type": "software-dev",
   "slug": "fix-duplicate-removal-hang-01KV0K9E",
-  "target_branch": "main"
+  "target_branch": "main",
+  "vcs": "git",
+  "source_description": "Clicking Remove on a playlist after duplicate identification hangs on 'removing...' indefinitely and the duplicate is never deleted; reproduced on a minimal 2-song playlist. Find and fix the root cause, plus add resilience so a stuck/failed removal call can never silently hang the UI."
 }

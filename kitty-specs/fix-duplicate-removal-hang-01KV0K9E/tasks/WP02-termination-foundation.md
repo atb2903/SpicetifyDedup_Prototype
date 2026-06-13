@@ -16,7 +16,8 @@ subtasks:
 - T004
 - T005
 - T006
-shell_pid: '74707'
+shell_pid: "74707"
+agent: "claude:opus:implementer:implementer"
 history:
 - timestamp: '2026-06-13T18:51:29Z'
   action: created
@@ -167,3 +168,7 @@ under the `hang` script. Maintain 100% branch coverage.
   `AbortSignal.timeout` here (research §R-6 rejected that primitive for determinism).
 - **Coverage on the never-settling branch** — assert the promise's *non-settlement* via a race,
   not by awaiting it (awaiting would hang the test).
+
+## Activity Log
+
+- 2026-06-13T21:53:06Z – claude:opus:implementer:implementer – shell_pid=74707 – Assigned agent via action command

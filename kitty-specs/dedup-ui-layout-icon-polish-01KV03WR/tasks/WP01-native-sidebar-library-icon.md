@@ -16,7 +16,8 @@ subtasks:
 - T002
 - T003
 - T004
-shell_pid: '23297'
+shell_pid: "23297"
+agent: "claude:opus-4-8:implementer:implementer"
 history:
 - 2026-06-13T09:28:03Z — created by /spec-kitty.tasks
 authoritative_surface: src/css/
@@ -199,3 +200,7 @@ WP reaches `done`.
   active states) — per this repo's standing rule, a skipped live verification is a
   blocking defect.
 - Confirm the path data was captured from the live client, not invented.
+
+## Activity Log
+
+- 2026-06-13T09:38:59Z – claude:opus-4-8:implementer:implementer – shell_pid=23297 – Assigned agent via action command

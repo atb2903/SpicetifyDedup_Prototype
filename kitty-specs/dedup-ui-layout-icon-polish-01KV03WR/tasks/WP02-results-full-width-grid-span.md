@@ -21,7 +21,8 @@ subtasks:
 - T009
 - T010
 - T011
-shell_pid: '26875'
+shell_pid: "26875"
+agent: "claude:opus-4-8:implementer:implementer"
 history:
 - 2026-06-13T09:28:03Z — created by /spec-kitty.tasks
 authoritative_surface: src/ui/
@@ -356,3 +357,7 @@ acceptance evidence.
   were exercised in the real client, not assumed.
 - **No horizontal overflow** (NFR-003): confirm `min-width: 0` is present so the
   text column and `.detail` can shrink on narrow windows.
+
+## Activity Log
+
+- 2026-06-13T09:45:54Z – claude:opus-4-8:implementer:implementer – shell_pid=26875 – Assigned agent via action command

@@ -9,11 +9,14 @@ requirement_refs:
 planning_base_branch: main
 merge_target_branch: main
 branch_strategy: Planning artifacts for this feature were generated on main. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into main unless the human explicitly redirects the landing branch.
-created_at: '2026-06-13T18:51:29Z'
+base_branch: kitty/mission-fix-duplicate-removal-hang-01KV0K9E
+base_commit: 9629e224ed58cade4e5dc115bab527b07892f18a
+created_at: '2026-06-13T21:53:05.730277+00:00'
 subtasks:
 - T004
 - T005
 - T006
+shell_pid: '74707'
 history:
 - timestamp: '2026-06-13T18:51:29Z'
   action: created

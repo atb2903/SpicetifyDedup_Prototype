@@ -28,9 +28,9 @@ can be implemented first. Both branch from `main`.
 
 | ID | Description | WP | Parallel |
 |----|-------------|----|----------|
-| T001 | Capture native `library` glyph markup from `Spicetify.SVGIcons.library` | WP01 | |
-| T002 | Replace `src/css/icon.svg` contents with the native glyph (`currentColor`, native viewBox) | WP01 | |
-| T003 | Write ADR-0015 (native-icon delivery via existing inline-SVG mechanism) | WP01 | [P] |
+| T001 | Capture native `library` glyph markup from `Spicetify.SVGIcons.library` | WP01 | | [D] |
+| T002 | Replace `src/css/icon.svg` contents with the native glyph (`currentColor`, native viewBox) | WP01 | | [D] |
+| T003 | Write ADR-0015 (native-icon delivery via existing inline-SVG mechanism) | WP01 | [D] |
 | T004 | Live-verify sidebar icon (AS-1/AS-2: default + active state) and confirm gates unaffected | WP01 | |
 | T005 | [TDD red] Failing tests — `PlaylistRow` renders detection child (scanning/loaded/failed) inside a full-width `.detail` wrapper; existing content unchanged | WP02 | |
 | T006 | [green] `PlaylistRow.tsx` wrap detection children in `.detail`; `PlaylistRow.module.scss` add `.detail { grid-column: 1 / -1 }` | WP02 | |
@@ -64,9 +64,9 @@ Status is tracked by the per-WP checkbox rows below.
 - **Dependencies**: none.
 
 **Included subtasks**:
-- [ ] T001 Capture native `library` glyph markup from `Spicetify.SVGIcons.library` (WP01)
-- [ ] T002 Replace `src/css/icon.svg` contents with the native glyph (`currentColor`, native viewBox) (WP01)
-- [ ] T003 Write ADR-0015 (native-icon delivery via existing inline-SVG mechanism) (WP01)
+- [x] T001 Capture native `library` glyph markup from `Spicetify.SVGIcons.library` (WP01)
+- [x] T002 Replace `src/css/icon.svg` contents with the native glyph (`currentColor`, native viewBox) (WP01)
+- [x] T003 Write ADR-0015 (native-icon delivery via existing inline-SVG mechanism) (WP01)
 - [ ] T004 Live-verify sidebar icon (AS-1/AS-2: default + active state) and confirm gates unaffected (WP01)
 
 **Implementation sketch**:

@@ -9,8 +9,8 @@
       "lane_id": "lane-a",
       "wp_ids": [
         "WP02",
-        "WP05",
         "WP03",
+        "WP05",
         "WP04"
       ],
       "write_scope": [
@@ -55,7 +55,7 @@
       "parallel_group": 0
     }
   ],
-  "computed_at": "2026-06-13T18:59:41.144610+00:00",
+  "computed_at": "2026-06-13T22:03:34.910182+00:00",
   "computed_from": "dependency_graph+ownership",
   "planning_artifact_wps": [
     "WP01"
@@ -75,17 +75,16 @@
         "evidence": "WP04 depends on WP03"
       },
       {
-        "wp_a": "WP05",
-        "wp_b": "WP02",
-        "rule": "co-lane",
-        "evidence": "WP05 (enricher uid fix) is independent of WP02 but co-laned with WP02/WP03/WP04 to keep WP04's WP05 dependency intra-lane; WP04 depends on WP05"
+        "wp_a": "WP04",
+        "wp_b": "WP05",
+        "rule": "dependency",
+        "evidence": "WP04 depends on WP05"
       }
     ],
     "total_merges": 3,
     "independent_wps_collapsed": 0,
     "by_rule": {
-      "dependency": 2,
-      "co-lane": 1
+      "dependency": 3
     }
   }
 }

@@ -32,12 +32,12 @@ can be implemented first. Both branch from `main`.
 | T002 | Replace `src/css/icon.svg` contents with the native glyph (`currentColor`, native viewBox) | WP01 | | [D] |
 | T003 | Write ADR-0015 (native-icon delivery via existing inline-SVG mechanism) | WP01 | [D] |
 | T004 | Live-verify sidebar icon (AS-1/AS-2: default + active state) and confirm gates unaffected | WP01 | | [D] |
-| T005 | [TDD red] Failing tests — `PlaylistRow` renders detection child (scanning/loaded/failed) inside a full-width `.detail` wrapper; existing content unchanged | WP02 | |
-| T006 | [green] `PlaylistRow.tsx` wrap detection children in `.detail`; `PlaylistRow.module.scss` add `.detail { grid-column: 1 / -1 }` | WP02 | |
-| T007 | [TDD red] Failing tests — `LikedSongsRow` spanning wrapper per detection state | WP02 | |
-| T008 | [green] `LikedSongsRow.tsx` wrap + `LikedSongsRow.module.scss` `.detail` | WP02 | |
-| T009 | `LoadedView.module.scss` — remove the `max-width: 900px` cap; fill content-area width | WP02 | |
-| T010 | `DetectionLoadedSummary.module.scss` — horizontalize the `.removal` stacking | WP02 | |
+| T005 | [TDD red] Failing tests — `PlaylistRow` renders detection child (scanning/loaded/failed) inside a full-width `.detail` wrapper; existing content unchanged | WP02 | | [D] |
+| T006 | [green] `PlaylistRow.tsx` wrap detection children in `.detail`; `PlaylistRow.module.scss` add `.detail { grid-column: 1 / -1 }` | WP02 | | [D] |
+| T007 | [TDD red] Failing tests — `LikedSongsRow` spanning wrapper per detection state | WP02 | | [D] |
+| T008 | [green] `LikedSongsRow.tsx` wrap + `LikedSongsRow.module.scss` `.detail` | WP02 | | [D] |
+| T009 | `LoadedView.module.scss` — remove the `max-width: 900px` cap; fill content-area width | WP02 | | [D] |
+| T010 | `DetectionLoadedSummary.module.scss` — horizontalize the `.removal` stacking | WP02 | | [D] |
 | T011 | Write ADR-0016 (grid-span `.detail` wrapper), run gates, drive layout live-verification | WP02 | |
 
 The `[P]` marker indicates parallel-safe work; it is **not** a status marker.
@@ -105,12 +105,12 @@ do not guess); active-state recolor failing (mitigated: keep `currentColor`).
 - **Dependencies**: none.
 
 **Included subtasks**:
-- [ ] T005 [TDD red] Failing tests — `PlaylistRow` renders detection child (scanning/loaded/failed) inside a full-width `.detail` wrapper; existing content unchanged (WP02)
-- [ ] T006 [green] `PlaylistRow.tsx` wrap detection children in `.detail`; `PlaylistRow.module.scss` add `.detail { grid-column: 1 / -1 }` (WP02)
-- [ ] T007 [TDD red] Failing tests — `LikedSongsRow` spanning wrapper per detection state (WP02)
-- [ ] T008 [green] `LikedSongsRow.tsx` wrap + `LikedSongsRow.module.scss` `.detail` (WP02)
-- [ ] T009 `LoadedView.module.scss` — remove the `max-width: 900px` cap; fill content-area width (WP02)
-- [ ] T010 `DetectionLoadedSummary.module.scss` — horizontalize the `.removal` stacking (WP02)
+- [x] T005 [TDD red] Failing tests — `PlaylistRow` renders detection child (scanning/loaded/failed) inside a full-width `.detail` wrapper; existing content unchanged (WP02)
+- [x] T006 [green] `PlaylistRow.tsx` wrap detection children in `.detail`; `PlaylistRow.module.scss` add `.detail { grid-column: 1 / -1 }` (WP02)
+- [x] T007 [TDD red] Failing tests — `LikedSongsRow` spanning wrapper per detection state (WP02)
+- [x] T008 [green] `LikedSongsRow.tsx` wrap + `LikedSongsRow.module.scss` `.detail` (WP02)
+- [x] T009 `LoadedView.module.scss` — remove the `max-width: 900px` cap; fill content-area width (WP02)
+- [x] T010 `DetectionLoadedSummary.module.scss` — horizontalize the `.removal` stacking (WP02)
 - [ ] T011 Write ADR-0016 (grid-span `.detail` wrapper), run gates, drive layout live-verification (WP02)
 
 **Implementation sketch** (TDD throughout):

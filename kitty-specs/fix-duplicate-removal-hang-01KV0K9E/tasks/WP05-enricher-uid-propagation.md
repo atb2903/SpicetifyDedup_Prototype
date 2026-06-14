@@ -144,3 +144,4 @@ doc-comment-only contract into a test-enforced one.
 - 2026-06-13T22:06:11Z – claude:opus:implementer:implementer – shell_pid=83552 – Ready for review — uid now survives enrichment, guard test enforces it
 - 2026-06-13T22:06:37Z – claude:opus:reviewer:reviewer – shell_pid=86461 – Started review via action command
 - 2026-06-13T22:08:12Z – claude:opus:reviewer:reviewer – shell_pid=86461 – Review passed: pure spread-when-defined uid field-copy onto enriched slot (ADR-0012 restored); guard test asserts uid='610a666b423c78e4' survives and stays absent for Liked-Songs; only inline-catalog-enricher.ts + its test changed; typecheck clean, 1109 tests pass, 100% line/branch.
+- 2026-06-14T00:16:33Z – claude:opus:reviewer:reviewer – shell_pid=86461 – Done override: Mission merged to main (d156adf)

@@ -175,3 +175,4 @@ under the `hang` script. Maintain 100% branch coverage.
 - 2026-06-13T21:59:10Z – claude:opus:implementer:implementer – shell_pid=74707 – Ready for review — stalled code + Scheduler seam + hang fake, all TDD'd to 100%
 - 2026-06-13T21:59:39Z – claude:opus:reviewer:reviewer – shell_pid=79867 – Started review via action command
 - 2026-06-13T22:02:05Z – claude:opus:reviewer:reviewer – shell_pid=79867 – Review passed: stalled code + Scheduler seam + hang fake; isRemovalError untouched, hang recorded-before-return, Exclude<throw|hang> sound; typecheck clean, 1107 tests green, 100% line/branch coverage
+- 2026-06-14T00:16:30Z – claude:opus:reviewer:reviewer – shell_pid=79867 – Done override: Mission merged to main (d156adf)

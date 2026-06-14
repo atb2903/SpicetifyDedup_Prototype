@@ -1,16 +1,16 @@
 {
-  "event_count": 33,
-  "last_event_id": "01KV1QSE080SP73QNFWV53H1Y6",
-  "materialized_at": "2026-06-14T00:16:31.240380+00:00",
+  "event_count": 34,
+  "last_event_id": "01KV1QSF9J5QP2RXV0JW79BD13",
+  "materialized_at": "2026-06-14T00:16:32.563012+00:00",
   "mission_number": "7",
   "mission_slug": "fix-duplicate-removal-hang-01KV0K9E",
   "mission_type": "software-dev",
   "summary": {
-    "approved": 2,
+    "approved": 1,
     "blocked": 0,
     "canceled": 0,
     "claimed": 0,
-    "done": 3,
+    "done": 4,
     "for_review": 0,
     "in_progress": 0,
     "in_review": 0,
@@ -40,10 +40,10 @@
     },
     "WP04": {
       "actor": "user",
-      "force_count": 1,
-      "lane": "approved",
-      "last_event_id": "01KV1QNX0G781C25GGS00TZR0N",
-      "last_transition_at": "2026-06-14T00:14:35.536716+00:00"
+      "force_count": 2,
+      "lane": "done",
+      "last_event_id": "01KV1QSF9J5QP2RXV0JW79BD13",
+      "last_transition_at": "2026-06-14T00:16:32.563012+00:00"
     },
     "WP05": {
       "actor": "user",

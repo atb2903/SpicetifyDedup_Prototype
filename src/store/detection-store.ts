@@ -24,13 +24,106 @@ import { createStore, type StoreApi } from 'zustand/vanilla';
 import { useStore } from 'zustand';
 import type { DetectionScanner } from '../ports/detection-scanner';
 import type { RemovalExecutor } from '../ports/removal-executor';
+import { defaultScheduler, type Scheduler } from '../ports/scheduler';
 import type { ScanRequest } from '../domain/detection-types';
-import type { RemovalTarget, RemovalOutcome } from '../domain/removal-types';
+import type {
+  RemovalTarget,
+  RemovalOutcome,
+  RemoveSet,
+} from '../domain/removal-types';
 import { transition, type DetectionState } from '../domain/detection-state';
 import { DetectionError, isDetectionError } from '../domain/detection-errors';
 import { RemovalError, isRemovalError } from '../domain/removal-errors';
 import { computeRemoveSet } from '../domain/remove-set';
 import { applyRemovalOutcome } from '../domain/apply-removal-outcome';
+
+// ── Stall ceiling (NFR-001) ─────────────────────────────────────────────────
+
+/**
+ * Hang guard (NOT a backend SLA): the maximum wall-clock time the store waits
+ * for a single `RemovalExecutor.remove` call to settle before it forcibly
+ * abandons it. When the executor neither resolves nor rejects within this
+ * window, the store aborts the in-flight controller and raises
+ * `RemovalError('stalled', …)`, which flows through the existing non-`AbortError`
+ * catch in `confirmRemoval` into an all-failed `partial`. This is defense in
+ * depth — the root-cause hang fix is the compute-once catch hardening — so a
+ * *future* never-settling host call can never again leave a row stuck on
+ * `removing`. Tunable here; deliberately generous (data-model §4, research §R-5).
+ */
+export const STALL_CEILING_MS = 30_000;
+
+/**
+ * Race `work` against a scheduler deadline of `ms`.
+ *
+ * Resolves/rejects with `work`'s settlement when it settles within `ms`;
+ * otherwise invokes `onStall()` and rejects with `RemovalError('stalled', …)`.
+ *
+ * Semantics (data-model §4):
+ * - **under** — `work` settles first → `scheduler.clearTimeout` (no leaked
+ *   timer) → resolve/reject with `work`'s result.
+ * - **at (`= ms`)** — deadline and settlement coincide → **deadline wins**
+ *   (the guard is never weaker than advertised). With a single-shot promise the
+ *   first `resolve`/`reject` wins; the deadline arm is wired so it takes the tie.
+ * - **over** — `work` never settles before `ms` → `onStall()` then reject
+ *   `RemovalError('stalled')`.
+ *
+ * A late settlement of `work` after the deadline is ignored — the `work` arm
+ * carries a no-op `.catch(() => {})` so a post-deadline rejection (e.g. the
+ * `AbortError` from the `onStall` abort) never surfaces as an unhandled
+ * rejection (research §R-7). Pure aside from the injected `scheduler`.
+ *
+ * @typeParam T   - The value `work` resolves with on success.
+ * @param work      - The in-flight promise to bound (the executor call).
+ * @param ms        - The ceiling in milliseconds (`STALL_CEILING_MS`).
+ * @param scheduler - Injected timer seam (deterministic under a fake in tests).
+ * @param onStall   - Side effect run exactly once when the deadline fires
+ *                    (here: `controller.abort()` to stop further batches).
+ * @returns A promise settling with `work`'s result, or rejecting with
+ *   `RemovalError('stalled')` if the deadline fires first.
+ */
+function raceStallCeiling<T>(
+  work: Promise<T>,
+  ms: number,
+  scheduler: Scheduler,
+  onStall: () => void,
+): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    let settled = false;
+
+    const handle = scheduler.setTimeout(() => {
+      if (settled) return;
+      settled = true;
+      onStall();
+      reject(
+        new RemovalError(
+          'stalled',
+          `Removal timed out after ${ms / 1000}s — no tracks were removed.`,
+          { context: { ceilingMs: ms } },
+        ),
+      );
+    }, ms);
+
+    work.then(
+      (value) => {
+        if (settled) return;
+        settled = true;
+        scheduler.clearTimeout(handle);
+        resolve(value);
+      },
+      (error) => {
+        if (settled) return;
+        settled = true;
+        scheduler.clearTimeout(handle);
+        reject(error);
+      },
+    );
+
+    // No-op catch on the work arm: a late rejection after the deadline (the
+    // `AbortError` from `onStall`, or any other post-deadline reject) is already
+    // a settled race and must not become an unhandled rejection.
+    work.catch(() => {});
+  });
+}
 
 // ── Public types ──────────────────────────────────────────────────────────────
 
@@ -169,11 +262,16 @@ function targetForKey(key: string): RemovalTarget {
  * @param scanner — `DetectionScanner` implementation to delegate scans to.
  * @param removalExecutor — Optional `RemovalExecutor` the removal flow deletes
  *   through. Defaults to `undefined` (back-compat); execution then fails loud.
+ * @param scheduler — Optional `Scheduler` timer seam backing the stall ceiling
+ *   (NFR-001). Defaults to `defaultScheduler` (real platform timers); tests
+ *   inject a deterministic double. Third optional parameter so every existing
+ *   caller (`app.tsx`, store tests) keeps compiling (data-model §3).
  * @returns Vanilla Zustand `StoreApi<DetectionStoreState>`.
  */
 export function createDetectionStore(
   scanner: DetectionScanner,
   removalExecutor?: RemovalExecutor,
+  scheduler: Scheduler = defaultScheduler,
 ): StoreApi<DetectionStoreState> {
   // Closure-level AbortController map — NOT part of public Zustand state
   // because React should not observe controller lifecycle; only `rows` (the
@@ -344,30 +442,55 @@ export function createDetectionStore(
         const controller = new AbortController();
         removalControllers[key] = controller;
 
+        // Derive the target once; both the try and the catch reuse it.
+        const target = targetForKey(key);
+        // `computeRemoveSet` is computed EXACTLY ONCE (Defect A fix). The catch
+        // never re-invokes it — instead it reuses this captured set when
+        // building the all-failed `partial`. `undefined` means the compute
+        // itself threw (e.g. a playlist member missing `uid`); that throw is
+        // caught below and routed to the same terminal `partial` path WITHOUT
+        // re-deriving — so a compute failure can never escape uncaught and leave
+        // the row stuck on `removing` (FR-004 / FR-006).
+        let removeSet: RemoveSet | undefined;
+
         try {
-          // 6. Execute: compute → remove → apply → complete.
-          const target = targetForKey(key);
-          const removeSet = computeRemoveSet(result, target);
-          const outcome = await removalExecutor.remove(
-            target,
-            removeSet.tracks,
-            controller.signal,
-            (event) => dispatch(key, { type: 'removeProgress', event }),
+          // 6. Execute: compute (once) → remove (ceiling-bounded) → apply →
+          //    complete.
+          removeSet = computeRemoveSet(result, target);
+          const outcome = await raceStallCeiling(
+            removalExecutor.remove(
+              target,
+              removeSet.tracks,
+              controller.signal,
+              (event) => dispatch(key, { type: 'removeProgress', event }),
+            ),
+            STALL_CEILING_MS,
+            scheduler,
+            // On stall: abort the in-flight controller so any subsequent host
+            // batch is cancelled. The executor's resulting `AbortError` loses
+            // the race (already settled `stalled`) and is swallowed by the
+            // work-arm no-op catch in `raceStallCeiling`.
+            () => controller.abort(),
           );
           // Apply the outcome exactly once (idempotence guard vs WP02's
           // `outcome-mismatch` trap).
           const updated = applyRemovalOutcome(result, outcome, target);
           dispatch(key, { type: 'removeComplete', result: updated, outcome });
         } catch (e) {
-          // AbortError: a cancel/reset moved the row; do not dispatch a failure.
+          // AbortError: a user cancel/reset moved the row; do not dispatch a
+          // failure (distinct from a stall — a stall raises RemovalError, not
+          // AbortError, so it never takes this swallow branch).
           if (e instanceof DOMException && e.name === 'AbortError') {
             return;
           }
-          // Wrap non-`RemovalError` throws for diagnostics, then surface the
-          // fault as an all-failed `partial` (AS-8 — "surfaced, not swallowed"):
-          // every requested track lands in `failed`, none in `removed`, so the
-          // row shows `partial` and the copies stay visible. `removableTrackCount`
-          // is unchanged because `applyRemovalOutcome` drops nothing.
+          // Any other throw — a `computeRemoveSet` failure (the captured
+          // `removeSet` is still `undefined`), a `'stalled'` ceiling rejection,
+          // or an executor rejection — is surfaced as an all-failed `partial`
+          // (AS-8 — "surfaced, not swallowed"): every requested track lands in
+          // `failed`, none in `removed`, so the row shows `partial` and the
+          // copies stay visible. `removableTrackCount` is unchanged because
+          // `applyRemovalOutcome` drops nothing. The catch NEVER re-invokes
+          // `computeRemoveSet` (the Defect A fix) — it reuses the captured set.
           const reason = isRemovalError(e)
             ? e
             : new RemovalError(
@@ -375,22 +498,35 @@ export function createDetectionStore(
                 'RemovalExecutor.remove threw a non-RemovalError',
                 { cause: e },
               );
-          const removeSet = computeRemoveSet(result, targetForKey(key));
+          // Reason prefix WP04 keys on: `stalled:` for a ceiling timeout, else
+          // `executor-failed:` for an executor/compute fault.
+          const prefix = reason.code === 'stalled' ? 'stalled' : 'executor-failed';
+          // Reuse the already-computed remove-set when present; if the compute
+          // itself threw (`removeSet === undefined`), synthesize a single
+          // whole-collection failure entry so the FSM still reaches `partial`
+          // (a non-empty `failed`) rather than a false-success `none`.
+          const failedRefs = removeSet?.tracks ?? [{ uri: result.collectionKey }];
           const allFailed: RemovalOutcome = {
             removed: [],
-            failed: removeSet.tracks.map((track) => ({
+            failed: failedRefs.map((track) => ({
               track,
-              reason: `executor-failed: ${reason.message}`,
+              reason: `${prefix}: ${reason.message}`,
             })),
           };
-          const unchanged = applyRemovalOutcome(
-            result,
-            allFailed,
-            targetForKey(key),
-          );
+          // Nothing was removed, so the refreshed result is the original
+          // unchanged. Apply the outcome (a no-op transform with `removed: []`)
+          // ONLY when the remove-set computed cleanly — a compute failure means
+          // the members are themselves malformed (e.g. missing `uid`), which
+          // would make `applyRemovalOutcome` throw on its own member-keying;
+          // in that case pass `result` straight through so the catch can never
+          // throw a second time (Defect A — keep the terminal dispatch reachable).
+          const refreshed =
+            removeSet !== undefined
+              ? applyRemovalOutcome(result, allFailed, target)
+              : result;
           dispatch(key, {
             type: 'removeComplete',
-            result: unchanged,
+            result: refreshed,
             outcome: allFailed,
           });
         } finally {

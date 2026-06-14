@@ -5,13 +5,14 @@ import {
   type RemovalErrorCode,
 } from '../../src/domain/removal-errors';
 
-// ── All four codes (data-model §4) ───────────────────────────────────────────
+// ── All five codes (data-model §4) ───────────────────────────────────────────
 
 const CODES = [
   'malformed-result',
   'outcome-mismatch',
   'executor-failed',
   'host-unavailable',
+  'stalled',
 ] as const satisfies readonly RemovalErrorCode[];
 
 // ── RemovalError construction ─────────────────────────────────────────────────
@@ -140,6 +141,31 @@ describe('isRemovalError', () => {
 
   it('returns false for an empty object', () => {
     expect(isRemovalError({})).toBe(false);
+  });
+});
+
+// ── stalled code (data-model §2) ─────────────────────────────────────────────
+
+describe('RemovalError — stalled code', () => {
+  it('constructs a stalled error with a plain-language message and context', () => {
+    const e = new RemovalError(
+      'stalled',
+      'Removal timed out after 30s — no tracks were removed.',
+      { context: { ceilingMs: 30000, total: 1 } },
+    );
+    expect(e.code).toBe('stalled');
+    expect(e.message).toBe('Removal timed out after 30s — no tracks were removed.');
+    expect(isRemovalError(e)).toBe(true);
+    expect(e.context).toEqual({ ceilingMs: 30000, total: 1 });
+  });
+
+  it('keeps message free of stack-trace text', () => {
+    const e = new RemovalError(
+      'stalled',
+      'Removal timed out after 30s — no tracks were removed.',
+    );
+    expect(e.message).not.toContain('at ');
+    expect(e.message).not.toContain('RemovalError:');
   });
 });
 

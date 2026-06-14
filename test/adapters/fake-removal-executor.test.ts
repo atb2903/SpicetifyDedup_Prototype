@@ -159,6 +159,53 @@ describe('FakeRemovalExecutor — throw script', () => {
 });
 
 // ---------------------------------------------------------------------------
+// hang script
+// ---------------------------------------------------------------------------
+
+/** Sentinel resolved on the next microtask, raced against the hang promise. */
+const SETTLED = Symbol('settled');
+
+describe('FakeRemovalExecutor — hang script', () => {
+  it('records the call with a snapshot copy of tracks before hanging', async () => {
+    const exec = new FakeRemovalExecutor({ kind: 'hang' });
+    const tracks = [likedTrack(0), likedTrack(1)];
+    // Do NOT await — the call never settles.
+    void exec.remove(LIKED, tracks, neverAborted());
+    // The call is recorded synchronously, before the never-settling promise.
+    expect(exec.calls).toHaveLength(1);
+    expect(exec.calls[0]?.target).toEqual(LIKED);
+    expect(exec.calls[0]?.tracks).toEqual([likedTrack(0), likedTrack(1)]);
+    // Snapshot: mutating the caller array afterwards does not change the record.
+    tracks.push(likedTrack(2));
+    tracks[0] = likedTrack(99);
+    expect(exec.calls[0]?.tracks).toEqual([likedTrack(0), likedTrack(1)]);
+  });
+
+  it('returns a promise that never settles (loses the race to an immediate sentinel)', async () => {
+    const exec = new FakeRemovalExecutor({ kind: 'hang' });
+    const hanging = exec.remove(LIKED, [likedTrack(0)], neverAborted());
+    const winner = await Promise.race([hanging, Promise.resolve(SETTLED)]);
+    expect(winner).toBe(SETTLED);
+  });
+
+  it('does not invoke onProgress', async () => {
+    const exec = new FakeRemovalExecutor({ kind: 'hang' });
+    const onProgress = vi.fn();
+    void exec.remove(LIKED, [likedTrack(0)], neverAborted(), onProgress);
+    await Promise.resolve();
+    expect(onProgress).not.toHaveBeenCalled();
+  });
+
+  it('a pre-aborted signal still throws AbortError before recording, even under hang', async () => {
+    const exec = new FakeRemovalExecutor({ kind: 'hang' });
+    await expect(exec.remove(LIKED, [likedTrack(0)], abortedSignal())).rejects.toSatisfy(
+      (e: unknown) => e instanceof DOMException && e.name === 'AbortError',
+    );
+    expect(exec.calls).toHaveLength(0);
+  });
+});
+
+// ---------------------------------------------------------------------------
 // Pre-aborted signal
 // ---------------------------------------------------------------------------
 

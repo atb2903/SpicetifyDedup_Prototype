@@ -11,3 +11,9 @@
   font-size: 12px;
   color: var(--dedup-error);
 }
+
+// Stall (timed-out) variant: a distinct, calmer affordance than a hard error
+// since nothing was deleted and retry is encouraged (NFR-004 / FR-008).
+.timedOut {
+  font-style: italic;
+}

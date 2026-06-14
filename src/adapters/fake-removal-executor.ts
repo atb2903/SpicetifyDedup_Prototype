@@ -47,12 +47,16 @@ export const FAKE_FAIL_REASON = 'fake-fail';
  *   removed. (Playlist identity is by `uid`.)
  * - `throw` — the whole call rejects with `error` (inject a `RemovalError` or
  *   any value), modelling an unattributable whole-operation fault.
+ * - `hang` — the call is recorded in `calls`, then returns a never-settling
+ *   promise (`new Promise(() => {})`), modelling a host call that never
+ *   resolves or rejects.
  */
 export type FakeRemovalScript =
   | { kind: 'ok' }
   | { kind: 'partial'; failUris: ReadonlyArray<string> }
   | { kind: 'partial-uids'; failUids: ReadonlyArray<string> }
-  | { kind: 'throw'; error: unknown };
+  | { kind: 'throw'; error: unknown }
+  | { kind: 'hang' };
 
 /**
  * A recorded `remove` invocation, for assertions about single-collection scope
@@ -110,8 +114,10 @@ export class FakeRemovalExecutor implements RemovalExecutor {
    * @param signal - If already aborted at entry, the call throws
    *   `DOMException('AbortError')` before recording or scripting.
    * @param onProgress - If provided, invoked once with a terminal
-   *   `{ removedSoFar, total }` after partitioning.
-   * @returns The aggregate outcome.
+   *   `{ removedSoFar, total }` after partitioning. Never called under the
+   *   `hang` script.
+   * @returns The aggregate outcome, or — under the `hang` script — a promise
+   *   that never settles.
    * @throws `DOMException('AbortError')` if `signal` is pre-aborted.
    * @throws the injected `error` if the active script is `throw`.
    */
@@ -136,6 +142,13 @@ export class FakeRemovalExecutor implements RemovalExecutor {
       return Promise.reject(script.error);
     }
 
+    // Non-settling host call: never resolves, never rejects, never reports
+    // progress. Recorded above (parity with `throw`) so callers can still
+    // assert the call reached the executor.
+    if (script.kind === 'hang') {
+      return new Promise<RemovalOutcome>(() => {});
+    }
+
     const outcome = partition(tracks, script);
 
     if (onProgress !== undefined) {
@@ -151,17 +164,18 @@ export class FakeRemovalExecutor implements RemovalExecutor {
 // ---------------------------------------------------------------------------
 
 /**
- * Partition `tracks` into removed/failed according to a non-throw `script`.
- * Upholds total accounting and disjointness by construction (each track lands
- * in exactly one partition).
+ * Partition `tracks` into removed/failed according to a settling, non-throw
+ * `script`. Upholds total accounting and disjointness by construction (each
+ * track lands in exactly one partition).
  *
  * @param tracks - Requested occurrences.
- * @param script - An `ok`, `partial`, or `partial-uids` script.
+ * @param script - An `ok`, `partial`, or `partial-uids` script (the `throw`
+ *   and `hang` scripts return before reaching here).
  * @returns The partitioned {@link RemovalOutcome}.
  */
 function partition(
   tracks: ReadonlyArray<TrackRef>,
-  script: Exclude<FakeRemovalScript, { kind: 'throw' }>,
+  script: Exclude<FakeRemovalScript, { kind: 'throw' } | { kind: 'hang' }>,
 ): RemovalOutcome {
   const removed: TrackRef[] = [];
   const failed: Array<{ track: TrackRef; reason: string }> = [];
@@ -181,12 +195,13 @@ function partition(
  * Decide whether `track` fails under `script`.
  *
  * @param track - A requested occurrence.
- * @param script - An `ok`, `partial`, or `partial-uids` script.
+ * @param script - An `ok`, `partial`, or `partial-uids` script (the `throw`
+ *   and `hang` scripts return before reaching here).
  * @returns `true` iff the track should be reported as failed.
  */
 function shouldFail(
   track: TrackRef,
-  script: Exclude<FakeRemovalScript, { kind: 'throw' }>,
+  script: Exclude<FakeRemovalScript, { kind: 'throw' } | { kind: 'hang' }>,
 ): boolean {
   switch (script.kind) {
     case 'partial':

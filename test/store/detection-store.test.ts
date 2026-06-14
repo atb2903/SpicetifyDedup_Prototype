@@ -25,7 +25,10 @@
  * - Double click within microtask
  */
 import { describe, it, expect, vi } from 'vitest';
-import { createDetectionStore } from '../../src/store/detection-store';
+import {
+  createDetectionStore,
+  STALL_CEILING_MS,
+} from '../../src/store/detection-store';
 import { DetectionError } from '../../src/domain/detection-errors';
 import { RemovalError, isRemovalError } from '../../src/domain/removal-errors';
 import {
@@ -35,6 +38,7 @@ import {
 } from '../../src/adapters/fake-removal-executor';
 import type { DetectionScanner } from '../../src/ports/detection-scanner';
 import type { RemovalExecutor } from '../../src/ports/removal-executor';
+import type { Scheduler, TimerHandle } from '../../src/ports/scheduler';
 import type {
   RemovalTarget,
   TrackRef,
@@ -632,6 +636,72 @@ function removalPhase(
   return row.removal.phase;
 }
 
+/** Flush pending microtasks/macrotasks so async chains settle. */
+function flush(): Promise<void> {
+  return new Promise<void>((res) => setTimeout(res, 0));
+}
+
+/**
+ * A deterministic `Scheduler` double. Timers are queued (never delegated to the
+ * real platform) and only fire when `advance(ms)` elapses their remaining delay.
+ *
+ * - `advance(ms)` — moves the virtual clock forward, firing every timer whose
+ *   accumulated delay has been reached (in scheduled order).
+ * - `pending` — number of timers still queued (asserts the under-ceiling path
+ *   clears its timer; asserts the over-ceiling path leaves none dangling).
+ */
+function makeFakeScheduler(): Scheduler & {
+  advance: (ms: number) => void;
+  readonly pending: number;
+} {
+  type Entry = { id: number; remaining: number; fn: () => void };
+  let nextId = 1;
+  let entries: Entry[] = [];
+
+  return {
+    setTimeout(fn: () => void, ms: number): TimerHandle {
+      const id = nextId++;
+      entries.push({ id, remaining: ms, fn });
+      // The handle only needs to round-trip through clearTimeout; cast the
+      // numeric id to the platform handle type.
+      return id as unknown as TimerHandle;
+    },
+    clearTimeout(handle: TimerHandle): void {
+      const id = handle as unknown as number;
+      entries = entries.filter((e) => e.id !== id);
+    },
+    advance(ms: number): void {
+      // Decrement every timer; fire (and remove) those that reach 0 or below.
+      const due: Entry[] = [];
+      for (const e of entries) {
+        e.remaining -= ms;
+        if (e.remaining <= 0) due.push(e);
+      }
+      entries = entries.filter((e) => e.remaining > 0);
+      for (const e of due) e.fn();
+    },
+    get pending(): number {
+      return entries.length;
+    },
+  };
+}
+
+/**
+ * Build a `loaded` row whose playlist members are missing `uid`, so
+ * `computeRemoveSet` (playlist target) throws
+ * `malformed-result/playlist-member-missing-uid`. Mirrors the live repro
+ * (`diagnosis-evidence.md` Defect A): a playlist duplicate group whose removable
+ * member has `uid === undefined`.
+ */
+async function seedComputeFailureRow(
+  key: string,
+  executor?: RemovalExecutor,
+): Promise<ReturnType<typeof createDetectionStore>> {
+  // `withUid: false` → playlist members carry no uid → computeRemoveSet throws
+  // when the target is a playlist (key is a playlist URI below).
+  return seedLoaded(key, makeRemovableResult(key, 1, false), executor);
+}
+
 describe('createDetectionStore — removal: single-collection scope (AS-4)', () => {
   it('confirmRemoval calls the executor exactly once, with the acted target only', async () => {
     const fake = new FakeRemovalExecutor();
@@ -1011,5 +1081,459 @@ describe('createDetectionStore — removal: optional-executor back-compat', () =
     await expect(store.getState().confirmRemoval(key)).rejects.toSatisfy(
       (e: unknown) => isRemovalError(e) && e.code === 'executor-failed',
     );
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// WP03 — Catch hardening (Defect A hang fix) + stall ceiling (NFR-001)
+// ═══════════════════════════════════════════════════════════════════════════
+
+describe('createDetectionStore — WP03 T007: hang regressions (must terminate)', () => {
+  // T007a — the live repro: a playlist removable member missing `uid` makes
+  // computeRemoveSet throw. The hardened catch must route this to a terminal
+  // all-failed `partial`, never leave the row stuck on `removing`, and never
+  // surface an uncaught rejection.
+  it('T007a — compute-failure (playlist member missing uid) terminates to partial', async () => {
+    const key = 'spotify:playlist:compute-fail';
+    const fake = new FakeRemovalExecutor();
+    const store = await seedComputeFailureRow(key, fake);
+
+    store.getState().requestRemoval(key);
+    // ≤25 → falls through to execute → computeRemoveSet throws inside confirm.
+    await expect(store.getState().confirmRemoval(key)).resolves.toBeUndefined();
+    await flush();
+
+    expect(removalPhase(store, key)).toBe('partial');
+    // The executor was never reached — the failure is pre-execution.
+    expect(fake.calls.length).toBe(0);
+  });
+
+  // T007b — the ceiling repro: a never-settling executor. Advancing the
+  // injected scheduler past STALL_CEILING_MS must drive the row out of
+  // `removing` into `partial`.
+  it('T007b — never-settling executor terminates to partial past the ceiling', async () => {
+    const key = 'liked-songs';
+    const exec = new FakeRemovalExecutor({ kind: 'hang' });
+    const scheduler = makeFakeScheduler();
+    const ctrl = makeControllableScanner();
+    const store = createDetectionStore(ctrl.scanner, exec, scheduler);
+    const p = store.getState().scanCollection(key, { kind: 'liked-songs' });
+    ctrl.resolveNext(makeRemovableResult(key, 2, false));
+    await p;
+
+    store.getState().requestRemoval(key);
+    const removalP = store.getState().confirmRemoval(key);
+    expect(removalPhase(store, key)).toBe('removing');
+    expect(exec.calls.length).toBe(1);
+
+    scheduler.advance(STALL_CEILING_MS);
+    await removalP;
+    await flush();
+
+    expect(removalPhase(store, key)).toBe('partial');
+  });
+});
+
+describe('createDetectionStore — WP03 T008: STALL_CEILING_MS constant', () => {
+  it('is exported as 30_000 ms (hang guard, not an SLA)', () => {
+    expect(STALL_CEILING_MS).toBe(30_000);
+  });
+});
+
+describe('createDetectionStore — WP03 T010: ceiling boundary (NFR-002)', () => {
+  // under — executor settles before the deadline → normal terminal phase; the
+  // timer is cleared (no leftover pending timer) and no spurious abort fires.
+  it('under — settles before deadline → none; timer cleared, no spurious abort', async () => {
+    let resolveRemove!: (o: RemovalOutcome) => void;
+    let seenSignal: AbortSignal | undefined;
+    const exec: RemovalExecutor = {
+      remove: vi.fn((_t: RemovalTarget, _tr: ReadonlyArray<TrackRef>, signal: AbortSignal) => {
+        seenSignal = signal;
+        return new Promise<RemovalOutcome>((res) => {
+          resolveRemove = res;
+        });
+      }),
+    };
+    const scheduler = makeFakeScheduler();
+    const key = 'liked-songs';
+    const ctrl = makeControllableScanner();
+    const store = createDetectionStore(ctrl.scanner, exec, scheduler);
+    const sp = store.getState().scanCollection(key, { kind: 'liked-songs' });
+    ctrl.resolveNext(makeRemovableResult(key, 2, false));
+    await sp;
+
+    store.getState().requestRemoval(key);
+    const p = store.getState().confirmRemoval(key);
+    expect(removalPhase(store, key)).toBe('removing');
+    expect(scheduler.pending).toBe(1); // ceiling timer scheduled
+
+    // Settle BEFORE advancing the scheduler (under the ceiling).
+    resolveRemove({
+      removed: [{ uri: 'spotify:track:0-dup' }, { uri: 'spotify:track:1-dup' }],
+      failed: [],
+    });
+    await p;
+    await flush();
+
+    expect(removalPhase(store, key)).toBe('none');
+    expect(scheduler.pending).toBe(0); // timer cleared — no leak
+    expect(seenSignal!.aborted).toBe(false); // no spurious abort
+  });
+
+  // at — deadline and settlement coincide: deadline-wins (documented tie-break)
+  // → stalled → all-failed partial.
+  it('at (= STALL_CEILING_MS) — deadline wins → stalled → partial', async () => {
+    const key = 'liked-songs';
+    const exec = new FakeRemovalExecutor({ kind: 'hang' });
+    const scheduler = makeFakeScheduler();
+    const ctrl = makeControllableScanner();
+    const store = createDetectionStore(ctrl.scanner, exec, scheduler);
+    const sp = store.getState().scanCollection(key, { kind: 'liked-songs' });
+    ctrl.resolveNext(makeRemovableResult(key, 2, false));
+    await sp;
+
+    store.getState().requestRemoval(key);
+    const p = store.getState().confirmRemoval(key);
+    expect(removalPhase(store, key)).toBe('removing');
+
+    scheduler.advance(STALL_CEILING_MS); // exactly at the boundary
+    await p;
+    await flush();
+
+    expect(removalPhase(store, key)).toBe('partial');
+  });
+
+  // over — never settles → advance past the ceiling → stalled → all-failed
+  // partial; removableTrackCount unchanged (nothing removed — truthful counts).
+  it('over — past the ceiling → stalled → partial; counts unchanged; reason prefixed', async () => {
+    const key = 'liked-songs';
+    const exec = new FakeRemovalExecutor({ kind: 'hang' });
+    const scheduler = makeFakeScheduler();
+    const ctrl = makeControllableScanner();
+    const store = createDetectionStore(ctrl.scanner, exec, scheduler);
+    const sp = store.getState().scanCollection(key, { kind: 'liked-songs' });
+    ctrl.resolveNext(makeRemovableResult(key, 2, false));
+    await sp;
+
+    store.getState().requestRemoval(key);
+    const p = store.getState().confirmRemoval(key);
+    scheduler.advance(STALL_CEILING_MS + 1); // over the ceiling
+    await p;
+    await flush();
+
+    const row = store.getState().rows[key];
+    if (row?.kind !== 'loaded' || row.removal.phase !== 'partial')
+      throw new Error('expected partial');
+    expect(row.removal.outcome.removed.length).toBe(0);
+    expect(row.removal.outcome.failed.length).toBe(2);
+    expect(row.result.removableTrackCount).toBe(2); // unchanged
+    // WP04 detects the stalled outcome via the `stalled:` reason prefix.
+    expect(row.removal.outcome.failed[0]!.reason.startsWith('stalled:')).toBe(true);
+    // The ceiling timer fired and is no longer pending.
+    expect(scheduler.pending).toBe(0);
+  });
+});
+
+describe('createDetectionStore — WP03 T011: stall ≠ cancel, no double-fire, late settle', () => {
+  // Stall → partial (terminal).
+  it('stall produces a terminal partial', async () => {
+    const key = 'liked-songs';
+    const exec = new FakeRemovalExecutor({ kind: 'hang' });
+    const scheduler = makeFakeScheduler();
+    const ctrl = makeControllableScanner();
+    const store = createDetectionStore(ctrl.scanner, exec, scheduler);
+    const sp = store.getState().scanCollection(key, { kind: 'liked-songs' });
+    ctrl.resolveNext(makeRemovableResult(key, 2, false));
+    await sp;
+
+    store.getState().requestRemoval(key);
+    const p = store.getState().confirmRemoval(key);
+    scheduler.advance(STALL_CEILING_MS);
+    await p;
+    await flush();
+    expect(removalPhase(store, key)).toBe('partial');
+  });
+
+  // reset() mid-removal → executor AbortError swallowed → row cleared (NOT
+  // partial). The two abort sources stay distinguishable.
+  it('reset() mid-removal clears the row (not partial) — distinct from stall', async () => {
+    let rejectRemove!: (e: unknown) => void;
+    let seenSignal: AbortSignal | undefined;
+    const exec: RemovalExecutor = {
+      remove: vi.fn((_t: RemovalTarget, _tr: ReadonlyArray<TrackRef>, signal: AbortSignal) => {
+        seenSignal = signal;
+        return new Promise<RemovalOutcome>((_res, rej) => {
+          rejectRemove = rej;
+        });
+      }),
+    };
+    const scheduler = makeFakeScheduler();
+    const key = 'liked-songs';
+    const ctrl = makeControllableScanner();
+    const store = createDetectionStore(ctrl.scanner, exec, scheduler);
+    const sp = store.getState().scanCollection(key, { kind: 'liked-songs' });
+    ctrl.resolveNext(makeRemovableResult(key, 2, false));
+    await sp;
+
+    store.getState().requestRemoval(key);
+    const p = store.getState().confirmRemoval(key);
+    expect(removalPhase(store, key)).toBe('removing');
+
+    store.getState().reset();
+    expect(seenSignal!.aborted).toBe(true);
+    // The executor observes the abort and rejects AbortError → swallowed.
+    rejectRemove(new DOMException('aborted', 'AbortError'));
+    await p;
+    await flush();
+
+    expect(store.getState().rows).toEqual({});
+    expect(store.getState().rows[key]).toBeUndefined();
+  });
+
+  // Compute-failure ≠ cancel: a computeRemoveSet failure → partial (terminal,
+  // never re-thrown), but reset() still clears the row.
+  it('compute-failure terminates to partial; a later reset still clears the row', async () => {
+    const key = 'spotify:playlist:compute-fail-2';
+    const fake = new FakeRemovalExecutor();
+    const store = await seedComputeFailureRow(key, fake);
+
+    store.getState().requestRemoval(key);
+    await store.getState().confirmRemoval(key);
+    await flush();
+    expect(removalPhase(store, key)).toBe('partial');
+    expect(fake.calls.length).toBe(0);
+
+    store.getState().reset();
+    expect(store.getState().rows).toEqual({});
+  });
+
+  // No double-fire (FR-009): a second confirmRemoval while one is in flight is
+  // rejected by the in-flight lock — even across the stall path.
+  it('no double-fire across the stall path — exactly one executor call', async () => {
+    const key = 'liked-songs';
+    const exec = new FakeRemovalExecutor({ kind: 'hang' });
+    const scheduler = makeFakeScheduler();
+    const ctrl = makeControllableScanner();
+    const store = createDetectionStore(ctrl.scanner, exec, scheduler);
+    const sp = store.getState().scanCollection(key, { kind: 'liked-songs' });
+    ctrl.resolveNext(makeRemovableResult(key, 2, false));
+    await sp;
+
+    store.getState().requestRemoval(key);
+    const first = store.getState().confirmRemoval(key);
+    expect(removalPhase(store, key)).toBe('removing');
+    expect(exec.calls.length).toBe(1);
+
+    // Second confirm while removing — rejected by the lock.
+    await store.getState().confirmRemoval(key);
+    expect(exec.calls.length).toBe(1);
+
+    scheduler.advance(STALL_CEILING_MS);
+    await first;
+    await flush();
+    expect(removalPhase(store, key)).toBe('partial');
+    expect(exec.calls.length).toBe(1);
+  });
+
+  // Late settle ignored: after the deadline fires, settle the hung work promise
+  // and flush → no state change, no unhandled-rejection warning. This exercises
+  // the no-op `.catch(() => {})` on the work arm.
+  it('late settle after the deadline is ignored (no unhandled rejection)', async () => {
+    let rejectRemove!: (e: unknown) => void;
+    const exec: RemovalExecutor = {
+      remove: vi.fn(
+        () =>
+          new Promise<RemovalOutcome>((_res, rej) => {
+            rejectRemove = rej;
+          }),
+      ),
+    };
+    const scheduler = makeFakeScheduler();
+    const key = 'liked-songs';
+    const ctrl = makeControllableScanner();
+    const store = createDetectionStore(ctrl.scanner, exec, scheduler);
+    const sp = store.getState().scanCollection(key, { kind: 'liked-songs' });
+    ctrl.resolveNext(makeRemovableResult(key, 2, false));
+    await sp;
+
+    store.getState().requestRemoval(key);
+    const p = store.getState().confirmRemoval(key);
+    scheduler.advance(STALL_CEILING_MS); // ceiling fires → controller.abort()
+    await p;
+    await flush();
+    expect(removalPhase(store, key)).toBe('partial');
+
+    // The hung executor now rejects late (it observed the abort from onStall) —
+    // the no-op catch on the work arm swallows it; no state change.
+    rejectRemove(new DOMException('aborted', 'AbortError'));
+    await flush();
+    expect(removalPhase(store, key)).toBe('partial');
+  });
+
+  // A late NON-abort rejection after the deadline is likewise ignored (covers
+  // the work-arm no-op catch for a generic rejection).
+  it('late non-abort rejection after the deadline is ignored', async () => {
+    let rejectRemove!: (e: unknown) => void;
+    const exec: RemovalExecutor = {
+      remove: vi.fn(
+        () =>
+          new Promise<RemovalOutcome>((_res, rej) => {
+            rejectRemove = rej;
+          }),
+      ),
+    };
+    const scheduler = makeFakeScheduler();
+    const key = 'liked-songs';
+    const ctrl = makeControllableScanner();
+    const store = createDetectionStore(ctrl.scanner, exec, scheduler);
+    const sp = store.getState().scanCollection(key, { kind: 'liked-songs' });
+    ctrl.resolveNext(makeRemovableResult(key, 2, false));
+    await sp;
+
+    store.getState().requestRemoval(key);
+    const p = store.getState().confirmRemoval(key);
+    scheduler.advance(STALL_CEILING_MS);
+    await p;
+    await flush();
+
+    rejectRemove(new Error('late host failure'));
+    await flush();
+    expect(removalPhase(store, key)).toBe('partial');
+  });
+
+  // Deadline fires AFTER work already settled (the `settled` guard inside the
+  // ceiling timer). Models the real-timer race where the macrotask fires before
+  // `clearTimeout` takes effect: a leniently-cancelling scheduler whose
+  // `clearTimeout` is a no-op lets the timer fire post-settlement; the guard
+  // short-circuits so no spurious `stalled` rejection is raised.
+  it('a deadline that fires after settlement is a no-op (settled guard)', async () => {
+    let resolveRemove!: (o: RemovalOutcome) => void;
+    let fire: (() => void) | undefined;
+    // A scheduler whose clearTimeout does NOT cancel — the captured `fire` can
+    // still be invoked after `work` resolves.
+    const scheduler: Scheduler = {
+      setTimeout(fn: () => void): TimerHandle {
+        fire = fn;
+        return 1 as unknown as TimerHandle;
+      },
+      clearTimeout(): void {
+        /* intentionally lenient — does not cancel */
+      },
+    };
+    const exec: RemovalExecutor = {
+      remove: vi.fn(
+        () =>
+          new Promise<RemovalOutcome>((res) => {
+            resolveRemove = res;
+          }),
+      ),
+    };
+    const key = 'liked-songs';
+    const ctrl = makeControllableScanner();
+    const store = createDetectionStore(ctrl.scanner, exec, scheduler);
+    const sp = store.getState().scanCollection(key, { kind: 'liked-songs' });
+    ctrl.resolveNext(makeRemovableResult(key, 2, false));
+    await sp;
+
+    store.getState().requestRemoval(key);
+    const p = store.getState().confirmRemoval(key);
+    // Settle under the ceiling — clearTimeout is a no-op, so `fire` survives.
+    resolveRemove({
+      removed: [{ uri: 'spotify:track:0-dup' }, { uri: 'spotify:track:1-dup' }],
+      failed: [],
+    });
+    await p;
+    await flush();
+    expect(removalPhase(store, key)).toBe('none');
+
+    // Now fire the (un-cancelled) deadline AFTER settlement — the `settled`
+    // guard must short-circuit; the phase stays `none`, no `stalled` partial.
+    fire!();
+    await flush();
+    expect(removalPhase(store, key)).toBe('none');
+  });
+
+  // A late RESOLVE after the deadline is also ignored.
+  it('late resolve after the deadline is ignored', async () => {
+    let resolveRemove!: (o: RemovalOutcome) => void;
+    const exec: RemovalExecutor = {
+      remove: vi.fn(
+        () =>
+          new Promise<RemovalOutcome>((res) => {
+            resolveRemove = res;
+          }),
+      ),
+    };
+    const scheduler = makeFakeScheduler();
+    const key = 'liked-songs';
+    const ctrl = makeControllableScanner();
+    const store = createDetectionStore(ctrl.scanner, exec, scheduler);
+    const sp = store.getState().scanCollection(key, { kind: 'liked-songs' });
+    ctrl.resolveNext(makeRemovableResult(key, 2, false));
+    await sp;
+
+    store.getState().requestRemoval(key);
+    const p = store.getState().confirmRemoval(key);
+    scheduler.advance(STALL_CEILING_MS);
+    await p;
+    await flush();
+    expect(removalPhase(store, key)).toBe('partial');
+
+    resolveRemove({ removed: [{ uri: 'spotify:track:0-dup' }], failed: [] });
+    await flush();
+    // Still partial — the late resolve lost the race and is ignored.
+    expect(removalPhase(store, key)).toBe('partial');
+  });
+
+  // Confirmations intact (FR-010): the stall path is only reachable after the
+  // confirm dialog(s) — requesting removal alone does not arm the ceiling.
+  it('confirmations intact — ceiling does not bypass the confirm dialog', async () => {
+    const key = 'liked-songs';
+    const exec = new FakeRemovalExecutor({ kind: 'hang' });
+    const scheduler = makeFakeScheduler();
+    const ctrl = makeControllableScanner();
+    const store = createDetectionStore(ctrl.scanner, exec, scheduler);
+    const sp = store.getState().scanCollection(key, { kind: 'liked-songs' });
+    ctrl.resolveNext(makeRemovableResult(key, 2, false));
+    await sp;
+
+    store.getState().requestRemoval(key);
+    expect(removalPhase(store, key)).toBe('confirming');
+    // No confirm yet → no executor call, no ceiling timer armed.
+    expect(exec.calls.length).toBe(0);
+    expect(scheduler.pending).toBe(0);
+
+    // Advancing the clock while only `confirming` changes nothing.
+    scheduler.advance(STALL_CEILING_MS);
+    await flush();
+    expect(removalPhase(store, key)).toBe('confirming');
+  });
+
+  // >25 bulk: the second confirm is still required before the ceiling arms.
+  it('confirmations intact — >25 requires the second confirm before the ceiling arms', async () => {
+    const key = 'liked-songs';
+    const exec = new FakeRemovalExecutor({ kind: 'hang' });
+    const scheduler = makeFakeScheduler();
+    const ctrl = makeControllableScanner();
+    const store = createDetectionStore(ctrl.scanner, exec, scheduler);
+    const sp = store.getState().scanCollection(key, { kind: 'liked-songs' });
+    ctrl.resolveNext(makeRemovableResult(key, 26, false));
+    await sp;
+
+    store.getState().requestRemoval(key);
+    await store.getState().confirmRemoval(key);
+    // First confirm on a bulk delete → confirming2, no execute, no ceiling.
+    expect(removalPhase(store, key)).toBe('confirming2');
+    expect(exec.calls.length).toBe(0);
+    expect(scheduler.pending).toBe(0);
+
+    // Second confirm executes and arms the ceiling.
+    const p = store.getState().confirmRemoval(key);
+    expect(removalPhase(store, key)).toBe('removing');
+    expect(scheduler.pending).toBe(1);
+    scheduler.advance(STALL_CEILING_MS);
+    await p;
+    await flush();
+    expect(removalPhase(store, key)).toBe('partial');
   });
 });

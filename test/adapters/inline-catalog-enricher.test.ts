@@ -57,6 +57,25 @@ describe('InlineCatalogEnricher', () => {
     });
   });
 
+  it('propagates a non-empty uid onto the enriched track (ADR-0012)', async () => {
+    const enricher = new InlineCatalogEnricher();
+    const track: RawTrack = { ...makeRawTrack(0), uid: '610a666b423c78e4' };
+    const result = await enricher.enrich([track], new AbortController().signal, vi.fn());
+    const slot = result[0] as Extract<EnrichmentSlot, { kind: 'enriched' }>;
+    expect(slot.kind).toBe('enriched');
+    expect(slot.track.uid).toBe('610a666b423c78e4');
+  });
+
+  it('leaves uid absent on the enriched track for a Liked-Songs RawTrack (no fabrication)', async () => {
+    const enricher = new InlineCatalogEnricher();
+    // makeRawTrack() builds no uid — the Liked-Songs origin shape.
+    const result = await enricher.enrich([makeRawTrack(0)], new AbortController().signal, vi.fn());
+    const slot = result[0] as Extract<EnrichmentSlot, { kind: 'enriched' }>;
+    expect(slot.kind).toBe('enriched');
+    expect(slot.track.uid).toBeUndefined();
+    expect('uid' in slot.track).toBe(false);
+  });
+
   it('maps artists to name-only entries (drops uri)', async () => {
     const enricher = new InlineCatalogEnricher();
     const track: RawTrack = {

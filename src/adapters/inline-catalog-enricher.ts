@@ -101,6 +101,10 @@ export class InlineCatalogEnricher implements CatalogEnricher {
               name: t.name,
               artists: t.artists.map((a) => ({ name: a.name })),
               durationMs: t.durationMs,
+              // Preserve the playlist occurrence id verbatim (ADR-0012). Added
+              // only when defined so Liked-Songs tracks keep `uid` absent —
+              // never fabricated — matching the enumerator's convention.
+              ...(t.uid !== undefined ? { uid: t.uid } : {}),
             },
           });
         } else {

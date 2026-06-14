@@ -163,3 +163,4 @@ user clicks; capture the transcript into `reverify-evidence.md`.
 ## Activity Log
 
 - 2026-06-13T23:45:52Z – claude:opus:implementer:implementer – shell_pid=99364 – Started implementation via action command
+- 2026-06-14T00:12:43Z – claude:opus:implementer:implementer – shell_pid=99364 – Ready for review — T012/T013 code (commit 3a45f74) + T014 live re-verify (SC-001..SC-004 all pass, evidence on main c0ba6a0)

@@ -58,7 +58,7 @@ live.
 | T016 | Failing-first guard test: `uid` survives enrichment for a playlist track; stays `undefined` for Liked-Songs | WP05 | [D] |
 | T012 | `RemovalOutcomeView`: plain-language timed-out copy for the stalled outcome | WP04 | | [D] |
 | T013 | Integration test: real store + real enricher → a `uid`-carrying duplicate is actually removed; `hang` fake + fake scheduler → terminates to `partial` | WP04 | | [D] |
-| T014 | Live re-verification on the 2-song repro (SC-001..SC-004) + transcript | WP04 | |
+| T014 | Live re-verification on the 2-song repro (SC-001..SC-004) + transcript | WP04 | | [D] |
 
 ---
 
@@ -210,7 +210,7 @@ transcript captured.
 
 - [x] T012 `RemovalOutcomeView`: plain-language timed-out copy for the stalled outcome (WP04)
 - [x] T013 Integration test: real store + `hang` fake + fake scheduler → terminates to `partial` (WP04)
-- [ ] T014 Live re-verification on the 2-song repro (SC-001..SC-004) + transcript (WP04)
+- [x] T014 Live re-verification on the 2-song repro (SC-001..SC-004) + transcript (WP04)
 
 **Dependencies / risks.** Depends on the `stalled`-reason convention WP03 writes into the
 all-failed outcome. Live re-verify needs the live client (driver protocol).

@@ -20,6 +20,7 @@
         "src/adapters/spicetify-removal-executor.ts",
         "src/adapters/spicetify-tracks-enumerator.ts",
         "src/domain/detection-errors.ts",
+        "src/domain/detection-state.ts",
         "src/domain/host-auth.ts",
         "src/domain/removal-types.ts",
         "src/ports/catalog-enricher.ts",
@@ -63,7 +64,7 @@
       "parallel_group": 0
     }
   ],
-  "computed_at": "2026-06-15T18:22:52.268705+00:00",
+  "computed_at": "2026-06-15T23:24:44.692638+00:00",
   "computed_from": "dependency_graph+ownership",
   "planning_artifact_wps": [],
   "collapse_report": {

@@ -29,6 +29,7 @@ subtasks:
 - T008
 - T009
 - T010
+- T011
 phase: Phase 1 - Foundational
 assignee: ''
 agent: "claude:opus:implementer:implementer"
@@ -42,6 +43,7 @@ execution_mode: code_change
 owned_files:
 - src/domain/detection-errors.ts
 - src/domain/removal-types.ts
+- src/domain/detection-state.ts
 - src/ports/removal-executor.ts
 - src/ports/catalog-enricher.ts
 - src/adapters/spicetify-removal-executor.ts
@@ -373,9 +375,42 @@ referenced from the code comments they govern.
 
 ---
 
+### T011 — Route `removeComplete` on `provenance` (FR-003/FR-009 end-to-end)
+
+**Purpose**: The truthful provenance-carrying outcomes from T007 must reach the
+`partial` view, or WP03's compute-failed/stalled copy is dead code. `removeComplete`
+in `src/domain/detection-state.ts` (now owned by this WP) today routes purely on
+`failed.length === 0 → none`, which misroutes compute-failed (`removed:[], failed:[]`)
+and a successful stalled-partial (`removed:[N], failed:[]`) to `none` — violating
+FR-009's user-facing copy and FR-003's "faithfully represent how many were removed".
+**Added after cycle-1 review** (see Review Feedback). Implement only this on top of the
+T001–T010 commit; do not redo earlier subtasks.
+
+**Steps**:
+1. In the `removeComplete` handler (~:271–:281), branch on `action.outcome.provenance`:
+   - `compute-failed` → `{ phase: 'partial', outcome }`
+   - `stalled` → `{ phase: 'partial', outcome }` (incl. `removed.length === 0`, so the
+     "timed out, removed nothing" copy renders)
+   - `executor-failed` → `{ phase: 'partial', outcome }` (unchanged; already `failed > 0`)
+   - `host` → keep the existing rule: `failed.length === 0 → none` (full success), else `partial`
+   Preserve every other transition byte-for-byte; keep the handler exhaustive over the
+   provenance union (a missing arm should be a `tsc` error where practical).
+2. Update the `removeComplete` JSDoc to document provenance-based routing.
+3. TDD (this WP owns these tests): `test/domain/detection-state.test.ts` — one case per
+   provenance branch (compute-failed→partial zero-track; stalled removed>0→partial truthful
+   count; stalled removed===0→partial; host full-success→none; host failed>0→partial).
+   `test/integration/removal-termination.test.ts` — assert end-to-end that a compute-failure
+   and a stalled-partial both land on `partial` carrying the truthful outcome.
+
+**Validation**: detection-state + integration tests green at 100% branch; no provenance
+value falls through; host full-success still → `none`; the `partial` phase is reachable for
+compute-failed and stalled outcomes.
+
+---
+
 ## Definition of Done
 
-- [ ] All 10 subtasks complete; each landed test-first (failing test observed first).
+- [ ] All 11 subtasks complete; each landed test-first (failing test observed first).
 - [ ] `npm test` green — full suite, **100% line + branch coverage**, no skips.
 - [ ] `npx tsc --noEmit` clean (strict).
 - [ ] Boundary tests present: 29 999 / 30 000 / 30 001 ms per-batch window + the
@@ -384,6 +419,7 @@ referenced from the code comments they govern.
 - [ ] `grep -R "startsWith('stalled:'\|startsWith('executor-failed:'" src` → empty.
 - [ ] ADRs (B; C/D/I; K; N) written under `.claude/adr/`.
 - [ ] `ports/catalog-enricher.ts` JSDoc no longer references a `SpicetifyCatalogEnricher` adapter (C-006).
+- [ ] `removeComplete` routes compute-failed/stalled/executor-failed to `partial`; host full-success still → `none`; routing is provenance-based, not `failed.length`-only (T011).
 - [ ] **Live-verify artefact (Finding B / FR-003)**: per the project live-verification
       protocol, drive the user through a real multi-batch removal on a large
       collection — confirm the reported removed-count equals what the host deleted

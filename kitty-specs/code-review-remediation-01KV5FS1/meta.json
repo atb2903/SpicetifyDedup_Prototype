@@ -1,0 +1,10 @@
+{
+  "created_at": "2026-06-15T11:13:27.685172+00:00",
+  "friendly_name": "code review remediation",
+  "mission_id": "01KV5FS11T99G0S4T0AXE3CRBB",
+  "mission_number": null,
+  "mission_slug": "code-review-remediation-01KV5FS1",
+  "mission_type": "software-dev",
+  "slug": "code-review-remediation-01KV5FS1",
+  "target_branch": "main"
+}

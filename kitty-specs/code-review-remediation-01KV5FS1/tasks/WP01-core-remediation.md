@@ -31,8 +31,8 @@ subtasks:
 - T010
 phase: Phase 1 - Foundational
 assignee: ''
-agent: ''
-shell_pid: '212789'
+agent: "claude:opus:implementer:implementer"
+shell_pid: "212789"
 history:
 - timestamp: '2026-06-15T11:46:50Z'
   agent: system
@@ -381,3 +381,7 @@ referenced from the code comments they govern.
   remains; provenance is a typed field, not a string prefix.
 - Confirm `computeRemoveSet` cannot be re-invoked in the catch (signature-level).
 - Confirm the live-verify artefact is attached.
+
+## Activity Log
+
+- 2026-06-15T13:44:36Z – claude:opus:implementer:implementer – shell_pid=212789 – Assigned agent via action command

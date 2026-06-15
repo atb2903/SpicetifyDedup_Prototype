@@ -1,0 +1,95 @@
+{
+  "version": 1,
+  "mission_slug": "code-review-remediation-01KV5FS1",
+  "mission_id": "01KV5FS11T99G0S4T0AXE3CRBB",
+  "mission_branch": "kitty/mission-code-review-remediation-01KV5FS1",
+  "target_branch": "main",
+  "lanes": [
+    {
+      "lane_id": "lane-a",
+      "wp_ids": [
+        "WP01",
+        "WP02",
+        "WP03",
+        "WP04"
+      ],
+      "write_scope": [
+        "src/adapters/fake-catalog-enricher.ts",
+        "src/adapters/fake-removal-executor.ts",
+        "src/adapters/spicetify-playlists-loader.ts",
+        "src/adapters/spicetify-removal-executor.ts",
+        "src/adapters/spicetify-tracks-enumerator.ts",
+        "src/domain/detection-errors.ts",
+        "src/domain/host-auth.ts",
+        "src/domain/removal-types.ts",
+        "src/ports/catalog-enricher.ts",
+        "src/ports/removal-executor.ts",
+        "src/store/detection-store.ts",
+        "src/ui/DedupPage.tsx",
+        "src/ui/DetectionFailedView.tsx",
+        "src/ui/DetectionLoadedSummary.tsx",
+        "src/ui/RemovalOutcomeView.tsx",
+        "src/ui/ScanningView.tsx",
+        "test/adapters/detection-scanner.test.ts",
+        "test/adapters/fake-catalog-enricher.test.ts",
+        "test/adapters/fake-removal-executor.test.ts",
+        "test/adapters/spicetify-playlists-loader.test.ts",
+        "test/adapters/spicetify-removal-executor.test.ts",
+        "test/adapters/spicetify-tracks-enumerator.test.ts",
+        "test/architecture-fixtures/**",
+        "test/architecture.test.ts",
+        "test/domain/apply-removal-outcome.test.ts",
+        "test/domain/detection-errors.test.ts",
+        "test/domain/detection-state.test.ts",
+        "test/domain/host-auth.test.ts",
+        "test/integration/detection-end-to-end.test.ts",
+        "test/integration/removal-termination.test.ts",
+        "test/store/detection-store.test.ts",
+        "test/ui/DedupPage.test.tsx",
+        "test/ui/DetectionFailedView.test.tsx",
+        "test/ui/DetectionLoadedSummary.test.tsx",
+        "test/ui/RemovalOutcomeView.test.tsx",
+        "test/ui/ScanningView.test.tsx"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "artifact-rendering",
+        "legacy-cleanup",
+        "tests",
+        "tracker-integration"
+      ],
+      "depends_on_lanes": [],
+      "parallel_group": 0
+    }
+  ],
+  "computed_at": "2026-06-15T11:59:58.657321+00:00",
+  "computed_from": "dependency_graph+ownership",
+  "planning_artifact_wps": [],
+  "collapse_report": {
+    "events": [
+      {
+        "wp_a": "WP02",
+        "wp_b": "WP01",
+        "rule": "dependency",
+        "evidence": "WP02 depends on WP01"
+      },
+      {
+        "wp_a": "WP03",
+        "wp_b": "WP01",
+        "rule": "dependency",
+        "evidence": "WP03 depends on WP01"
+      },
+      {
+        "wp_a": "WP04",
+        "wp_b": "WP01",
+        "rule": "dependency",
+        "evidence": "WP04 depends on WP01"
+      }
+    ],
+    "total_merges": 3,
+    "independent_wps_collapsed": 0,
+    "by_rule": {
+      "dependency": 3
+    }
+  }
+}

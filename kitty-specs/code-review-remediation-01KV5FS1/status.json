@@ -1,7 +1,7 @@
 {
-  "event_count": 8,
-  "last_event_id": "01KV6SHQTMW5JQ1KW34Y2QDR6P",
-  "materialized_at": "2026-06-15T23:23:28.468131+00:00",
+  "event_count": 10,
+  "last_event_id": "01KV6SM3TVNQERN85PF314D9TZ",
+  "materialized_at": "2026-06-15T23:24:46.299804+00:00",
   "mission_number": "",
   "mission_slug": "code-review-remediation-01KV5FS1",
   "mission_type": "software-dev",
@@ -12,17 +12,17 @@
     "claimed": 0,
     "done": 0,
     "for_review": 0,
-    "in_progress": 0,
+    "in_progress": 1,
     "in_review": 0,
-    "planned": 4
+    "planned": 3
   },
   "work_packages": {
     "WP01": {
-      "actor": "user",
+      "actor": "claude:opus:implementer:implementer",
       "force_count": 2,
-      "lane": "planned",
-      "last_event_id": "01KV6SHQTMW5JQ1KW34Y2QDR6P",
-      "last_transition_at": "2026-06-15T23:23:28.468131+00:00"
+      "lane": "in_progress",
+      "last_event_id": "01KV6SM3TVNQERN85PF314D9TZ",
+      "last_transition_at": "2026-06-15T23:24:46.299804+00:00"
     },
     "WP02": {
       "actor": "finalize-tasks",

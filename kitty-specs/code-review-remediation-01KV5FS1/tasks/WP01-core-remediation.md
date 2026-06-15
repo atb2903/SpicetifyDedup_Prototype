@@ -408,3 +408,4 @@ referenced from the code comments they govern.
 
 - 2026-06-15T13:44:36Z – claude:opus:implementer:implementer – shell_pid=212789 – Assigned agent via action command
 - 2026-06-15T18:56:43Z – claude:opus:implementer:implementer – shell_pid=212789 – Ready for review: core remediation complete — taxonomy reshape, typed provenance, per-batch stall watchdog, truthful partial/compute-failed outcomes, confirmRemoval decomposition. tsc clean, 1139 tests, 100% coverage. Live-verify (Finding B / FR-003) outstanding for orchestrator; one FSM-routing gap for compute-failed flagged (unowned detection-state.ts).
+- 2026-06-15T23:23:28Z – claude:opus:implementer:implementer – shell_pid=212789 – Moved to planned

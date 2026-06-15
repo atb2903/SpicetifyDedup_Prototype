@@ -48,6 +48,7 @@
         "test/ui/DedupPage.test.tsx",
         "test/ui/DetectionFailedView.test.tsx",
         "test/ui/DetectionLoadedSummary.test.tsx",
+        "test/ui/PlaylistRow.test.tsx",
         "test/ui/RemovalOutcomeView.test.tsx",
         "test/ui/ScanningView.test.tsx"
       ],
@@ -62,7 +63,7 @@
       "parallel_group": 0
     }
   ],
-  "computed_at": "2026-06-15T11:59:58.657321+00:00",
+  "computed_at": "2026-06-15T18:22:52.268705+00:00",
   "computed_from": "dependency_graph+ownership",
   "planning_artifact_wps": [],
   "collapse_report": {

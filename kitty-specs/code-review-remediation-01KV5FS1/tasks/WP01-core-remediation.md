@@ -58,6 +58,7 @@ owned_files:
 - test/store/detection-store.test.ts
 - test/integration/removal-termination.test.ts
 - test/integration/detection-end-to-end.test.ts
+- test/ui/PlaylistRow.test.tsx
 tags: []
 ---
 
@@ -103,6 +104,27 @@ Types first so the file compiles, then the producers that must change atomically
 with them, then structure/docs:
 T001 → T003 (domain types) → T002, T004 (enricher + executor producers) →
 T005, T006, T007 (store) → T008 (decompose) → T009, T010 (docs/ADRs).
+
+### Cross-scope compile-keeping edits (T001/T003 fallout)
+
+`tsconfig.json` type-checks the whole `test/` tree, so two test files that import
+the *real* domain types break the moment T001 (union narrow) and T003 (required
+`provenance`) land. Make the **minimal** edits to keep the suite green — do **not**
+do WP03's substantive work here:
+
+- `test/ui/PlaylistRow.test.tsx` — **adopted into this WP's `owned_files`** (it was
+  orphaned — owned by no WP). The two `new DetectionError('network-failure', 'Test')`
+  constructions must use a reason still in the narrowed union (use
+  `'enumerator-failed'`). Nothing else.
+- `test/ui/RemovalOutcomeView.test.tsx` — **remains WP03-owned** (its substantive
+  provenance-branching rewrite is WP03/T018) but lives in this same shared lane
+  (`lane-a`), so a minimal compile-keeping touch here is sanctioned and expected.
+  Add the now-required `provenance` to each `RemovalOutcome` fixture so it
+  type-checks — `'host'` for the generic-partial fixtures (`outcomeWith`),
+  `'stalled'` for the `stalledOutcome`/timeout fixtures, and the matching value on
+  the inline `mixed` literals. Leave the `reason: 'stalled: …'` strings and the
+  view's branching logic to WP03 (T018). Reviewers: this cross-WP in-lane edit is
+  intentional, not scope creep.
 
 ---
 

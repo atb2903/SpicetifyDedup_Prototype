@@ -22,16 +22,16 @@
 
 | ID | Description | WP | Parallel |
 |----|-------------|----|----------|
-| T001 | Reshape `DetectionErrorReason` taxonomy | WP01 | |
-| T002 | Purge dead-reason producers in the enricher layer (+ C-006 JSDoc) | WP01 | |
-| T003 | Add typed `RemovalOutcome.provenance` + truthful outcome shapes | WP01 | |
-| T004 | `RemovalExecutor` boundary-abort returns accumulated partial | WP01 | |
-| T005 | Store scan-catch → honest `internal-error` (drop `catalog-rejected`) | WP01 | |
-| T006 | Store per-batch stall watchdog + `raceStallCeiling` JSDoc | WP01 | |
-| T007 | Store truthful partial / compute-failed outcomes + provenance stamping | WP01 | |
-| T008 | Decompose `confirmRemoval` into named helpers | WP01 | |
-| T009 | Document `reset()` placement (comment + ADR) | WP01 | |
-| T010 | ADRs for B, C/D/I, K, N | WP01 | |
+| T001 | Reshape `DetectionErrorReason` taxonomy | WP01 | | [D] |
+| T002 | Purge dead-reason producers in the enricher layer (+ C-006 JSDoc) | WP01 | | [D] |
+| T003 | Add typed `RemovalOutcome.provenance` + truthful outcome shapes | WP01 | | [D] |
+| T004 | `RemovalExecutor` boundary-abort returns accumulated partial | WP01 | | [D] |
+| T005 | Store scan-catch → honest `internal-error` (drop `catalog-rejected`) | WP01 | | [D] |
+| T006 | Store per-batch stall watchdog + `raceStallCeiling` JSDoc | WP01 | | [D] |
+| T007 | Store truthful partial / compute-failed outcomes + provenance stamping | WP01 | | [D] |
+| T008 | Decompose `confirmRemoval` into named helpers | WP01 | | [D] |
+| T009 | Document `reset()` placement (comment + ADR) | WP01 | | [D] |
+| T010 | ADRs for B, C/D/I, K, N | WP01 | | [D] |
 | T011 | New `src/domain/host-auth.ts` shared auth-expired predicate | WP02 | [P] |
 | T012 | Enumerator classifier gate (skip non-track items) | WP02 | |
 | T013 | Enumerator `requirePlatform` (remove unsafe cast) | WP02 | |
@@ -70,16 +70,16 @@
 
 Included subtasks:
 
-- [ ] T001 Reshape `DetectionErrorReason` taxonomy (WP01)
-- [ ] T002 Purge dead-reason producers in the enricher layer + C-006 JSDoc (WP01)
-- [ ] T003 Add typed `RemovalOutcome.provenance` + truthful outcome shapes (WP01)
-- [ ] T004 `RemovalExecutor` boundary-abort returns accumulated partial (WP01)
-- [ ] T005 Store scan-catch → honest `internal-error` (WP01)
-- [ ] T006 Store per-batch stall watchdog + `raceStallCeiling` JSDoc (WP01)
-- [ ] T007 Store truthful partial / compute-failed outcomes + provenance stamping (WP01)
-- [ ] T008 Decompose `confirmRemoval` into named helpers (WP01)
-- [ ] T009 Document `reset()` placement (comment + ADR) (WP01)
-- [ ] T010 ADRs for B, C/D/I, K, N (WP01)
+- [x] T001 Reshape `DetectionErrorReason` taxonomy (WP01)
+- [x] T002 Purge dead-reason producers in the enricher layer + C-006 JSDoc (WP01)
+- [x] T003 Add typed `RemovalOutcome.provenance` + truthful outcome shapes (WP01)
+- [x] T004 `RemovalExecutor` boundary-abort returns accumulated partial (WP01)
+- [x] T005 Store scan-catch → honest `internal-error` (WP01)
+- [x] T006 Store per-batch stall watchdog + `raceStallCeiling` JSDoc (WP01)
+- [x] T007 Store truthful partial / compute-failed outcomes + provenance stamping (WP01)
+- [x] T008 Decompose `confirmRemoval` into named helpers (WP01)
+- [x] T009 Document `reset()` placement (comment + ADR) (WP01)
+- [x] T010 ADRs for B, C/D/I, K, N (WP01)
 
 Implementation sketch: domain types first (T001, T003) so the file compiles, then
 the producers that must change atomically with them (T002 enricher, T004 executor,

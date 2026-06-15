@@ -32,7 +32,7 @@
 | T008 | Decompose `confirmRemoval` into named helpers | WP01 | | [D] |
 | T009 | Document `reset()` placement (comment + ADR) | WP01 | | [D] |
 | T010 | ADRs for B, C/D/I, K, N | WP01 | | [D] |
-| T011 | New `src/domain/host-auth.ts` shared auth-expired predicate | WP02 | [P] |
+| T011 | New `src/domain/host-auth.ts` shared auth-expired predicate | WP02 | [D] |
 | T012 | Enumerator classifier gate (skip non-track items) | WP02 | |
 | T013 | Enumerator `requirePlatform` (remove unsafe cast) | WP02 | |
 | T014 | Enumerator auth via shared predicate (`code`, not `status`) | WP02 | |
@@ -108,7 +108,7 @@ the suite won't compile. Live-verify artefact required (Finding B).
 
 Included subtasks:
 
-- [ ] T011 New `src/domain/host-auth.ts` shared auth-expired predicate (WP02)
+- [x] T011 New `src/domain/host-auth.ts` shared auth-expired predicate (WP02)
 - [ ] T012 Enumerator classifier gate — skip non-track items (WP02)
 - [ ] T013 Enumerator `requirePlatform` — remove unsafe cast (WP02)
 - [ ] T014 Enumerator auth via shared predicate (`code`) (WP02)

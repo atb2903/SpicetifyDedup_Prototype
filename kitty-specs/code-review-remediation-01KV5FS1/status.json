@@ -1,7 +1,7 @@
 {
-  "event_count": 21,
-  "last_event_id": "01KV7VRCY0K6922CK2ECPFR6G9",
-  "materialized_at": "2026-06-16T09:21:18.272992+00:00",
+  "event_count": 22,
+  "last_event_id": "01KV7VSD7P6NNTJSFNT388YY42",
+  "materialized_at": "2026-06-16T09:21:51.350367+00:00",
   "mission_number": "",
   "mission_slug": "code-review-remediation-01KV5FS1",
   "mission_type": "software-dev",
@@ -11,9 +11,9 @@
     "canceled": 0,
     "claimed": 0,
     "done": 0,
-    "for_review": 1,
+    "for_review": 0,
     "in_progress": 0,
-    "in_review": 0,
+    "in_review": 1,
     "planned": 1
   },
   "work_packages": {
@@ -32,11 +32,11 @@
       "last_transition_at": "2026-06-16T00:12:04.026987+00:00"
     },
     "WP03": {
-      "actor": "user",
+      "actor": "claude:opus:reviewer:reviewer",
       "force_count": 1,
-      "lane": "for_review",
-      "last_event_id": "01KV7VRCY0K6922CK2ECPFR6G9",
-      "last_transition_at": "2026-06-16T09:21:18.272992+00:00"
+      "lane": "in_review",
+      "last_event_id": "01KV7VSD7P6NNTJSFNT388YY42",
+      "last_transition_at": "2026-06-16T09:21:51.350367+00:00"
     },
     "WP04": {
       "actor": "finalize-tasks",

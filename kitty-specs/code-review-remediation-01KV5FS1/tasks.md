@@ -41,8 +41,8 @@
 | T017 | `DetectionFailedView` message map (internal-error, host-unavailable, no phantom suffix) | WP03 | | [D] |
 | T018 | `RemovalOutcomeView` provenance-driven (no `startsWith`) | WP03 | | [D] |
 | T019 | `DedupPage` named routing helper (no inline IIFE) | WP03 | | [D] |
-| T020 | Rebuild architecture test on the TypeScript Compiler API | WP04 | |
-| T021 | Architecture fixtures: re-export / dynamic import() / type-only edges | WP04 | |
+| T020 | Rebuild architecture test on the TypeScript Compiler API | WP04 | | [D] |
+| T021 | Architecture fixtures: re-export / dynamic import() / type-only edges | WP04 | | [D] |
 | T022 | Route `removeComplete` on `provenance` (FR-003/FR-009 end-to-end) | WP01 | | [D] |
 
 ---
@@ -161,8 +161,8 @@ Prompt: `tasks/WP03-ui-remediation.md`.
 
 Included subtasks:
 
-- [ ] T020 Rebuild architecture test on the TypeScript Compiler API (WP04)
-- [ ] T021 Architecture fixtures: re-export / dynamic import() / type-only edges (WP04)
+- [x] T020 Rebuild architecture test on the TypeScript Compiler API (WP04)
+- [x] T021 Architecture fixtures: re-export / dynamic import() / type-only edges (WP04)
 
 Prompt: `tasks/WP04-architecture-test.md`.
 

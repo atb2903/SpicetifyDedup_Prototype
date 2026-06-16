@@ -184,3 +184,4 @@ test green.
 ## Activity Log
 
 - 2026-06-16T00:12:37Z – claude:opus:implementer:implementer – shell_pid=262673 – Started implementation via action command
+- 2026-06-16T09:21:18Z – claude:opus:implementer:implementer – shell_pid=262673 – WP03 complete: domain-type imports (T016), honest message map + no phantom suffix (T017), provenance-driven outcome (T018), named routing helper (T019); coverage + tsc green

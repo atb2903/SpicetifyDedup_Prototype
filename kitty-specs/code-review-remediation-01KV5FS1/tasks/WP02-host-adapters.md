@@ -19,8 +19,8 @@ subtasks:
 - T015
 phase: Phase 2 - Host adapters & UI
 assignee: ''
-agent: "claude:opus:implementer:implementer"
-shell_pid: "258855"
+agent: "claude:opus:reviewer:reviewer"
+shell_pid: "261493"
 history:
 - timestamp: '2026-06-15T11:46:50Z'
   agent: system
@@ -198,3 +198,4 @@ remains in the enumerator.
 
 - 2026-06-16T00:02:54Z – claude:opus:implementer:implementer – shell_pid=258855 – Started implementation via action command
 - 2026-06-16T00:09:43Z – claude:opus:implementer:implementer – shell_pid=258855 – Ready for review
+- 2026-06-16T00:10:14Z – claude:opus:reviewer:reviewer – shell_pid=261493 – Started review via action command

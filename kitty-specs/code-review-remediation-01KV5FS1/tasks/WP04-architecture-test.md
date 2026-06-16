@@ -15,8 +15,8 @@ subtasks:
 - T021
 phase: Phase 3 - Structural enforcement
 assignee: ''
-agent: "claude:opus:implementer:implementer"
-shell_pid: "12167"
+agent: "claude:opus:reviewer:reviewer"
+shell_pid: "14437"
 history:
 - timestamp: '2026-06-15T11:46:50Z'
   agent: system
@@ -131,3 +131,4 @@ import-kind handlers; gates green.
 
 - 2026-06-16T09:25:35Z – claude:opus:implementer:implementer – shell_pid=12167 – Started implementation via action command
 - 2026-06-16T09:31:31Z – claude:opus:implementer:implementer – shell_pid=12167 – WP04 complete: AST import-graph analyser on TS Compiler API replacing regex (T020), fixtures for re-export/dynamic-import/type-only forbidden edges (T021); coverage + tsc green, no new dep
+- 2026-06-16T09:32:12Z – claude:opus:reviewer:reviewer – shell_pid=14437 – Started review via action command

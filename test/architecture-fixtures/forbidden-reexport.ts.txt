@@ -1,0 +1,6 @@
+// FIXTURE (not compiled): a UI-layer file that re-exports from an adapter.
+// ADR-0001 forbids src/ui -> src/adapters. The old regex content-scan missed
+// `export … from` re-exports; the AST analyser must flag this as a forbidden
+// edge to `src/adapters`. Analysed as if it lived at `src/ui/<file>.tsx`.
+export { SpicetifyRemovalExecutor } from '../adapters/spicetify-removal-executor';
+export * from '../adapters/detection-scanner';

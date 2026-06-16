@@ -265,13 +265,22 @@ describe('SpicetifyPlaylistsLoader — rootlist fetch failures', () => {
     await expectReason(new SpicetifyPlaylistsLoader().load(), 'rootlist-fetch-failed');
   });
 
-  it('throws host-auth-expired when the rejection has status 401', async () => {
+  it('throws host-auth-expired when the rejection has code 401 (the field Spicetify.CosmosAsync populates — ADR-0010)', async () => {
+    stubSpicetify({
+      getContents: async () => {
+        throw Object.assign(new Error('unauthorized'), { code: 401 });
+      },
+    });
+    await expectReason(new SpicetifyPlaylistsLoader().load(), 'host-auth-expired');
+  });
+
+  it('throws rootlist-fetch-failed (NOT host-auth-expired) when the rejection has status 401 — corrected field, regression pin for finding D', async () => {
     stubSpicetify({
       getContents: async () => {
         throw Object.assign(new Error('unauthorized'), { status: 401 });
       },
     });
-    await expectReason(new SpicetifyPlaylistsLoader().load(), 'host-auth-expired');
+    await expectReason(new SpicetifyPlaylistsLoader().load(), 'rootlist-fetch-failed');
   });
 
   it('throws host-auth-expired when the message includes "401"', async () => {
@@ -695,7 +704,7 @@ function configureForReason(reason: string): void {
     case 'host-auth-expired':
       stubSpicetify({
         getContents: async () => {
-          throw Object.assign(new Error('access token expired'), { status: 401 });
+          throw Object.assign(new Error('rejected'), { code: 401 });
         },
       });
       return;

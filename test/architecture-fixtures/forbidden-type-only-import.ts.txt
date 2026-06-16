@@ -1,0 +1,8 @@
+// FIXTURE (not compiled): a UI-layer file that type-only-imports an adapter.
+// ADR-0001 forbids src/ui -> src/adapters even for types. The analyser must
+// NOT exempt `import type`; this is a forbidden edge to `src/adapters`. By
+// contrast a type-only import of a `src/domain` type IS permitted (NFR-001),
+// asserted separately in the test. Analysed as if it lived at `src/ui/<file>.tsx`.
+import type { SpicetifyRemovalExecutor } from '../adapters/spicetify-removal-executor';
+
+export type Alias = SpicetifyRemovalExecutor;

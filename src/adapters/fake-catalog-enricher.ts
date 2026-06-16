@@ -18,16 +18,15 @@ import type { RawTrack, EnrichedTrack, ProgressEvent } from '../domain/detection
 import { DetectionError } from '../domain/detection-errors';
 
 /**
- * Force-mode values that trigger specific error paths (mutually exclusive).
+ * Force-mode values that trigger specific error paths.
  *
- * - `'auth-expired'` — throws `DetectionError('auth-token-expired')`.
- * - `'rate-limit-unparseable'` — throws `DetectionError('rate-limit-unparseable')`.
- * - `'shape-drift'` — throws `DetectionError('malformed-enrichment-payload')`.
+ * - `'auth-expired'` — throws `DetectionError('auth-token-expired')`, the one
+ *   reachable enricher reason in the live (inline-enricher) pipeline (ADR-0011).
+ *
+ * The abandoned Web-API enricher modes were removed in the code-review-
+ * remediation pass — their reasons have no live producer (FR-005 / ADR-0018).
  */
-export type FakeEnricherForceMode =
-  | 'auth-expired'
-  | 'rate-limit-unparseable'
-  | 'shape-drift';
+export type FakeEnricherForceMode = 'auth-expired';
 
 /**
  * Constructor options for `FakeCatalogEnricher`.
@@ -152,20 +151,16 @@ export class FakeCatalogEnricher implements CatalogEnricher {
 // ---------------------------------------------------------------------------
 
 /**
- * Build the appropriate `DetectionError` for a force-mode.
+ * Build the `DetectionError` for a force-mode. `'auth-expired'` is the only
+ * reachable enricher reason in the live pipeline (ADR-0011 / ADR-0018).
  *
  * @param mode - The active force mode.
  * @returns Corresponding `DetectionError` instance.
  */
 function buildForceError(mode: FakeEnricherForceMode): DetectionError {
-  switch (mode) {
-    case 'auth-expired':
-      return new DetectionError('auth-token-expired', 'fake: auth token expired');
-    case 'rate-limit-unparseable':
-      return new DetectionError('rate-limit-unparseable', 'fake: rate limit unparseable');
-    case 'shape-drift':
-      return new DetectionError('malformed-enrichment-payload', 'fake: shape drift');
-  }
+  // Single-member union — `mode` is always `'auth-expired'`; named for clarity.
+  void mode;
+  return new DetectionError('auth-token-expired', 'fake: auth token expired');
 }
 
 /**

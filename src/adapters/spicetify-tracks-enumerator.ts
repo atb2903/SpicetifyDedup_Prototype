@@ -26,6 +26,7 @@
 import type { TracksEnumerator } from '../ports/tracks-enumerator';
 import type { RawTrack, ScanRequest, ProgressEvent } from '../domain/detection-types';
 import { DetectionError } from '../domain/detection-errors';
+import { looksLikeHostAuthExpired } from '../domain/host-auth';
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -222,13 +223,51 @@ export interface TracksEnumeratorPlatform {
 export class SpicetifyTracksEnumerator implements TracksEnumerator {
   private readonly _platform: TracksEnumeratorPlatform | undefined;
 
-  /** Lazy accessor: returns the injected platform or reads from globalThis.Spicetify.Platform. */
-  private get platform(): TracksEnumeratorPlatform {
+  /**
+   * Lazy accessor: returns the injected platform, else reads from
+   * `globalThis.Spicetify.Platform`. May be `undefined` if the host is not
+   * present yet — callers MUST go through {@link requirePlatform} so a missing
+   * host fails loud as a typed `host-unavailable` rather than an opaque
+   * `TypeError`. No unsafe cast: the compiler sees the real `T | undefined`.
+   */
+  private get platform(): TracksEnumeratorPlatform | undefined {
     if (this._platform !== undefined) return this._platform;
     return (
-      (globalThis as unknown as { Spicetify?: { Platform?: TracksEnumeratorPlatform } })
-        .Spicetify?.Platform as TracksEnumeratorPlatform
-    );
+      globalThis as unknown as { Spicetify?: { Platform?: TracksEnumeratorPlatform } }
+    ).Spicetify?.Platform;
+  }
+
+  /**
+   * Resolve the platform and assert the API/method needed for `request.kind`
+   * exists. Fails loud with `DetectionError('host-unavailable')` — mirroring the
+   * removal and playlists adapters' `requirePlatform` (R-4 / NFR-002, SC-007) —
+   * rather than letting a missing method surface later as an opaque `TypeError`.
+   * Called before any host fetch.
+   */
+  private requirePlatform(request: ScanRequest): TracksEnumeratorPlatform {
+    const platform = this.platform;
+    if (platform === undefined) {
+      throw new DetectionError(
+        'host-unavailable',
+        'Spicetify.Platform is not available; cannot enumerate tracks',
+      );
+    }
+    if (request.kind === 'liked-songs') {
+      if (typeof platform.LibraryAPI?.getTracks !== 'function') {
+        throw new DetectionError(
+          'host-unavailable',
+          'Spicetify.Platform.LibraryAPI.getTracks is not available',
+        );
+      }
+    } else {
+      if (typeof platform.PlaylistAPI?.getContents !== 'function') {
+        throw new DetectionError(
+          'host-unavailable',
+          'Spicetify.Platform.PlaylistAPI.getContents is not available',
+        );
+      }
+    }
+    return platform;
   }
 
   /**
@@ -259,6 +298,9 @@ export class SpicetifyTracksEnumerator implements TracksEnumerator {
     // Pre-check
     this.validateRequest(request);
 
+    // Host-availability guard — fail loud BEFORE any host call (R-4 / NFR-002).
+    const platform = this.requirePlatform(request);
+
     // Immediate abort guard
     if (signal.aborted) {
       throw new DOMException('Enumeration aborted before start', 'AbortError');
@@ -276,21 +318,29 @@ export class SpicetifyTracksEnumerator implements TracksEnumerator {
         throw new DOMException('Enumeration aborted between pages', 'AbortError');
       }
 
-      const raw = await this.fetchPage(request, offset);
+      const raw = await this.fetchPage(request, offset, platform);
       const page = this.validatePage(raw);
 
       if (total === null) {
         total = page.totalLength;
       }
 
-      // Filter and parse items
+      // Filter and parse items. Skip an item when it is a local file OR is not a
+      // genuine track (`type !== 'track'`, the classifier's leading discriminant)
+      // — episodes and other non-track kinds are excluded, never parsed or deduped
+      // (FR-001, finding A). A genuine `type === 'track'` item still flows through
+      // `parseLibraryTrackItem`, which keeps its fail-loud behaviour on a malformed
+      // genuine track. The type-gate (not the full shape classifier) is deliberate:
+      // skipping on the full classifier would silently swallow a malformed genuine
+      // track and hide the fail-loud branch.
       const pageItems: RawTrack[] = [];
       for (const item of page.items) {
-        if (!this.isLocalFile(item)) {
-          const parsed = this.parseItem(item, position);
-          pageItems.push(parsed);
-          position++;
+        if (this.isLocalFile(item) || !this.isTrackKind(item)) {
+          continue;
         }
+        const parsed = this.parseItem(item, position);
+        pageItems.push(parsed);
+        position++;
       }
 
       tracks.push(...pageItems);
@@ -336,18 +386,22 @@ export class SpicetifyTracksEnumerator implements TracksEnumerator {
     }
   }
 
-  private async fetchPage(request: ScanRequest, offset: number): Promise<unknown> {
+  private async fetchPage(
+    request: ScanRequest,
+    offset: number,
+    platform: TracksEnumeratorPlatform,
+  ): Promise<unknown> {
     try {
       if (request.kind === 'liked-songs') {
-        return await this.platform.LibraryAPI.getTracks({ limit: PAGE_SIZE, offset });
+        return await platform.LibraryAPI.getTracks({ limit: PAGE_SIZE, offset });
       } else {
-        return await this.platform.PlaylistAPI.getContents(request.playlistUri, {
+        return await platform.PlaylistAPI.getContents(request.playlistUri, {
           limit: PAGE_SIZE,
           offset,
         });
       }
     } catch (cause) {
-      if (this.looksLikeAuthExpired(cause)) {
+      if (looksLikeHostAuthExpired(cause)) {
         throw new DetectionError(
           'auth-token-expired',
           'Host API rejected with an auth-expired signal during enumeration',
@@ -392,18 +446,19 @@ export class SpicetifyTracksEnumerator implements TracksEnumerator {
     return typeof uri === 'string' && uri.startsWith('spotify:local:');
   }
 
-  private parseItem(item: unknown, position: number): RawTrack {
-    return parseLibraryTrackItem(item, position);
+  /**
+   * Leading `type === 'track'` discriminant — the same gate `isLibraryTrackItem`
+   * checks first. Used to skip non-track items (e.g. podcast episodes) in the
+   * enumerate loop WITHOUT the full shape classifier, so a genuine-but-malformed
+   * track still reaches `parseLibraryTrackItem` and fails loud (FR-001, finding A).
+   * A non-object item is not a track and is skipped.
+   */
+  private isTrackKind(item: unknown): boolean {
+    if (typeof item !== 'object' || item === null) return false;
+    return (item as Record<string, unknown>)['type'] === 'track';
   }
 
-  private looksLikeAuthExpired(cause: unknown): boolean {
-    if (typeof cause !== 'object' || cause === null) return false;
-    const status = (cause as { status?: unknown }).status;
-    if (status === 401) return true;
-    const message = (cause as { message?: unknown }).message;
-    if (typeof message !== 'string') return false;
-    const lower = message.toLowerCase();
-    if (lower.includes('401')) return true;
-    return lower.includes('token') && (lower.includes('expired') || lower.includes('invalid'));
+  private parseItem(item: unknown, position: number): RawTrack {
+    return parseLibraryTrackItem(item, position);
   }
 }

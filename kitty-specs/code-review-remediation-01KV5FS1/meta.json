@@ -2,11 +2,11 @@
   "created_at": "2026-06-15T11:13:27.685172+00:00",
   "friendly_name": "Code Review Remediation Pass",
   "mission_id": "01KV5FS11T99G0S4T0AXE3CRBB",
-  "mission_number": null,
+  "mission_number": 8,
   "mission_slug": "code-review-remediation-01KV5FS1",
   "mission_type": "software-dev",
   "slug": "code-review-remediation-01KV5FS1",
+  "source_description": "Remediate all 14 findings (A-N) from code-review section 14 (problems, potential bugs, antipatterns). Correctness fixes (A-G), maintainability fixes (H-K), and test/style/modelling items (L-N). Key decisions: per-batch stall ceiling + accurate partial reporting (B); remove dead Web-API enricher code and fix live wiring including the auth heuristic (C/D); refactor L/M, document N; ADR per load-bearing change.",
   "target_branch": "main",
-  "vcs": "git",
-  "source_description": "Remediate all 14 findings (A-N) from code-review section 14 (problems, potential bugs, antipatterns). Correctness fixes (A-G), maintainability fixes (H-K), and test/style/modelling items (L-N). Key decisions: per-batch stall ceiling + accurate partial reporting (B); remove dead Web-API enricher code and fix live wiring including the auth heuristic (C/D); refactor L/M, document N; ADR per load-bearing change."
+  "vcs": "git"
 }

@@ -41,7 +41,7 @@ const DETECTION_RESULT: DetectionResult = {
   scannedTrackCount: 50,
 };
 
-const DETECTION_ERROR = new DetectionError('network-failure', 'host unreachable');
+const DETECTION_ERROR = new DetectionError('enumerator-failed', 'host unreachable');
 
 // A non-empty result so removeComplete's new result is distinguishable from
 // the pre-removal one by reference.
@@ -63,11 +63,46 @@ const REMOVAL_PROGRESS: RemovalProgressEvent = { removedSoFar: 3, total: 10 };
 const OUTCOME_ALL_OK: RemovalOutcome = {
   removed: [TRACK_REF],
   failed: [],
+  provenance: 'host',
 };
 
 const OUTCOME_PARTIAL: RemovalOutcome = {
   removed: [],
   failed: [{ track: TRACK_REF, reason: 'host rejected' }],
+  provenance: 'host',
+};
+
+// ── Non-host provenance outcomes (T011 routing) ──────────────────────────────
+
+// compute-failed: no host call, both partitions empty, count truthfully 0
+// (FR-009). Must still reach `partial` so the "couldn't compute" copy renders.
+const OUTCOME_COMPUTE_FAILED: RemovalOutcome = {
+  removed: [],
+  failed: [],
+  provenance: 'compute-failed',
+};
+
+// stalled with removed > 0: the watchdog tripped after some tracks were
+// confirmed (FR-003 — `removed` is the truthful count, never forced to []).
+const OUTCOME_STALLED_REMOVED: RemovalOutcome = {
+  removed: [TRACK_REF],
+  failed: [{ track: { uri: 'spotify:track:def' }, reason: 'removal aborted while hung' }],
+  provenance: 'stalled',
+};
+
+// stalled with removed === 0: timed out having confirmed nothing. Must still
+// reach `partial` so the "timed out, removed nothing" copy renders.
+const OUTCOME_STALLED_NONE: RemovalOutcome = {
+  removed: [],
+  failed: [{ track: TRACK_REF, reason: 'removal aborted while hung' }],
+  provenance: 'stalled',
+};
+
+// executor-failed: a whole-operation fault; nothing removed, all failed.
+const OUTCOME_EXECUTOR_FAILED: RemovalOutcome = {
+  removed: [],
+  failed: [{ track: TRACK_REF, reason: 'executor rejected' }],
+  provenance: 'executor-failed',
 };
 
 // Initial scanning state used for "from scanning" tests
@@ -518,18 +553,79 @@ describe('Removal sub-FSM — confirmFirst discriminator branches', () => {
   });
 });
 
-// ── removeComplete failed-length branch (explicit) ───────────────────────────
+// ── removeComplete host-provenance failed-length branch (explicit) ───────────
 
-describe('Removal sub-FSM — removeComplete failed-length branch', () => {
-  it('empty failed → removal.phase === none', () => {
+describe('Removal sub-FSM — removeComplete host failed-length branch', () => {
+  it('host full-success (empty failed) → removal.phase === none', () => {
     const after = transition(makeLoadedState({ phase: 'removing' }), { type: 'removeComplete', result: REMOVAL_RESULT, outcome: OUTCOME_ALL_OK });
     expect(loadedRemoval(after).phase).toBe('none');
   });
-  it('non-empty failed → removal.phase === partial carrying the outcome', () => {
+  it('host non-empty failed → removal.phase === partial carrying the outcome', () => {
     const after = transition(makeLoadedState({ phase: 'removing' }), { type: 'removeComplete', result: REMOVAL_RESULT, outcome: OUTCOME_PARTIAL });
     const removal = loadedRemoval(after);
     expect(removal.phase).toBe('partial');
     if (removal.phase === 'partial') expect(removal.outcome).toBe(OUTCOME_PARTIAL);
+  });
+});
+
+// ── removeComplete provenance-based routing (T011 / FR-003 / FR-009) ─────────
+
+/**
+ * The reducer routes `removeComplete` on `outcome.provenance`, not on
+ * `failed.length` alone. compute-failed and stalled must reach `partial` even
+ * when `failed` is empty (compute-failed) or `removed` is non-empty (a truthful
+ * stalled partial), so the provenance-specific copy in the partial view is
+ * reachable. Only `host` keeps the `failed.length === 0 → none` full-success
+ * rule.
+ */
+describe('Removal sub-FSM — removeComplete routes on provenance', () => {
+  it('compute-failed (removed=[], failed=[]) → partial carrying the zero-track outcome', () => {
+    const after = transition(makeLoadedState({ phase: 'removing' }), { type: 'removeComplete', result: REMOVAL_RESULT, outcome: OUTCOME_COMPUTE_FAILED });
+    const removal = loadedRemoval(after);
+    expect(removal.phase).toBe('partial');
+    if (removal.phase === 'partial') {
+      expect(removal.outcome).toBe(OUTCOME_COMPUTE_FAILED);
+      expect(removal.outcome.removed.length).toBe(0);
+      expect(removal.outcome.failed.length).toBe(0);
+    }
+  });
+
+  it('stalled removed>0, failed=[] → partial carrying the truthful removed count', () => {
+    const after = transition(makeLoadedState({ phase: 'removing' }), { type: 'removeComplete', result: REMOVAL_RESULT, outcome: OUTCOME_STALLED_REMOVED });
+    const removal = loadedRemoval(after);
+    expect(removal.phase).toBe('partial');
+    if (removal.phase === 'partial') {
+      expect(removal.outcome).toBe(OUTCOME_STALLED_REMOVED);
+      // FR-003: the truthful removed count survives routing (not forced to none).
+      expect(removal.outcome.removed.length).toBe(1);
+    }
+  });
+
+  it('stalled removed===0 → partial (so the "timed out, removed nothing" copy renders)', () => {
+    const after = transition(makeLoadedState({ phase: 'removing' }), { type: 'removeComplete', result: REMOVAL_RESULT, outcome: OUTCOME_STALLED_NONE });
+    const removal = loadedRemoval(after);
+    expect(removal.phase).toBe('partial');
+    if (removal.phase === 'partial') {
+      expect(removal.outcome).toBe(OUTCOME_STALLED_NONE);
+      expect(removal.outcome.removed.length).toBe(0);
+    }
+  });
+
+  it('executor-failed (failed>0) → partial carrying the outcome', () => {
+    const after = transition(makeLoadedState({ phase: 'removing' }), { type: 'removeComplete', result: REMOVAL_RESULT, outcome: OUTCOME_EXECUTOR_FAILED });
+    const removal = loadedRemoval(after);
+    expect(removal.phase).toBe('partial');
+    if (removal.phase === 'partial') expect(removal.outcome).toBe(OUTCOME_EXECUTOR_FAILED);
+  });
+
+  it('host full-success (failed=[]) → none (full-success rule preserved)', () => {
+    const after = transition(makeLoadedState({ phase: 'removing' }), { type: 'removeComplete', result: REMOVAL_RESULT, outcome: OUTCOME_ALL_OK });
+    expect(loadedRemoval(after).phase).toBe('none');
+  });
+
+  it('host with failures (failed>0) → partial', () => {
+    const after = transition(makeLoadedState({ phase: 'removing' }), { type: 'removeComplete', result: REMOVAL_RESULT, outcome: OUTCOME_PARTIAL });
+    expect(loadedRemoval(after).phase).toBe('partial');
   });
 });
 

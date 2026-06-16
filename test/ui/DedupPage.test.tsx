@@ -164,6 +164,25 @@ describe('DedupPage', () => {
     expect(src).not.toMatch(/\.main-[a-z]/i);
   });
 
+  it('NFR-006 — routing is a named module-level helper, not an inline JSX IIFE', () => {
+    // The view routing must be extracted from the render tree into a named
+    // helper (data-model.md §8). Read the source and assert the inline
+    // self-invoking arrow `{(() => { … })()}` is gone and a named helper that
+    // switches on the kind is present.
+    const src = readFileSync(
+      join(__dirname, '..', '..', 'src', 'ui', 'DedupPage.tsx'),
+      'utf8',
+    );
+    // No inline IIFE in the JSX.
+    expect(src).not.toMatch(/\(\(\)\s*=>\s*\{[\s\S]*\}\)\(\)/);
+    // A named helper that takes the kind and switches on it.
+    expect(src).toMatch(
+      /function\s+(routeView|renderForKind)\s*\([\s\S]*switch\s*\(/,
+    );
+    // Exhaustiveness preserved: the switch carries no `default` branch.
+    expect(src).not.toMatch(/default\s*:/);
+  });
+
   it('end-to-end: idle → trigger → loaded transition is visible in the DOM', async () => {
     const { store } = makeStore('success');
     renderDedupPage(store);

@@ -24,44 +24,15 @@
  */
 
 import React from 'react';
+import type { DetectionError } from '../domain/detection-errors';
 import styles from './DetectionFailedView.module.scss';
-
-// ---------------------------------------------------------------------------
-// Types (WP01 domain types are defined locally until WP01 is merged into main)
-// ---------------------------------------------------------------------------
-
-/**
- * The closed set of reasons a detection scan can fail.
- * Mirrors `DetectionErrorReason` from `src/domain/detection-errors.ts` (WP01).
- */
-export type DetectionErrorReason =
-  | 'auth-token-expired'
-  | 'rate-limit-unparseable'
-  | 'network-failure'
-  | 'malformed-enrichment-payload'
-  | 'enumerator-failed'
-  | 'catalog-rejected'
-  | 'aborted';
-
-/**
- * A typed detection error. Mirrors `DetectionError` from
- * `src/domain/detection-errors.ts` (WP01) — expressed as a plain object here
- * so tests can construct it without importing the class.
- */
-export type DetectionError = {
-  /** Discriminant identifying which failure mode occurred. */
-  reason: DetectionErrorReason;
-  /** Human-readable message for diagnostics. */
-  message: string;
-  /**
-   * Optional structured payload.
-   * - `catalog-rejected`: may include `{ status: number }`.
-   */
-  context?: Readonly<Record<string, unknown>>;
-};
 
 /**
  * Props for {@link DetectionFailedView}.
+ *
+ * Consumes the canonical {@link DetectionError} by import (NFR-001) — no local
+ * re-declaration. The view reads only `reason` for messaging; `context` is not
+ * inspected (FR-008 — no producer sets a messaging status).
  */
 export type DetectionFailedViewProps = {
   /** The detection error to render. */
@@ -111,26 +82,19 @@ function buildMessage(error: DetectionError): string {
     case 'auth-token-expired':
       return 'Spotify signed out mid-scan — sign back in and retry.';
 
-    case 'rate-limit-unparseable':
-      return "Spotify is throttling and didn't tell us when to retry. Try again in a minute.";
-
-    case 'network-failure':
-      return "Couldn't reach Spotify. Check your connection and retry.";
-
-    case 'malformed-enrichment-payload':
-      return 'Spotify returned unexpected data. This is a bug — please report it.';
-
     case 'enumerator-failed':
       return "Couldn't read the playlist contents. Try again.";
 
-    case 'catalog-rejected': {
-      const status =
-        typeof error.context?.['status'] === 'number'
-          ? error.context['status']
-          : null;
-      const suffix = status !== null ? ` (status ${status})` : '';
-      return `Spotify rejected the catalog lookup${suffix}. Try again.`;
-    }
+    case 'host-unavailable':
+      // Matches the dedicated host-unavailable signal of the removal and
+      // playlists paths (SC-007).
+      return 'The Spotify client is not ready. Try again in a moment.';
+
+    case 'internal-error':
+      // Honest internal fault (SC-004). The live, inline-enricher pipeline
+      // performs no catalog lookup, so this MUST NOT mention a catalog or a
+      // Spotify rejection.
+      return 'Something went wrong while scanning. Try again.';
 
     case 'aborted':
       // This path indicates a store wiring bug — 'aborted' should never

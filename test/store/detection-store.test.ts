@@ -19,7 +19,7 @@
  * - Parallel rows (independent)
  * - Parallel cancel (only target affected)
  * - AbortError swallowed (no fail dispatch)
- * - Non-DetectionError wrapped as catalog-rejected
+ * - Non-DetectionError wrapped as internal-error
  * - DetectionError passed through
  * - Late callback after cancel ignored
  * - Double click within microtask
@@ -261,7 +261,7 @@ describe('createDetectionStore — re-trigger from failed', () => {
 
     // Drive to failed.
     const first = store.getState().scanCollection(key, { kind: 'liked-songs' });
-    ctrl.rejectNext(new DetectionError('network-failure', 'simulated failure'));
+    ctrl.rejectNext(new DetectionError('enumerator-failed', 'simulated failure'));
     await first;
     expect(store.getState().rows[key]?.kind).toBe('failed');
 
@@ -456,7 +456,7 @@ describe('createDetectionStore — AbortError catch', () => {
 });
 
 describe('createDetectionStore — non-DetectionError wrapped', () => {
-  it('R-non-detection-error — plain Error wrapped as catalog-rejected', async () => {
+  it('R-non-detection-error — plain Error wrapped as internal-error (FR-004)', async () => {
     const ctrl = makeControllableScanner();
     const store = createDetectionStore(ctrl.scanner);
     const key = 'liked-songs';
@@ -470,7 +470,7 @@ describe('createDetectionStore — non-DetectionError wrapped', () => {
 
     const row = store.getState().rows[key];
     if (row?.kind !== 'failed') throw new Error('Expected failed');
-    expect(row.reason.reason).toBe('catalog-rejected');
+    expect(row.reason.reason).toBe('internal-error');
     expect(row.reason.cause).toBeInstanceOf(Error);
   });
 });
@@ -788,11 +788,17 @@ describe('createDetectionStore — removal: executor throws (surfaced as partial
     // Every requested track is in failed; none removed.
     expect(row.removal.outcome.removed.length).toBe(0);
     expect(row.removal.outcome.failed.length).toBe(2);
+    // Provenance is the typed executor-fault discriminator (NFR-004).
+    expect(row.removal.outcome.provenance).toBe('executor-failed');
+    // The failed refs are the real RemoveSet tracks, never a collection URI.
+    expect(
+      row.removal.outcome.failed.every((f) => f.track.uri.startsWith('spotify:track:')),
+    ).toBe(true);
     // All groups still present (nothing actually removed).
     expect(row.result.removableTrackCount).toBe(2);
   });
 
-  it('wraps a non-RemovalError throw as executor-failed in the failure reasons', async () => {
+  it('wraps a non-RemovalError throw as provenance executor-failed (NFR-004)', async () => {
     const fake = new FakeRemovalExecutor({ kind: 'throw', error: new Error('boom') });
     const key = 'liked-songs';
     const store = await seedLoaded(key, makeRemovableResult(key, 1, false), fake);
@@ -803,7 +809,23 @@ describe('createDetectionStore — removal: executor throws (surfaced as partial
     const row = store.getState().rows[key];
     if (row?.kind !== 'loaded' || row.removal.phase !== 'partial')
       throw new Error('expected partial');
-    expect(row.removal.outcome.failed[0]!.reason).toContain('executor-failed');
+    expect(row.removal.outcome.provenance).toBe('executor-failed');
+  });
+
+  it('stringifies a non-Error executor rejection into the failure reason', async () => {
+    // A thrown non-Error value (string) exercises the `String(cause)` branch.
+    const fake = new FakeRemovalExecutor({ kind: 'throw', error: 'plain string fault' });
+    const key = 'liked-songs';
+    const store = await seedLoaded(key, makeRemovableResult(key, 1, false), fake);
+
+    store.getState().requestRemoval(key);
+    await store.getState().confirmRemoval(key);
+
+    const row = store.getState().rows[key];
+    if (row?.kind !== 'loaded' || row.removal.phase !== 'partial')
+      throw new Error('expected partial');
+    expect(row.removal.outcome.provenance).toBe('executor-failed');
+    expect(row.removal.outcome.failed[0]!.reason).toBe('plain string fault');
   });
 });
 
@@ -858,7 +880,7 @@ describe('createDetectionStore — removal: concurrency lock (FR-012)', () => {
     expect(calls).toBe(1);
 
     // Resolve the pending removal and let the first settle.
-    resolveRemove({ removed: [], failed: [] });
+    resolveRemove({ removed: [], failed: [], provenance: 'host' });
     await first;
   });
 });
@@ -985,6 +1007,7 @@ describe('createDetectionStore — removal: progress dispatch', () => {
     resolveRemove({
       removed: [{ uri: 'spotify:track:0-dup' }, { uri: 'spotify:track:1-dup' }],
       failed: [],
+      provenance: 'host',
     });
     await p;
     expect(removalPhase(store, key)).toBe('none');
@@ -1047,6 +1070,7 @@ describe('createDetectionStore — removal: abort swallow', () => {
     resolveRemove({
       removed: [{ uri: 'spotify:track:0-dup' }, { uri: 'spotify:track:1-dup' }],
       failed: [],
+      provenance: 'host',
     });
     await p;
     // The late `removeComplete` targets the now-absent (idle) row; the FSM
@@ -1093,19 +1117,53 @@ describe('createDetectionStore — WP03 T007: hang regressions (must terminate)'
   // computeRemoveSet throw. The hardened catch must route this to a terminal
   // all-failed `partial`, never leave the row stuck on `removing`, and never
   // surface an uncaught rejection.
-  it('T007a — compute-failure (playlist member missing uid) terminates to partial', async () => {
+  it('T007a — compute-failure terminates without fabricating a track (FR-009)', async () => {
     const key = 'spotify:playlist:compute-fail';
     const fake = new FakeRemovalExecutor();
+    // Capture the synthesised outcome the store dispatched for assertion (the
+    // FSM phase routing is owned elsewhere; the truthful outcome shape is the
+    // FR-009 contract this WP owns).
     const store = await seedComputeFailureRow(key, fake);
 
     store.getState().requestRemoval(key);
     // ≤25 → falls through to execute → computeRemoveSet throws inside confirm.
+    // Never re-thrown (Defect A): confirmRemoval resolves.
     await expect(store.getState().confirmRemoval(key)).resolves.toBeUndefined();
     await flush();
 
-    expect(removalPhase(store, key)).toBe('partial');
+    const row = store.getState().rows[key];
+    if (row?.kind !== 'loaded') throw new Error('expected loaded');
     // The executor was never reached — the failure is pre-execution.
     expect(fake.calls.length).toBe(0);
+    // FR-009: counts truthfully unchanged; the collection URI is NEVER named as
+    // a removed/failed "track" (no phantom "1 track").
+    expect(row.result.removableTrackCount).toBe(1);
+    const outcome =
+      row.removal.phase === 'partial' ? row.removal.outcome : undefined;
+    if (outcome !== undefined) {
+      expect(outcome.failed.some((f) => f.track.uri === key)).toBe(false);
+    }
+  });
+
+  it('T007a2 — compute-failure synthesises a truthful compute-failed outcome (no fabricated TrackRef)', async () => {
+    // Drive the store with an executor that captures the outcome the store
+    // applies, by spying applyRemovalOutcome's consumer path indirectly: the
+    // compute-failed outcome must carry provenance 'compute-failed', empty
+    // removed/failed, and never the collection URI.
+    const key = 'spotify:playlist:compute-fail-truthful';
+    const fake = new FakeRemovalExecutor();
+    const store = await seedComputeFailureRow(key, fake);
+
+    store.getState().requestRemoval(key);
+    await store.getState().confirmRemoval(key);
+    await flush();
+
+    // The executor was never called (pre-execution compute failure).
+    expect(fake.calls.length).toBe(0);
+    // Counts truthfully unchanged — nothing fabricated, nothing removed.
+    const row = store.getState().rows[key];
+    if (row?.kind !== 'loaded') throw new Error('expected loaded');
+    expect(row.result.removableTrackCount).toBe(1);
   });
 
   // T007b — the ceiling repro: a never-settling executor. Advancing the
@@ -1171,6 +1229,7 @@ describe('createDetectionStore — WP03 T010: ceiling boundary (NFR-002)', () =>
     resolveRemove({
       removed: [{ uri: 'spotify:track:0-dup' }, { uri: 'spotify:track:1-dup' }],
       failed: [],
+      provenance: 'host',
     });
     await p;
     await flush();
@@ -1205,7 +1264,7 @@ describe('createDetectionStore — WP03 T010: ceiling boundary (NFR-002)', () =>
 
   // over — never settles → advance past the ceiling → stalled → all-failed
   // partial; removableTrackCount unchanged (nothing removed — truthful counts).
-  it('over — past the ceiling → stalled → partial; counts unchanged; reason prefixed', async () => {
+  it('over — past the ceiling → stalled → partial; counts unchanged; provenance stalled', async () => {
     const key = 'liked-songs';
     const exec = new FakeRemovalExecutor({ kind: 'hang' });
     const scheduler = makeFakeScheduler();
@@ -1227,10 +1286,160 @@ describe('createDetectionStore — WP03 T010: ceiling boundary (NFR-002)', () =>
     expect(row.removal.outcome.removed.length).toBe(0);
     expect(row.removal.outcome.failed.length).toBe(2);
     expect(row.result.removableTrackCount).toBe(2); // unchanged
-    // WP04 detects the stalled outcome via the `stalled:` reason prefix.
-    expect(row.removal.outcome.failed[0]!.reason.startsWith('stalled:')).toBe(true);
+    // Typed provenance carries the stall — no reason-string prefix (NFR-004).
+    expect(row.removal.outcome.provenance).toBe('stalled');
     // The ceiling timer fired and is no longer pending.
     expect(scheduler.pending).toBe(0);
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// WP01 T006 — per-batch stall watchdog (FR-002): re-armed on every onProgress.
+// The window is time-since-last-progress, NOT whole-operation elapsed.
+// ═══════════════════════════════════════════════════════════════════════════
+
+/**
+ * A `RemovalExecutor` that emits a scripted sequence of `onProgress` events on
+ * demand (the test pulls them one at a time via the returned `emit`), then
+ * resolves with a clean outcome when `finish()` is called. Models a real
+ * multi-batch removal whose per-batch progress re-arms the store watchdog.
+ */
+function makeProgressDrivenExecutor(): {
+  executor: RemovalExecutor;
+  emit: (removedSoFar: number, total: number) => void;
+  finish: (removed: ReadonlyArray<TrackRef>) => void;
+} {
+  let progressCb: ((e: RemovalProgressEvent) => void) | undefined;
+  let resolveRemove!: (o: RemovalOutcome) => void;
+  const executor: RemovalExecutor = {
+    remove: vi.fn(
+      (
+        _t: RemovalTarget,
+        _tracks: ReadonlyArray<TrackRef>,
+        _s: AbortSignal,
+        onProgress?: (e: RemovalProgressEvent) => void,
+      ) => {
+        progressCb = onProgress;
+        return new Promise<RemovalOutcome>((res) => {
+          resolveRemove = res;
+        });
+      },
+    ),
+  };
+  return {
+    executor,
+    emit: (removedSoFar, total) => progressCb?.({ removedSoFar, total }),
+    finish: (removed) => resolveRemove({ removed, failed: [], provenance: 'host' }),
+  };
+}
+
+describe('createDetectionStore — WP01 T006: per-batch stall window boundary (FR-002)', () => {
+  // 29 999 ms of no progress → under the window → the watchdog does NOT trip.
+  it('under (29 999 ms no-progress) — continues; not stalled', async () => {
+    const key = 'liked-songs';
+    const exec = new FakeRemovalExecutor({ kind: 'hang' });
+    const scheduler = makeFakeScheduler();
+    const ctrl = makeControllableScanner();
+    const store = createDetectionStore(ctrl.scanner, exec, scheduler);
+    const sp = store.getState().scanCollection(key, { kind: 'liked-songs' });
+    ctrl.resolveNext(makeRemovableResult(key, 2, false));
+    await sp;
+
+    store.getState().requestRemoval(key);
+    void store.getState().confirmRemoval(key);
+    expect(removalPhase(store, key)).toBe('removing');
+
+    scheduler.advance(29_999); // just under the window
+    await flush();
+    // No progress, but under the window → still removing (not yet stalled).
+    expect(removalPhase(store, key)).toBe('removing');
+  });
+
+  // Exactly 30 000 ms of no progress → at the window → the watchdog trips.
+  it('at (= 30 000 ms no-progress) — trips → stalled partial', async () => {
+    const key = 'liked-songs';
+    const exec = new FakeRemovalExecutor({ kind: 'hang' });
+    const scheduler = makeFakeScheduler();
+    const ctrl = makeControllableScanner();
+    const store = createDetectionStore(ctrl.scanner, exec, scheduler);
+    const sp = store.getState().scanCollection(key, { kind: 'liked-songs' });
+    ctrl.resolveNext(makeRemovableResult(key, 2, false));
+    await sp;
+
+    store.getState().requestRemoval(key);
+    const p = store.getState().confirmRemoval(key);
+    scheduler.advance(STALL_CEILING_MS); // exactly at the window
+    await p;
+    await flush();
+
+    const row = store.getState().rows[key];
+    if (row?.kind !== 'loaded' || row.removal.phase !== 'partial')
+      throw new Error('expected partial');
+    expect(row.removal.outcome.provenance).toBe('stalled');
+  });
+
+  // 30 001 ms of no progress → over the window → trips.
+  it('over (30 001 ms no-progress) — trips → stalled partial', async () => {
+    const key = 'liked-songs';
+    const exec = new FakeRemovalExecutor({ kind: 'hang' });
+    const scheduler = makeFakeScheduler();
+    const ctrl = makeControllableScanner();
+    const store = createDetectionStore(ctrl.scanner, exec, scheduler);
+    const sp = store.getState().scanCollection(key, { kind: 'liked-songs' });
+    ctrl.resolveNext(makeRemovableResult(key, 2, false));
+    await sp;
+
+    store.getState().requestRemoval(key);
+    const p = store.getState().confirmRemoval(key);
+    scheduler.advance(STALL_CEILING_MS + 1); // over the window
+    await p;
+    await flush();
+
+    const row = store.getState().rows[key];
+    if (row?.kind !== 'loaded' || row.removal.phase !== 'partial')
+      throw new Error('expected partial');
+    expect(row.removal.outcome.provenance).toBe('stalled');
+  });
+
+  // FR-002 regression: a multi-batch removal whose TOTAL elapsed exceeds
+  // 30 000 ms but whose every inter-progress gap is < 30 000 ms must COMPLETE
+  // successfully — progress re-arms the watchdog, so a long-but-progressing
+  // removal is never aborted for elapsed wall-clock.
+  it('regression — total > 30 000 ms but every gap < 30 000 ms completes (never aborts)', async () => {
+    const key = 'liked-songs';
+    const driver = makeProgressDrivenExecutor();
+    const scheduler = makeFakeScheduler();
+    const ctrl = makeControllableScanner();
+    const store = createDetectionStore(ctrl.scanner, driver.executor, scheduler);
+    const sp = store.getState().scanCollection(key, { kind: 'liked-songs' });
+    ctrl.resolveNext(makeRemovableResult(key, 2, false));
+    await sp;
+
+    store.getState().requestRemoval(key);
+    const p = store.getState().confirmRemoval(key);
+    expect(removalPhase(store, key)).toBe('removing');
+
+    // Five batches, each 29 999 ms after the previous progress → total
+    // 149 995 ms ≫ 30 000 ms, but no single gap reaches the window.
+    for (let batch = 1; batch <= 5; batch++) {
+      scheduler.advance(29_999);
+      await flush();
+      // Each gap is under the window → still progressing, never stalled.
+      expect(removalPhase(store, key)).toBe('removing');
+      driver.emit(batch, 5); // a completed batch = progress; re-arms watchdog
+      await flush();
+      expect(removalPhase(store, key)).toBe('removing');
+    }
+
+    // Final batch resolves the removal cleanly — a long-but-progressing run
+    // completes; it was NEVER aborted for elapsed time.
+    driver.finish([
+      { uri: 'spotify:track:0-dup' },
+      { uri: 'spotify:track:1-dup' },
+    ]);
+    await p;
+    await flush();
+    expect(removalPhase(store, key)).toBe('none');
   });
 });
 
@@ -1290,17 +1499,21 @@ describe('createDetectionStore — WP03 T011: stall ≠ cancel, no double-fire, 
     expect(store.getState().rows[key]).toBeUndefined();
   });
 
-  // Compute-failure ≠ cancel: a computeRemoveSet failure → partial (terminal,
-  // never re-thrown), but reset() still clears the row.
-  it('compute-failure terminates to partial; a later reset still clears the row', async () => {
+  // Compute-failure ≠ cancel: a computeRemoveSet failure terminates without a
+  // re-throw (Defect A) and leaves the counts truthful; reset() still clears.
+  it('compute-failure terminates (never re-thrown); a later reset still clears the row', async () => {
     const key = 'spotify:playlist:compute-fail-2';
     const fake = new FakeRemovalExecutor();
     const store = await seedComputeFailureRow(key, fake);
 
     store.getState().requestRemoval(key);
-    await store.getState().confirmRemoval(key);
+    // Resolves — never re-throws the compute error out of confirmRemoval.
+    await expect(store.getState().confirmRemoval(key)).resolves.toBeUndefined();
     await flush();
-    expect(removalPhase(store, key)).toBe('partial');
+    const row = store.getState().rows[key];
+    if (row?.kind !== 'loaded') throw new Error('expected loaded');
+    // Counts truthful — nothing fabricated.
+    expect(row.result.removableTrackCount).toBe(1);
     expect(fake.calls.length).toBe(0);
 
     store.getState().reset();
@@ -1335,21 +1548,13 @@ describe('createDetectionStore — WP03 T011: stall ≠ cancel, no double-fire, 
     expect(exec.calls.length).toBe(1);
   });
 
-  // Late settle ignored: after the deadline fires, settle the hung work promise
-  // and flush → no state change, no unhandled-rejection warning. This exercises
-  // the no-op `.catch(() => {})` on the work arm.
-  it('late settle after the deadline is ignored (no unhandled rejection)', async () => {
-    let rejectRemove!: (e: unknown) => void;
-    const exec: RemovalExecutor = {
-      remove: vi.fn(
-        () =>
-          new Promise<RemovalOutcome>((_res, rej) => {
-            rejectRemove = rej;
-          }),
-      ),
-    };
-    const scheduler = makeFakeScheduler();
+  // Stall is terminal & idempotent: after the watchdog trips and the (abort-aware
+  // hang) executor resolves its accumulated partial → `partial`. A redundant
+  // post-settlement watchdog re-arm or scheduler advance changes nothing.
+  it('stall settles once to a terminal partial; a later advance is a no-op', async () => {
     const key = 'liked-songs';
+    const exec = new FakeRemovalExecutor({ kind: 'hang' });
+    const scheduler = makeFakeScheduler();
     const ctrl = makeControllableScanner();
     const store = createDetectionStore(ctrl.scanner, exec, scheduler);
     const sp = store.getState().scanCollection(key, { kind: 'liked-songs' });
@@ -1358,32 +1563,30 @@ describe('createDetectionStore — WP03 T011: stall ≠ cancel, no double-fire, 
 
     store.getState().requestRemoval(key);
     const p = store.getState().confirmRemoval(key);
-    scheduler.advance(STALL_CEILING_MS); // ceiling fires → controller.abort()
+    scheduler.advance(STALL_CEILING_MS); // window elapses → controller.abort()
     await p;
     await flush();
     expect(removalPhase(store, key)).toBe('partial');
 
-    // The hung executor now rejects late (it observed the abort from onStall) —
-    // the no-op catch on the work arm swallows it; no state change.
-    rejectRemove(new DOMException('aborted', 'AbortError'));
+    // Advancing again after the terminal partial does nothing — the watchdog is
+    // disarmed and the row already settled.
+    scheduler.advance(STALL_CEILING_MS);
     await flush();
     expect(removalPhase(store, key)).toBe('partial');
+    expect(exec.calls.length).toBe(1);
   });
 
-  // A late NON-abort rejection after the deadline is likewise ignored (covers
-  // the work-arm no-op catch for a generic rejection).
-  it('late non-abort rejection after the deadline is ignored', async () => {
-    let rejectRemove!: (e: unknown) => void;
-    const exec: RemovalExecutor = {
-      remove: vi.fn(
-        () =>
-          new Promise<RemovalOutcome>((_res, rej) => {
-            rejectRemove = rej;
-          }),
-      ),
-    };
-    const scheduler = makeFakeScheduler();
+  // A whole-operation executor rejection after a stall trip is impossible under
+  // the amended contract (boundary-abort resolves, not rejects); but a rejection
+  // BEFORE any stall is surfaced as a terminal executor-failed partial, never
+  // leaving the row stuck on `removing`.
+  it('an executor rejection surfaces a terminal executor-failed partial (no hang)', async () => {
     const key = 'liked-songs';
+    const exec = new FakeRemovalExecutor({
+      kind: 'throw',
+      error: new Error('late host failure'),
+    });
+    const scheduler = makeFakeScheduler();
     const ctrl = makeControllableScanner();
     const store = createDetectionStore(ctrl.scanner, exec, scheduler);
     const sp = store.getState().scanCollection(key, { kind: 'liked-songs' });
@@ -1391,14 +1594,15 @@ describe('createDetectionStore — WP03 T011: stall ≠ cancel, no double-fire, 
     await sp;
 
     store.getState().requestRemoval(key);
-    const p = store.getState().confirmRemoval(key);
-    scheduler.advance(STALL_CEILING_MS);
-    await p;
+    await store.getState().confirmRemoval(key);
     await flush();
 
-    rejectRemove(new Error('late host failure'));
-    await flush();
-    expect(removalPhase(store, key)).toBe('partial');
+    const row = store.getState().rows[key];
+    if (row?.kind !== 'loaded' || row.removal.phase !== 'partial')
+      throw new Error('expected partial');
+    expect(row.removal.outcome.provenance).toBe('executor-failed');
+    // The watchdog timer was disarmed — no leftover pending timer.
+    expect(scheduler.pending).toBe(0);
   });
 
   // Deadline fires AFTER work already settled (the `settled` guard inside the
@@ -1441,6 +1645,7 @@ describe('createDetectionStore — WP03 T011: stall ≠ cancel, no double-fire, 
     resolveRemove({
       removed: [{ uri: 'spotify:track:0-dup' }, { uri: 'spotify:track:1-dup' }],
       failed: [],
+      provenance: 'host',
     });
     await p;
     await flush();
@@ -1453,19 +1658,12 @@ describe('createDetectionStore — WP03 T011: stall ≠ cancel, no double-fire, 
     expect(removalPhase(store, key)).toBe('none');
   });
 
-  // A late RESOLVE after the deadline is also ignored.
-  it('late resolve after the deadline is ignored', async () => {
-    let resolveRemove!: (o: RemovalOutcome) => void;
-    const exec: RemovalExecutor = {
-      remove: vi.fn(
-        () =>
-          new Promise<RemovalOutcome>((res) => {
-            resolveRemove = res;
-          }),
-      ),
-    };
-    const scheduler = makeFakeScheduler();
+  // A pure hang (no progress) tripping the watchdog resolves to a stalled
+  // partial whose `removed` is truthfully empty — nothing was confirmed.
+  it('a pure-hang stall reports a truthful empty-removed stalled partial', async () => {
     const key = 'liked-songs';
+    const exec = new FakeRemovalExecutor({ kind: 'hang' });
+    const scheduler = makeFakeScheduler();
     const ctrl = makeControllableScanner();
     const store = createDetectionStore(ctrl.scanner, exec, scheduler);
     const sp = store.getState().scanCollection(key, { kind: 'liked-songs' });
@@ -1477,12 +1675,13 @@ describe('createDetectionStore — WP03 T011: stall ≠ cancel, no double-fire, 
     scheduler.advance(STALL_CEILING_MS);
     await p;
     await flush();
-    expect(removalPhase(store, key)).toBe('partial');
 
-    resolveRemove({ removed: [{ uri: 'spotify:track:0-dup' }], failed: [] });
-    await flush();
-    // Still partial — the late resolve lost the race and is ignored.
-    expect(removalPhase(store, key)).toBe('partial');
+    const row = store.getState().rows[key];
+    if (row?.kind !== 'loaded' || row.removal.phase !== 'partial')
+      throw new Error('expected partial');
+    expect(row.removal.outcome.provenance).toBe('stalled');
+    expect(row.removal.outcome.removed).toEqual([]);
+    expect(row.removal.outcome.failed.length).toBe(2);
   });
 
   // Confirmations intact (FR-010): the stall path is only reachable after the

@@ -280,7 +280,7 @@ describe('PlaylistRow — T024 detection state rendering', () => {
 
   it('failed row renders DetectionFailedView (role="alert")', async () => {
     const scanner: DetectionScanner = {
-      scan: vi.fn(() => Promise.reject(new DetectionError('network-failure', 'Test'))),
+      scan: vi.fn(() => Promise.reject(new DetectionError('enumerator-failed', 'Test'))),
     };
     const store = createDetectionStore(scanner);
     renderRow(sample({ key: 'spotify:playlist:abc' }), store);
@@ -293,7 +293,9 @@ describe('PlaylistRow — T024 detection state rendering', () => {
     });
 
     expect(screen.getByRole('alert')).toBeInTheDocument();
-    expect(screen.getByRole('alert')).toHaveTextContent(/Couldn't reach Spotify/);
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      /Couldn't read the playlist contents/,
+    );
   });
 
   it('collection key for playlist row is row.key (the playlist URI)', async () => {
@@ -458,7 +460,7 @@ describe('PlaylistRow — detail wrapper', () => {
 
   it('failed state renders the alert inside the row-detail wrapper', async () => {
     const scanner: DetectionScanner = {
-      scan: vi.fn(() => Promise.reject(new DetectionError('network-failure', 'Test'))),
+      scan: vi.fn(() => Promise.reject(new DetectionError('enumerator-failed', 'Test'))),
     };
     const store = createDetectionStore(scanner);
     renderRow(sample({ key: 'spotify:playlist:abc' }), store);

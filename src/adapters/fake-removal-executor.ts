@@ -47,9 +47,13 @@ export const FAKE_FAIL_REASON = 'fake-fail';
  *   removed. (Playlist identity is by `uid`.)
  * - `throw` — the whole call rejects with `error` (inject a `RemovalError` or
  *   any value), modelling an unattributable whole-operation fault.
- * - `hang` — the call is recorded in `calls`, then returns a never-settling
- *   promise (`new Promise(() => {})`), modelling a host call that never
- *   resolves or rejects.
+ * - `hang` — the call is recorded in `calls`, then **makes no progress and does
+ *   not settle until `signal` aborts**, modelling a host call that hangs on a
+ *   batch (no `onProgress`). It is abort-aware: once aborted (the store's stall
+ *   watchdog firing, or a user cancel/reset), it **resolves with the accumulated
+ *   host partial** (`provenance: 'host'`) — here an all-failed partition, since a
+ *   pure hang confirmed nothing — mirroring the real adapter's boundary-abort
+ *   contract (FR-003). With a never-aborting signal it never settles.
  */
 export type FakeRemovalScript =
   | { kind: 'ok' }
@@ -142,11 +146,22 @@ export class FakeRemovalExecutor implements RemovalExecutor {
       return Promise.reject(script.error);
     }
 
-    // Non-settling host call: never resolves, never rejects, never reports
-    // progress. Recorded above (parity with `throw`) so callers can still
-    // assert the call reached the executor.
+    // Hanging host call: makes no progress and does not settle until the signal
+    // aborts (the store's stall watchdog, or a cancel/reset). On abort it
+    // resolves with the accumulated host partial — a pure hang confirmed
+    // nothing, so every requested track is `failed` (FR-003 / data-model §4).
+    // With a never-aborting signal it never settles. Recorded above (parity with
+    // `throw`) so callers can assert the call reached the executor.
     if (script.kind === 'hang') {
-      return new Promise<RemovalOutcome>(() => {});
+      // The entry guard above already rejected a pre-aborted signal, so the
+      // signal is live here; resolve only once it later aborts.
+      return new Promise<RemovalOutcome>((resolve) => {
+        signal.addEventListener(
+          'abort',
+          () => resolve(hangPartial(tracks)),
+          { once: true },
+        );
+      });
     }
 
     const outcome = partition(tracks, script);
@@ -162,6 +177,23 @@ export class FakeRemovalExecutor implements RemovalExecutor {
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
+
+/**
+ * Build the host partial a hung call resolves with once its signal aborts: a
+ * pure hang confirmed nothing, so every requested track is `failed`. Carries
+ * `provenance: 'host'` (the store re-stamps `'stalled'` when its watchdog
+ * tripped). Total accounting holds: `removed.length + failed.length === total`.
+ *
+ * @param tracks - The requested occurrences.
+ * @returns An all-failed host {@link RemovalOutcome}.
+ */
+function hangPartial(tracks: ReadonlyArray<TrackRef>): RemovalOutcome {
+  return {
+    removed: [],
+    failed: tracks.map((track) => ({ track, reason: 'removal aborted while hung' })),
+    provenance: 'host',
+  };
+}
 
 /**
  * Partition `tracks` into removed/failed according to a settling, non-throw
@@ -188,7 +220,10 @@ function partition(
     }
   }
 
-  return { removed, failed };
+  // Synthesised outcomes are the fake's host-truth (`provenance: 'host'`),
+  // matching the real adapter's resolved-outcome contract (FR-003 / data-model
+  // §3). The store re-stamps `'stalled'` when its watchdog trips.
+  return { removed, failed, provenance: 'host' };
 }
 
 /**

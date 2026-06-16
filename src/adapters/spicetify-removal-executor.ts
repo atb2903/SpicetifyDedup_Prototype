@@ -15,7 +15,10 @@
  *      outcome without a host call.
  *   3. Batch the ordered tracks into runs of `BATCH_SIZE` (no re-order, no
  *      dedup — the domain produced them in the correct later-copies order).
- *   4. Check the `AbortSignal` at each batch boundary; throw `AbortError`.
+ *   4. Check the `AbortSignal` at each batch boundary; on abort, **resolve with
+ *      the accumulated host-truthful partial** (`provenance: 'host'`) rather
+ *      than throwing `AbortError` (FR-003 / ADR-0019). The store decides whether
+ *      an aborted partial means *stall* (apply, re-stamp) or *cancel* (discard).
  *   5. Per-batch partial failure with per-track fallback (live-verify
  *      2026-06-12): a fulfilled batch's tracks go to `removed`; a *rejected*
  *      batch is NOT marked wholesale failed — instead each track is retried with
@@ -23,8 +26,9 @@
  *      with the rejection message). The remaining batches are still attempted.
  *      `onProgress` fires once per batch (after any fallback) with the updated
  *      cumulative `removedSoFar`.
- *   6. Return `{ removed, failed }` with
- *      `removed.length + failed.length === tracks.length`.
+ *   6. Return `{ removed, failed, provenance: 'host' }` with
+ *      `removed.length + failed.length === tracks.length` (full run) or
+ *      `<= tracks.length` (boundary-abort partial).
  *
  * Architecture (ADR-0001 / test/architecture.test.ts): imports `src/ports/` +
  * `src/domain/` only — never store or UI. Platform-only; NO public Web API
@@ -125,17 +129,19 @@ export class SpicetifyRemovalExecutor implements RemovalExecutor {
    * @param target - The single collection to delete from (C-003).
    * @param tracks - Ordered occurrences to delete (not re-ordered/deduped).
    * @param signal - Checked at each batch boundary (before starting a batch);
-   *   throws `DOMException('AbortError')` if aborted, starting no further batch.
-   *   An in-progress per-track fallback for the current batch is allowed to
-   *   complete; the abort guard sits at batch boundaries, not mid-fallback.
+   *   if aborted, the loop stops and the call **resolves with the accumulated
+   *   partial** (`provenance: 'host'`) rather than throwing — every track
+   *   removed before the abort is reported truthfully (FR-003). An in-progress
+   *   per-track fallback for the current batch is allowed to complete; the abort
+   *   guard sits at batch boundaries, not mid-fallback.
    * @param onProgress - Optional; invoked once per batch (after any per-track
    *   fallback) with the cumulative `removedSoFar` and the `total` requested
    *   (NFR-002). Fires even for a fully-failed batch (count unchanged).
    * @returns Promise resolving with the aggregate {@link RemovalOutcome}
-   *   (`removed.length + failed.length === tracks.length`).
+   *   (`provenance: 'host'`; `removed.length + failed.length === tracks.length`
+   *   for a full run, or `<= tracks.length` for a boundary-abort partial).
    * @throws RemovalError('host-unavailable') if the needed host API/method is
    *   absent — thrown before any mutation.
-   * @throws DOMException('AbortError') if `signal` is aborted.
    */
   async remove(
     target: RemovalTarget,
@@ -148,7 +154,7 @@ export class SpicetifyRemovalExecutor implements RemovalExecutor {
 
     // 2. Nothing to do.
     if (tracks.length === 0) {
-      return { removed: [], failed: [] };
+      return { removed: [], failed: [], provenance: 'host' };
     }
 
     // 3. Ordered batches of BATCH_SIZE (no re-order, no dedup).
@@ -159,9 +165,12 @@ export class SpicetifyRemovalExecutor implements RemovalExecutor {
     const total = tracks.length;
 
     for (const batch of batches) {
-      // 4. Abort check at each batch boundary.
+      // 4. Abort check at each batch boundary: stop and return the accumulated
+      // host-truthful partial (FR-003 / ADR-0019) — the store reads what was
+      // actually removed instead of discarding it. No un-attempted track is
+      // invented into `failed`.
       if (signal.aborted) {
-        throw new DOMException('Removal aborted between batches', 'AbortError');
+        return { removed, failed, provenance: 'host' };
       }
 
       // Validate the batch shape (e.g. playlist uid presence) BEFORE the host
@@ -198,7 +207,7 @@ export class SpicetifyRemovalExecutor implements RemovalExecutor {
     }
 
     // 6. Aggregate outcome (every requested track accounted for exactly once).
-    return { removed, failed };
+    return { removed, failed, provenance: 'host' };
   }
 
   // -------------------------------------------------------------------------

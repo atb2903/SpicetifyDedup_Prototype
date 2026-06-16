@@ -108,8 +108,12 @@ export type DetectionState =
  * - `removeProgress` — executor reported batch progress. `removing → removing`.
  * - `removeComplete` — removal finished. Carries the already-applied
  *                      `applyRemovalOutcome` `result` (the store computes it)
- *                      and the `outcome`. `removing → loaded(result, none)` when
- *                      no failures, else `loaded(result, partial)`.
+ *                      and the `outcome`. Routes on `outcome.provenance`
+ *                      (NOT on `failed.length` alone): `'compute-failed'`,
+ *                      `'stalled'`, and `'executor-failed'` always go to
+ *                      `partial` (so their copy is reachable — FR-003/FR-009);
+ *                      only `'host'` keeps the `failed.length === 0 → none`
+ *                      full-success rule, else `partial`.
  */
 export type DetectionAction =
   | { type: 'start' }
@@ -271,14 +275,16 @@ function transitionRemoval(
     case 'removeComplete':
       // removing → loaded(result, none | partial). The `result` is the
       // already-applied applyRemovalOutcome output supplied by the store.
+      // Route on `outcome.provenance`, not on `failed.length` alone (NFR-004):
+      // a compute-failed outcome (removed:[], failed:[]) and a successful
+      // stalled partial (removed:[N], failed:[]) must still reach `partial` so
+      // their copy renders (FR-003 / FR-009) — `failed.length === 0 → none`
+      // applies to a full host success only.
       if (phase === 'removing')
         return {
           kind: 'loaded',
           result: action.result,
-          removal:
-            action.outcome.failed.length === 0
-              ? { phase: 'none' }
-              : { phase: 'partial', outcome: action.outcome },
+          removal: removalAfterComplete(action.outcome),
         };
       return state;
 
@@ -286,6 +292,44 @@ function transitionRemoval(
       // start/progress/complete/fail are handled by the caller; nothing else
       // affects the removal sub-state.
       return state;
+  }
+}
+
+/**
+ * Map a terminal `removeComplete` outcome to the resulting removal phase,
+ * branching on `outcome.provenance` (NFR-004 — control flow comes from the
+ * typed discriminator, never a `reason` string):
+ *
+ * - `'compute-failed'` → `partial` — `computeRemoveSet` threw before any host
+ *   call; `removed`/`failed` are both empty but the user must still see the
+ *   "couldn't compute the removal" copy (FR-009).
+ * - `'stalled'` → `partial` — the per-batch watchdog tripped. `removed` is
+ *   whatever the host confirmed before the trip (FR-003 — may be `> 0` or `0`);
+ *   either way the partial view renders the truthful count.
+ * - `'executor-failed'` → `partial` — a whole-operation fault (`failed` is
+ *   non-empty by construction); behaviour unchanged from the prior rule.
+ * - `'host'` → the host-truthful result: a clean full success
+ *   (`failed.length === 0`) returns to `none`; any host failure is `partial`.
+ *
+ * The `switch` is exhaustive over `RemovalOutcomeProvenance` and every arm
+ * returns, so `tsc` (strict, no implicit return) flags a missing arm as an
+ * error — matching the default-less exhaustive-switch idiom `transition` uses
+ * over `state.kind` above. No `default` is needed (and none is reachable, so
+ * none would be coverable).
+ *
+ * @param outcome - The terminal `RemovalOutcome` carried by `removeComplete`.
+ * @returns The removal phase the `loaded` state should carry next.
+ */
+function removalAfterComplete(outcome: RemovalOutcome): RemovalState {
+  switch (outcome.provenance) {
+    case 'compute-failed':
+    case 'stalled':
+    case 'executor-failed':
+      return { phase: 'partial', outcome };
+    case 'host':
+      return outcome.failed.length === 0
+        ? { phase: 'none' }
+        : { phase: 'partial', outcome };
   }
 }
 

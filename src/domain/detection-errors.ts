@@ -13,35 +13,37 @@
 
 /**
  * Closed enumeration of every failure mode the detection pipeline can
- * produce. Kept in lock-step with data-model.md §6.1 — adding or removing
+ * produce. Kept in lock-step with data-model.md §1 — adding or removing
  * a value here breaks the UI's reason-to-message lookup table in a
  * type-checked way.
  *
- * Per-reason notes:
- * - `'auth-token-expired'` — CosmosAsync returned 401 or a "token expired"
- *   body from the catalog enricher. User needs to sign back in.
- * - `'rate-limit-unparseable'` — Spotify returned HTTP 429 but the
- *   `Retry-After` header was missing or non-numeric. Can't retry safely.
- * - `'network-failure'` — host unreachable, HTTP 5xx, or the fetch itself
- *   threw (catalog enricher or tracks enumerator).
- * - `'malformed-enrichment-payload'` — HTTP 200 but the catalog response
- *   body did not conform to the expected track shape. Likely a Spotify API
- *   change; should be reported as a bug.
- * - `'enumerator-failed'` — `LibraryAPI` or `PlaylistAPI` threw, or
- *   returned a non-page shape. Transient; user can retry.
- * - `'catalog-rejected'` — HTTP 4xx other than 401 or 429. Includes the
- *   status code in `context.statusCode`. Transient; user can retry.
+ * The set is exactly the reasons the live, inline-enricher pipeline can
+ * reach (ADR-0011 / ADR-0018). The abandoned Web-API enricher reasons and the
+ * mislabelled catalog-rejection wrap were removed in the code-review-remediation
+ * pass; each had zero live producer (see ADR-0018 for the full taxonomy delta).
+ *
+ * Per-reason producers (the sole reachable source of each):
+ * - `'auth-token-expired'` — the tracks enumerator's `fetchPage` catch,
+ *   classified via `looksLikeHostAuthExpired` (a 401 under `code`, or a
+ *   "token expired" message). User needs to sign back in.
+ * - `'enumerator-failed'` — the tracks enumerator's precheck / page-shape /
+ *   item-shape validation, or a non-auth host rejection. Transient; retry.
+ * - `'host-unavailable'` — the tracks enumerator's `requirePlatform`, thrown
+ *   before any host call when the Platform / API / method is absent. Matches
+ *   the removal and playlists paths' host-unavailable signal (SC-007).
+ * - `'internal-error'` — the store wrapping an unexpected non-`DetectionError`
+ *   throw from the scan pipeline. An honest internal fault — NOT a Spotify /
+ *   catalog rejection (the live pipeline performs no catalog lookup).
  * - `'aborted'` — `AbortSignal` fired mid-scan. The store catches this and
- *   transitions the row to `idle` rather than `failed`; it is never shown
- *   to the user directly.
+ *   transitions the row to `idle` rather than `failed`, so it is never
+ *   dispatched as a `fail` reason; it remains in the union only as a
+ *   defensive UI fallback.
  */
 export type DetectionErrorReason =
   | 'auth-token-expired'
-  | 'rate-limit-unparseable'
-  | 'network-failure'
-  | 'malformed-enrichment-payload'
   | 'enumerator-failed'
-  | 'catalog-rejected'
+  | 'host-unavailable'
+  | 'internal-error'
   | 'aborted';
 
 // ── §6.2 — DetectionError class ──────────────────────────────────────────────
@@ -56,8 +58,8 @@ export type DetectionErrorReason =
  *
  * @example
  * ```ts
- * throw new DetectionError('catalog-rejected', `Spotify rejected lookup (status 403)`, {
- *   context: { statusCode: 403 },
+ * throw new DetectionError('internal-error', 'scan pipeline faulted', {
+ *   cause: err,
  * });
  * ```
  */

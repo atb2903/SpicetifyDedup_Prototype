@@ -22,6 +22,7 @@
  */
 
 import React from 'react';
+import type { LoadState } from '../domain/load-state';
 import { usePlaylistsStore } from '../store/PlaylistsStoreContext';
 import { IdleView } from './IdleView';
 import { LoadingView } from './LoadingView';
@@ -30,24 +31,34 @@ import { EmptyView } from './EmptyView';
 import { FailedView } from './FailedView';
 import styles from './DedupPage.module.scss';
 
+/**
+ * Map a `LoadState.kind` to the view that renders it (NFR-006).
+ *
+ * Extracted from the render tree as a named module-level helper so the JSX
+ * carries no inline self-invoking arrow (data-model.md §8). The `switch` keeps
+ * **no** `default` branch: every `LoadState` variant must be handled here, so
+ * adding a new variant becomes a `tsc` error that surfaces the missing UI
+ * mapping immediately.
+ *
+ * @param kind - The discriminant of the current `LoadState`.
+ * @returns The view element for that state.
+ */
+function routeView(kind: LoadState['kind']): React.ReactElement {
+  switch (kind) {
+    case 'idle':
+      return <IdleView />;
+    case 'loading':
+      return <LoadingView />;
+    case 'loaded':
+      return <LoadedView />;
+    case 'empty':
+      return <EmptyView />;
+    case 'failed':
+      return <FailedView />;
+  }
+}
+
 export function DedupPage() {
   const kind = usePlaylistsStore((s) => s.loadState.kind);
-  return (
-    <div className={styles.page}>
-      {(() => {
-        switch (kind) {
-          case 'idle':
-            return <IdleView />;
-          case 'loading':
-            return <LoadingView />;
-          case 'loaded':
-            return <LoadedView />;
-          case 'empty':
-            return <EmptyView />;
-          case 'failed':
-            return <FailedView />;
-        }
-      })()}
-    </div>
-  );
+  return <div className={styles.page}>{routeView(kind)}</div>;
 }

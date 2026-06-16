@@ -17,27 +17,14 @@
  */
 
 import React from 'react';
+import type { ProgressEvent } from '../domain/detection-types';
 import styles from './ScanningView.module.scss';
-
-// ---------------------------------------------------------------------------
-// Types (WP01 domain types are defined locally until WP01 is merged into main)
-// ---------------------------------------------------------------------------
-
-/**
- * A progress snapshot emitted during a detection scan.
- *
- * - `enumerating`: tracks yielded so far; `total` is `null` until the first
- *   page returns a total count.
- * - `enriching`: catalog-enriched tracks completed / total to enrich.
- * - `matching`: `processed ∈ {0, total}`; two events per scan (start + end).
- */
-export type ProgressEvent =
-  | { stage: 'enumerating'; processed: number; total: number | null }
-  | { stage: 'enriching'; processed: number; total: number }
-  | { stage: 'matching'; processed: number; total: number };
 
 /**
  * Props for {@link ScanningView}.
+ *
+ * Consumes the canonical {@link ProgressEvent} by import (NFR-001) — no local
+ * re-declaration.
  */
 export type ScanningViewProps = {
   /** Current progress snapshot to render. */

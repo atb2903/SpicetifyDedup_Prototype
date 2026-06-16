@@ -17,7 +17,7 @@ import React from 'react';
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent, act } from '@testing-library/react';
 import { DetectionLoadedSummary } from '../../src/ui/DetectionLoadedSummary';
-import type { DetectionResult } from '../../src/ui/DetectionLoadedSummary';
+import type { DetectionResult } from '../../src/domain/detection-types';
 import { DetectionStoreProvider } from '../../src/store/DetectionStoreContext';
 import {
   createDetectionStore,

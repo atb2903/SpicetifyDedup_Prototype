@@ -38,55 +38,11 @@
 import React from 'react';
 import { useDetectionStore } from '../store/DetectionStoreContext';
 import type { RemovalTarget } from '../domain/removal-types';
+import type { DetectionResult } from '../domain/detection-types';
 import { RemoveDuplicatesButton } from './RemoveDuplicatesButton';
 import { RemovalConfirmDialog } from './RemovalConfirmDialog';
 import { RemovalOutcomeView } from './RemovalOutcomeView';
 import styles from './DetectionLoadedSummary.module.scss';
-
-// ---------------------------------------------------------------------------
-// Types (WP01 domain types are defined locally until WP01 is merged into main)
-// ---------------------------------------------------------------------------
-
-/** A single member of a duplicate group — only fields needed for the summary. */
-type GroupMember = {
-  position: number;
-  uri: string;
-  canonicalUri: string;
-  name: string;
-  artists: ReadonlyArray<{ name: string }>;
-  durationMs: number;
-};
-
-/** A set of duplicate tracks found within a single collection. */
-type DuplicateGroup = {
-  id: string;
-  reason: 'same-canonical-uri' | 'name-artist-duration';
-  members: ReadonlyArray<GroupMember>;
-  defaultKeepIndex: number;
-};
-
-/**
- * The full detection payload exposed by the store when a row reaches `loaded`.
- * Mirrors `DetectionResult` from `src/domain/detection-types.ts` (WP01).
- */
-export type DetectionResult = {
-  /** Canonical URI of the scanned collection. */
-  collectionKey: string;
-  /** UTC ms timestamp of scan completion. */
-  completedAt: number;
-  /** All duplicate groups; empty when no duplicates were found (AS-1). */
-  groups: ReadonlyArray<DuplicateGroup>;
-  /** Sum of all `members.length` across groups. */
-  duplicateTrackCount: number;
-  /** `duplicateTrackCount − groups.length` — tracks that would be removed if keeping one per group. */
-  removableTrackCount: number;
-  /** Count of `spotify:local:…` URIs filtered before enrichment. */
-  skippedLocalCount: number;
-  /** Count of tracks the catalog returned `null` for. */
-  unenrichedCount: number;
-  /** Total non-local tracks the enumerator yielded. */
-  scannedTrackCount: number;
-};
 
 /**
  * Props for {@link DetectionLoadedSummary}.

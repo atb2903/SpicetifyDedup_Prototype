@@ -203,6 +203,23 @@ describe('FakeRemovalExecutor — hang script', () => {
     );
     expect(exec.calls).toHaveLength(0);
   });
+
+  it('resolves with an all-failed host partial once the signal aborts mid-hang (FR-003)', async () => {
+    const exec = new FakeRemovalExecutor({ kind: 'hang' });
+    const tracks = [likedTrack(0), likedTrack(1)];
+    const controller = new AbortController();
+    const pending = exec.remove(LIKED, tracks, controller.signal);
+    // It hangs until aborted — recorded, but does not settle yet.
+    expect(exec.calls).toHaveLength(1);
+    const stillHanging = await Promise.race([pending, Promise.resolve(SETTLED)]);
+    expect(stillHanging).toBe(SETTLED);
+    // Abort → resolves with the host-truthful partial (nothing confirmed).
+    controller.abort();
+    const outcome = await pending;
+    expect(outcome.removed).toEqual([]);
+    expect(outcome.failed.map((f) => f.track)).toEqual(tracks);
+    expect(outcome.provenance).toBe('host');
+  });
 });
 
 // ---------------------------------------------------------------------------

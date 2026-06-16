@@ -67,6 +67,32 @@ export type RemoveSet = {
 // ── §2.4 — RemovalOutcome ────────────────────────────────────────────────────
 
 /**
+ * Typed provenance of a `RemovalOutcome` — the single source of truth for how
+ * a removal ended, replacing the brittle `stalled:` / `executor-failed:`
+ * `reason`-string-prefix protocol the store and `RemovalOutcomeView` used to
+ * share (NFR-004 / ADR-0020). No layer derives control flow from `reason`
+ * strings any more; the view branches on this discriminator.
+ *
+ * Per-provenance invariants (data-model.md §3 / contracts/removal-outcome-provenance.md):
+ * - `'host'` — the executor's host-truthful result (full completion or a
+ *   boundary-abort partial). Total accounting holds:
+ *   `removed.length + failed.length === requested.length`.
+ * - `'stalled'` — the store's per-batch stall watchdog tripped. `removed` is
+ *   whatever the executor confirmed before the trip (FR-003 — **never** forced
+ *   to `[]`); `failed` is the remainder.
+ * - `'executor-failed'` — the executor rejected with a whole-operation fault.
+ *   `removed` is empty; `failed` carries the real RemoveSet refs (never
+ *   synthesised from a collection URI).
+ * - `'compute-failed'` — `computeRemoveSet` threw before any host call (FR-009).
+ *   `removed: []`, `failed: []`, no fabricated `TrackRef`, count truthfully 0.
+ */
+export type RemovalOutcomeProvenance =
+  | 'host'
+  | 'stalled'
+  | 'executor-failed'
+  | 'compute-failed';
+
+/**
  * Per-collection result of a removal attempt (FR-010 / AS-8). Partitions the
  * requested tracks into those the host confirmed deleted and those that
  * failed (with a host-supplied reason), so the UI can keep the unremoved
@@ -74,15 +100,26 @@ export type RemoveSet = {
  *
  * Invariants:
  * - `removed.length + failed.length === requested.length` (the `RemoveSet`
- *   that produced this outcome) — every requested track is accounted for.
+ *   that produced this outcome) — every requested track is accounted for —
+ *   for the `'host'` and `'executor-failed'` provenances. A `'stalled'`
+ *   partial accounts only what the executor confirmed before the trip; a
+ *   `'compute-failed'` outcome accounts nothing (both partitions empty).
  * - `removed` and `failed` are disjoint by `TrackRef` identity (playlist →
  *   `uid`, Liked Songs → `uri`); no track appears in both.
+ *
+ * `reason` strings on `failed[]` are human-readable diagnostics only — no
+ * layer derives control flow from them (use `provenance` — NFR-004).
  */
 export type RemovalOutcome = {
   /** Tracks the host confirmed deleted. */
   removed: ReadonlyArray<TrackRef>;
   /** Tracks that could not be deleted, each with a host-supplied reason. */
   failed: ReadonlyArray<{ track: TrackRef; reason: string }>;
+  /**
+   * Typed provenance replacing the `stalled:` / `executor-failed:` `reason`
+   * string prefix (NFR-004 / ADR-0020). See {@link RemovalOutcomeProvenance}.
+   */
+  provenance: RemovalOutcomeProvenance;
 };
 
 // ── §2.5 — RemovalProgressEvent ──────────────────────────────────────────────

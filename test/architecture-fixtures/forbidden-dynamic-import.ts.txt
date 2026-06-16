@@ -1,0 +1,8 @@
+// FIXTURE (not compiled): a UI-layer file that dynamically imports a port.
+// ADR-0001 forbids src/ui -> src/ports. The old regex content-scan missed
+// dynamic `import()`; the AST analyser must flag this as a forbidden edge to
+// `src/ports`. Analysed as if it lived at `src/ui/<file>.tsx`.
+export async function lazyScheduler() {
+  const mod = await import('../ports/scheduler');
+  return mod;
+}

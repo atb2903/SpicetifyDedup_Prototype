@@ -211,7 +211,7 @@ describe('FakeCatalogEnricher — force auth-expired', () => {
   });
 });
 
-describe('FakeCatalogEnricher — force rate-limit-unparseable after 2 batches', () => {
+describe('FakeCatalogEnricher — force auth-expired after 2 batches', () => {
   it('first 2 batches succeed, 3rd batch throws', async () => {
     const tracks = makeRawTracks(150); // 3 batches of 50
     const catalog = makeCatalog(tracks);
@@ -220,34 +220,17 @@ describe('FakeCatalogEnricher — force rate-limit-unparseable after 2 batches',
     const enricher = new FakeCatalogEnricher({
       catalog,
       batchSize: 50,
-      forceMode: 'rate-limit-unparseable',
+      forceMode: 'auth-expired',
       forceAfterBatches: 2,
     });
     await expect(
       enricher.enrich(tracks, neverAborted(), onProgress),
     ).rejects.toSatisfy(
       (e: unknown) =>
-        e instanceof DetectionError && e.reason === 'rate-limit-unparseable',
+        e instanceof DetectionError && e.reason === 'auth-token-expired',
     );
     // First 2 batches emitted progress, 3rd threw before emitting.
     expect(onProgress).toHaveBeenCalledTimes(2);
-  });
-});
-
-describe('FakeCatalogEnricher — force shape-drift', () => {
-  it('throws DetectionError(malformed-enrichment-payload) immediately', async () => {
-    const tracks = makeRawTracks(5);
-    const enricher = new FakeCatalogEnricher({
-      catalog: new Map(),
-      forceMode: 'shape-drift',
-    });
-    await expect(
-      enricher.enrich(tracks, neverAborted(), vi.fn()),
-    ).rejects.toSatisfy(
-      (e: unknown) =>
-        e instanceof DetectionError &&
-        e.reason === 'malformed-enrichment-payload',
-    );
   });
 });
 

@@ -14,7 +14,8 @@
  * - On `cancelScan`: abort the row's controller if present; dispatch `cancel`.
  * - On `reset`: abort ALL in-flight controllers; clear the rows map.
  * - Swallow `AbortError` — the cancel/reset already moved the row to `idle`.
- * - Wrap non-`DetectionError` throws in `DetectionError('catalog-rejected', …)`.
+ * - Wrap non-`DetectionError` throws in `DetectionError('internal-error', …)`
+ *   (FR-004 — an honest internal fault, not a catalog/Spotify rejection).
  *
  * Architecture: `src/store/` may import from `src/domain/` and `src/ports/` only
  * (ADR-0001, `test/architecture.test.ts`).
@@ -24,105 +25,82 @@ import { createStore, type StoreApi } from 'zustand/vanilla';
 import { useStore } from 'zustand';
 import type { DetectionScanner } from '../ports/detection-scanner';
 import type { RemovalExecutor } from '../ports/removal-executor';
-import { defaultScheduler, type Scheduler } from '../ports/scheduler';
-import type { ScanRequest } from '../domain/detection-types';
+import { defaultScheduler, type Scheduler, type TimerHandle } from '../ports/scheduler';
+import type { ScanRequest, DetectionResult } from '../domain/detection-types';
 import type {
   RemovalTarget,
   RemovalOutcome,
+  RemovalProgressEvent,
   RemoveSet,
 } from '../domain/removal-types';
 import { transition, type DetectionState } from '../domain/detection-state';
 import { DetectionError, isDetectionError } from '../domain/detection-errors';
-import { RemovalError, isRemovalError } from '../domain/removal-errors';
+import { RemovalError } from '../domain/removal-errors';
 import { computeRemoveSet } from '../domain/remove-set';
 import { applyRemovalOutcome } from '../domain/apply-removal-outcome';
 
-// ── Stall ceiling (NFR-001) ─────────────────────────────────────────────────
+// ── Stall watchdog (FR-002 / NFR-007) ───────────────────────────────────────
 
 /**
- * Hang guard (NOT a backend SLA): the maximum wall-clock time the store waits
- * for a single `RemovalExecutor.remove` call to settle before it forcibly
- * abandons it. When the executor neither resolves nor rejects within this
- * window, the store aborts the in-flight controller and raises
- * `RemovalError('stalled', …)`, which flows through the existing non-`AbortError`
- * catch in `confirmRemoval` into an all-failed `partial`. This is defense in
- * depth — the root-cause hang fix is the compute-once catch hardening — so a
- * *future* never-settling host call can never again leave a row stuck on
- * `removing`. Tunable here; deliberately generous (data-model §4, research §R-5).
+ * Per-batch stall window (NOT a backend SLA): the maximum time the store waits
+ * for the executor to make **progress on a single batch** before it treats the
+ * removal as hung. Re-scoped (ADR-0019) from "whole-removal elapsed" to "time
+ * since the last `onProgress` event": each completed batch re-arms the window,
+ * so a genuinely-progressing large removal is never aborted merely for taking
+ * long (FR-002). Only a batch that makes no progress for the whole window — a
+ * true hang — trips it. On a trip the store aborts the in-flight controller;
+ * the executor then resolves with its accumulated host partial (FR-003), which
+ * the store applies and stamps `provenance: 'stalled'` (R-3/T007).
+ *
+ * Tunable here; deliberately generous (data-model §5, research §R-1/§R-6).
  */
 export const STALL_CEILING_MS = 30_000;
 
 /**
- * Race `work` against a scheduler deadline of `ms`.
+ * A progress-resettable stall watchdog over the injected `scheduler`.
  *
- * Resolves/rejects with `work`'s settlement when it settles within `ms`;
- * otherwise invokes `onStall()` and rejects with `RemovalError('stalled', …)`.
+ * `arm()` (re)starts the window; the store calls it once when the removal
+ * begins and again on **every** `onProgress` event. If the window of `ms`
+ * elapses without a re-arm, `onStall()` fires exactly once. `disarm()` cancels
+ * any pending timer (called when the removal settles).
  *
- * Semantics (data-model §4):
- * - **under** — `work` settles first → `scheduler.clearTimeout` (no leaked
- *   timer) → resolve/reject with `work`'s result.
- * - **at (`= ms`)** — deadline and settlement coincide → **deadline wins**
- *   (the guard is never weaker than advertised). With a single-shot promise the
- *   first `resolve`/`reject` wins; the deadline arm is wired so it takes the tie.
- * - **over** — `work` never settles before `ms` → `onStall()` then reject
- *   `RemovalError('stalled')`.
+ * `= ms` semantics: the timer fires when the scheduler reaches the window — the
+ * boundary tests (T006) pin "29 999 continues / 30 000 trips / 30 001 trips".
+ * No deadline-vs-settlement tie-break is asserted here; the watchdog is a
+ * one-shot side effect, not a promise race (NFR-007 — the old `raceStallCeiling`
+ * JSDoc claimed an unbacked tie-break; this design has no such claim).
  *
- * A late settlement of `work` after the deadline is ignored — the `work` arm
- * carries a no-op `.catch(() => {})` so a post-deadline rejection (e.g. the
- * `AbortError` from the `onStall` abort) never surfaces as an unhandled
- * rejection (research §R-7). Pure aside from the injected `scheduler`.
- *
- * @typeParam T   - The value `work` resolves with on success.
- * @param work      - The in-flight promise to bound (the executor call).
- * @param ms        - The ceiling in milliseconds (`STALL_CEILING_MS`).
+ * @param ms        - The per-batch window in milliseconds (`STALL_CEILING_MS`).
  * @param scheduler - Injected timer seam (deterministic under a fake in tests).
- * @param onStall   - Side effect run exactly once when the deadline fires
- *                    (here: `controller.abort()` to stop further batches).
- * @returns A promise settling with `work`'s result, or rejecting with
- *   `RemovalError('stalled')` if the deadline fires first.
+ * @param onStall   - Side effect run exactly once when the window elapses
+ *                    without a re-arm (here: `controller.abort()`).
+ * @returns `{ arm, disarm }` — `arm` re-starts the window; `disarm` cancels it.
  */
-function raceStallCeiling<T>(
-  work: Promise<T>,
+function createStallWatchdog(
   ms: number,
   scheduler: Scheduler,
   onStall: () => void,
-): Promise<T> {
-  return new Promise<T>((resolve, reject) => {
-    let settled = false;
+): { arm: () => void; disarm: () => void } {
+  let handle: TimerHandle | undefined;
 
-    const handle = scheduler.setTimeout(() => {
-      if (settled) return;
-      settled = true;
+  function disarm(): void {
+    if (handle !== undefined) {
+      scheduler.clearTimeout(handle);
+      handle = undefined;
+    }
+  }
+
+  function arm(): void {
+    // Re-arming cancels any pending window and starts a fresh one, so at most
+    // one timer is ever live — `onStall` fires at most once per window.
+    disarm();
+    handle = scheduler.setTimeout(() => {
+      handle = undefined;
       onStall();
-      reject(
-        new RemovalError(
-          'stalled',
-          `Removal timed out after ${ms / 1000}s — no tracks were removed.`,
-          { context: { ceilingMs: ms } },
-        ),
-      );
     }, ms);
+  }
 
-    work.then(
-      (value) => {
-        if (settled) return;
-        settled = true;
-        scheduler.clearTimeout(handle);
-        resolve(value);
-      },
-      (error) => {
-        if (settled) return;
-        settled = true;
-        scheduler.clearTimeout(handle);
-        reject(error);
-      },
-    );
-
-    // No-op catch on the work arm: a late rejection after the deadline (the
-    // `AbortError` from `onStall`, or any other post-deadline reject) is already
-    // a settled race and must not become an unhandled rejection.
-    work.catch(() => {});
-  });
+  return { arm, disarm };
 }
 
 // ── Public types ──────────────────────────────────────────────────────────────
@@ -202,9 +180,14 @@ export type DetectionStoreState = {
    * applyRemovalOutcome → removeComplete`, applying the outcome exactly once
    * (guards the `outcome-mismatch` idempotence trap). A concurrent removal of
    * the same collection is rejected by a closure-level in-flight lock (FR-012).
-   * An `AbortError` is swallowed; any other throw is wrapped as
-   * `RemovalError('executor-failed', …)` and surfaced as an **all-failed**
-   * `partial` so the copies stay visible (AS-8).
+   * A per-batch stall watchdog (FR-002) re-armed on each progress event aborts
+   * a genuinely-hung removal; the executor then resolves with its accumulated
+   * host partial (FR-003), stamped `provenance: 'stalled'`. A user
+   * cancel/reset `AbortError` is swallowed; a whole-operation executor fault
+   * yields `provenance: 'executor-failed'` (real RemoveSet refs); a
+   * `computeRemoveSet` failure yields `provenance: 'compute-failed'` with no
+   * fabricated track (FR-009). Provenance is a typed discriminator, not a
+   * `reason`-string prefix (NFR-004).
    *
    * Fails loud with `RemovalError('executor-failed', …)` if execution is
    * reached while no `RemovalExecutor` was injected (production always injects
@@ -329,12 +312,16 @@ export function createDetectionStore(
             return;
           }
           // DetectionError: pass through.
-          // Anything else: wrap as catalog-rejected (defensive guard).
+          // Anything else: an unexpected non-`DetectionError` throw is an
+          // honest INTERNAL fault in the scan pipeline (FR-004) — NOT a Spotify
+          // / catalog rejection (the live, inline-enricher pipeline performs no
+          // catalog lookup, ADR-0011). Wrap it as `internal-error`; no
+          // `context.status` is plumbed (FR-008 — nothing reads it).
           const reason = isDetectionError(e)
             ? e
             : new DetectionError(
-                'catalog-rejected',
-                'scanner.scan threw a non-DetectionError',
+                'internal-error',
+                'an unexpected internal error occurred during the scan',
                 { cause: e },
               );
           dispatch(key, { type: 'fail', reason });
@@ -363,15 +350,27 @@ export function createDetectionStore(
       },
 
       reset() {
+        // PLACEMENT (NFR-008 / ADR-0005 / ADR-0019): `reset()` is a deliberate
+        // lifecycle OVERRIDE, not a per-row FSM transition. It aborts every
+        // in-flight controller and clears `rows` directly — there is no
+        // `transition()` action with a per-row edge for "discard everything",
+        // because reset is a whole-store boundary event (route change / unmount,
+        // ADR-0005) rather than a state machine step on any single row. Reasoning
+        // about reachable per-row lifecycle therefore never needs to account for
+        // a `reset` edge; it sits outside the transition tables on purpose.
+        // No structural change here — see ADR-0019 §reset() for the rationale.
+
         // Abort ALL in-flight scan controllers first.
         for (const key of Object.keys(controllers)) {
           controllers[key].abort();
           delete controllers[key];
         }
-        // Abort ALL in-flight removal controllers too — navigating away must
-        // not leave a removal running (FR-012). The aborted executor rejects
-        // with AbortError, which `confirmRemoval`'s catch swallows; clearing the
-        // map here also releases the lock so a fresh scan/removal can proceed.
+        // Abort ALL in-flight removal controllers too — navigating away must not
+        // leave a removal running (FR-012). The aborted executor resolves with
+        // its accumulated host partial (FR-003); the resulting late
+        // `removeComplete` targets a now-cleared row, which the FSM ignores
+        // (own-entry guard). Clearing the map here also releases the lock so a
+        // fresh scan/removal can proceed.
         for (const key of Object.keys(removalControllers)) {
           removalControllers[key].abort();
           delete removalControllers[key];
@@ -438,96 +437,46 @@ export function createDetectionStore(
           );
         }
 
-        // 5. Claim the in-flight slot with a fresh controller.
+        // 5. Claim the in-flight slot with a fresh controller and execute.
         const controller = new AbortController();
         removalControllers[key] = controller;
-
-        // Derive the target once; both the try and the catch reuse it.
         const target = targetForKey(key);
-        // `computeRemoveSet` is computed EXACTLY ONCE (Defect A fix). The catch
-        // never re-invokes it — instead it reuses this captured set when
-        // building the all-failed `partial`. `undefined` means the compute
-        // itself threw (e.g. a playlist member missing `uid`); that throw is
-        // caught below and routed to the same terminal `partial` path WITHOUT
-        // re-deriving — so a compute failure can never escape uncaught and leave
-        // the row stuck on `removing` (FR-004 / FR-006).
-        let removeSet: RemoveSet | undefined;
 
         try {
-          // 6. Execute: compute (once) → remove (ceiling-bounded) → apply →
-          //    complete.
-          removeSet = computeRemoveSet(result, target);
-          const outcome = await raceStallCeiling(
-            removalExecutor.remove(
-              target,
-              removeSet.tracks,
-              controller.signal,
-              (event) => dispatch(key, { type: 'removeProgress', event }),
-            ),
-            STALL_CEILING_MS,
-            scheduler,
-            // On stall: abort the in-flight controller so any subsequent host
-            // batch is cancelled. The executor's resulting `AbortError` loses
-            // the race (already settled `stalled`) and is swallowed by the
-            // work-arm no-op catch in `raceStallCeiling`.
-            () => controller.abort(),
-          );
-          // Apply the outcome exactly once (idempotence guard vs WP02's
-          // `outcome-mismatch` trap).
-          const updated = applyRemovalOutcome(result, outcome, target);
-          dispatch(key, { type: 'removeComplete', result: updated, outcome });
-        } catch (e) {
-          // AbortError: a user cancel/reset moved the row; do not dispatch a
-          // failure (distinct from a stall — a stall raises RemovalError, not
-          // AbortError, so it never takes this swallow branch).
-          if (e instanceof DOMException && e.name === 'AbortError') {
+          // 6a. Compute the RemoveSet EXACTLY ONCE, structurally (T008 / R-8):
+          //     the set is computed here and threaded as a parameter into the
+          //     execute helper, so the failure path **cannot** re-invoke
+          //     `computeRemoveSet` (the ADR-0017 Defect A invariant becomes a
+          //     signature-level one). A compute failure is its own terminal
+          //     outcome (FR-009) — no host call, no fabricated track.
+          let removeSet: RemoveSet;
+          try {
+            removeSet = computeRemoveSet(result, target);
+          } catch {
+            // Compute-failed: no host call, nothing removed. Pass `result`
+            // through UNCHANGED — do NOT run `applyRemovalOutcome`, whose
+            // member-keying would itself throw on the same malformed members
+            // (e.g. a missing `uid`) that failed the compute (FR-009 / Defect A).
+            dispatch(key, {
+              type: 'removeComplete',
+              result,
+              outcome: computeFailedOutcome(),
+            });
             return;
           }
-          // Any other throw — a `computeRemoveSet` failure (the captured
-          // `removeSet` is still `undefined`), a `'stalled'` ceiling rejection,
-          // or an executor rejection — is surfaced as an all-failed `partial`
-          // (AS-8 — "surfaced, not swallowed"): every requested track lands in
-          // `failed`, none in `removed`, so the row shows `partial` and the
-          // copies stay visible. `removableTrackCount` is unchanged because
-          // `applyRemovalOutcome` drops nothing. The catch NEVER re-invokes
-          // `computeRemoveSet` (the Defect A fix) — it reuses the captured set.
-          const reason = isRemovalError(e)
-            ? e
-            : new RemovalError(
-                'executor-failed',
-                'RemovalExecutor.remove threw a non-RemovalError',
-                { cause: e },
-              );
-          // Reason prefix WP04 keys on: `stalled:` for a ceiling timeout, else
-          // `executor-failed:` for an executor/compute fault.
-          const prefix = reason.code === 'stalled' ? 'stalled' : 'executor-failed';
-          // Reuse the already-computed remove-set when present; if the compute
-          // itself threw (`removeSet === undefined`), synthesize a single
-          // whole-collection failure entry so the FSM still reaches `partial`
-          // (a non-empty `failed`) rather than a false-success `none`.
-          const failedRefs = removeSet?.tracks ?? [{ uri: result.collectionKey }];
-          const allFailed: RemovalOutcome = {
-            removed: [],
-            failed: failedRefs.map((track) => ({
-              track,
-              reason: `${prefix}: ${reason.message}`,
-            })),
-          };
-          // Nothing was removed, so the refreshed result is the original
-          // unchanged. Apply the outcome (a no-op transform with `removed: []`)
-          // ONLY when the remove-set computed cleanly — a compute failure means
-          // the members are themselves malformed (e.g. missing `uid`), which
-          // would make `applyRemovalOutcome` throw on its own member-keying;
-          // in that case pass `result` straight through so the catch can never
-          // throw a second time (Defect A — keep the terminal dispatch reachable).
-          const refreshed =
-            removeSet !== undefined
-              ? applyRemovalOutcome(result, allFailed, target)
-              : result;
-          dispatch(key, {
-            type: 'removeComplete',
-            result: refreshed,
-            outcome: allFailed,
+
+          // 6b. Execute the (already-computed) RemoveSet against the executor,
+          //     bounded by the per-batch stall watchdog (FR-002), and apply the
+          //     resulting outcome with its stamped provenance (FR-003/T007).
+          await executeRemoveSet({
+            dispatch,
+            key,
+            result,
+            target,
+            removeSet,
+            executor: removalExecutor,
+            controller,
+            scheduler,
           });
         } finally {
           // Only delete if we still own the entry (mirror scanCollection's
@@ -539,6 +488,144 @@ export function createDetectionStore(
       },
     };
   });
+}
+
+// ── confirmRemoval execute helpers (T008 / NFR-003) ─────────────────────────
+
+/** The `dispatch` closure shape `confirmRemoval`'s helpers consume. */
+type RowDispatch = (
+  key: string,
+  action:
+    | { type: 'removeProgress'; event: RemovalProgressEvent }
+    | { type: 'removeComplete'; result: DetectionResult; outcome: RemovalOutcome },
+) => void;
+
+/**
+ * Synthesise the truthful **compute-failed** outcome (FR-009 / R-3): no host
+ * call was made, so nothing was removed and nothing failed. It fabricates **no**
+ * `TrackRef` — in particular it never names the collection URI / `'liked-songs'`
+ * sentinel as a "track". `reason` strings are diagnostics only.
+ *
+ * @returns A `provenance: 'compute-failed'` outcome with empty partitions.
+ */
+function computeFailedOutcome(): RemovalOutcome {
+  return { removed: [], failed: [], provenance: 'compute-failed' };
+}
+
+/**
+ * Synthesise an **executor-failed** outcome from a whole-operation executor
+ * fault (R-3): nothing removed; every requested track from the *real* RemoveSet
+ * lands in `failed` (never synthesised from a collection URI). `reason` carries
+ * a human diagnostic only — provenance is the typed control signal (NFR-004).
+ *
+ * @param removeSet - The already-computed RemoveSet (the real TrackRefs).
+ * @param cause     - The originating executor rejection, preserved as diagnostic.
+ * @returns A `provenance: 'executor-failed'` all-failed outcome.
+ */
+function executorFailedOutcome(removeSet: RemoveSet, cause: unknown): RemovalOutcome {
+  // `RemovalError extends Error`, so the `instanceof Error` test covers both.
+  const message = cause instanceof Error ? cause.message : String(cause);
+  return {
+    removed: [],
+    failed: removeSet.tracks.map((track) => ({ track, reason: message })),
+    provenance: 'executor-failed',
+  };
+}
+
+/**
+ * Apply a synthesised outcome to the row and dispatch the terminal
+ * `removeComplete` (T007). The outcome's `removed` is empty in every synthesised
+ * case, so `applyRemovalOutcome` is a no-op transform that cannot throw
+ * `outcome-mismatch`; the row's counts stay truthful (nothing dropped).
+ *
+ * @param dispatch - The row dispatch closure.
+ * @param key      - The collection key.
+ * @param result   - The pre-removal `DetectionResult` (unchanged on no removal).
+ * @param target   - The removal target (selects the apply key function).
+ * @param outcome  - The synthesised terminal outcome (empty `removed`).
+ */
+function applyTerminalOutcome(
+  dispatch: RowDispatch,
+  key: string,
+  result: DetectionResult,
+  target: RemovalTarget,
+  outcome: RemovalOutcome,
+): void {
+  const updated = applyRemovalOutcome(result, outcome, target);
+  dispatch(key, { type: 'removeComplete', result: updated, outcome });
+}
+
+/**
+ * Run the (already-computed) RemoveSet against the executor under the per-batch
+ * stall watchdog, then apply the resulting outcome with truthful provenance.
+ *
+ * Outcomes (T007):
+ * - executor resolves, watchdog never tripped → pass the executor's `'host'`
+ *   outcome through (full or boundary-abort partial — FR-003).
+ * - watchdog tripped (genuine no-progress hang) → the abort makes the executor
+ *   resolve with its accumulated host partial; re-stamp it `'stalled'` and apply
+ *   it (FR-003 — `removed` is never forced to `[]`).
+ * - executor rejects with `AbortError` → a user cancel/reset moved the row;
+ *   swallow (the row already left `removing`).
+ * - executor rejects otherwise → `'executor-failed'` (real RemoveSet refs).
+ *
+ * Compute-once is structural: this helper receives `removeSet` as a parameter
+ * and never calls `computeRemoveSet` (ADR-0017 / T008).
+ */
+async function executeRemoveSet(args: {
+  dispatch: RowDispatch;
+  key: string;
+  result: DetectionResult;
+  target: RemovalTarget;
+  removeSet: RemoveSet;
+  executor: RemovalExecutor;
+  controller: AbortController;
+  scheduler: Scheduler;
+}): Promise<void> {
+  const { dispatch, key, result, target, removeSet, executor, controller, scheduler } = args;
+
+  // The watchdog re-arms on each batch progress (FR-002). A trip marks the
+  // termination as a stall so the resolved partial is re-stamped `'stalled'`.
+  let stalled = false;
+  const watchdog = createStallWatchdog(STALL_CEILING_MS, scheduler, () => {
+    stalled = true;
+    controller.abort();
+  });
+  watchdog.arm();
+
+  try {
+    const outcome = await executor.remove(
+      target,
+      removeSet.tracks,
+      controller.signal,
+      (event) => {
+        // A completed batch is progress → re-arm the stall window.
+        watchdog.arm();
+        dispatch(key, { type: 'removeProgress', event });
+      },
+    );
+
+    if (stalled) {
+      // The watchdog aborted; the executor resolved with its accumulated host
+      // partial. Re-stamp `'stalled'` (FR-003 — never force `removed: []`).
+      const stalledOutcome: RemovalOutcome = { ...outcome, provenance: 'stalled' };
+      applyTerminalOutcome(dispatch, key, result, target, stalledOutcome);
+      return;
+    }
+
+    // Host-truthful outcome (full completion or boundary-abort partial).
+    applyTerminalOutcome(dispatch, key, result, target, outcome);
+  } catch (e) {
+    // A user cancel/reset `AbortError` — the row already moved away; discard.
+    // (A stall never lands here: the executor resolves, it does not reject.)
+    if (e instanceof DOMException && e.name === 'AbortError') {
+      return;
+    }
+    // A whole-operation executor fault → executor-failed (real RemoveSet refs).
+    applyTerminalOutcome(dispatch, key, result, target, executorFailedOutcome(removeSet, e));
+  } finally {
+    watchdog.disarm();
+  }
 }
 
 // ── Hook factory ──────────────────────────────────────────────────────────────

@@ -11,7 +11,7 @@
  * 2. Each `onProgress` call the scanner makes updates `scanning.progress`.
  * 3. Returning a `DetectionResult` transitions the row to `loaded`.
  * 4. Aborting via `reset()` aborts the in-flight `AbortSignal` and clears rows.
- * 5. A non-`DetectionError` thrown by the scanner is wrapped as `catalog-rejected`.
+ * 5. A non-`DetectionError` thrown by the scanner is wrapped as `internal-error`.
  * 6. A `DetectionError` thrown by the scanner surfaces as `failed.reason`.
  *
  * These are black-box tests over the store's public API. The fake scanner
@@ -251,7 +251,7 @@ describe('detection end-to-end — reset() aborts in-flight scan', () => {
 
 describe('detection end-to-end — error handling', () => {
   it('E2E-05 — DetectionError from scanner surfaces as failed.reason', async () => {
-    const error = new DetectionError('network-failure', 'simulated network error');
+    const error = new DetectionError('enumerator-failed', 'simulated enumerator failure');
     const scanner: DetectionScanner = {
       scan: vi.fn(() => Promise.reject(error)),
     };
@@ -265,10 +265,10 @@ describe('detection end-to-end — error handling', () => {
     expect(row?.kind).toBe('failed');
     if (row?.kind !== 'failed') throw new Error('Expected failed');
     expect(row.reason).toBe(error);
-    expect(row.reason.reason).toBe('network-failure');
+    expect(row.reason.reason).toBe('enumerator-failed');
   });
 
-  it('E2E-06 — non-DetectionError wrapped as catalog-rejected', async () => {
+  it('E2E-06 — non-DetectionError wrapped as internal-error', async () => {
     const scanner: DetectionScanner = {
       scan: vi.fn(() => Promise.reject(new TypeError('unexpected payload'))),
     };
@@ -281,7 +281,7 @@ describe('detection end-to-end — error handling', () => {
     const row = store.getState().rows[key];
     expect(row?.kind).toBe('failed');
     if (row?.kind !== 'failed') throw new Error('Expected failed');
-    expect(row.reason.reason).toBe('catalog-rejected');
+    expect(row.reason.reason).toBe('internal-error');
     expect(row.reason.cause).toBeInstanceOf(TypeError);
   });
 

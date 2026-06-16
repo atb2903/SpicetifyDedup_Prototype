@@ -68,7 +68,7 @@ function expectCountInvariant(r: DetectionResult): void {
 
 const LIKED: RemovalTarget = { kind: 'liked-songs' };
 const PLAYLIST: RemovalTarget = { kind: 'playlist', playlistUri: 'spotify:playlist:p1' };
-const EMPTY: RemovalOutcome = { removed: [], failed: [] };
+const EMPTY: RemovalOutcome = { removed: [], failed: [], provenance: 'host' };
 
 function ref(uri: string, uid?: string): TrackRef {
   return uid === undefined ? { uri } : { uri, uid };
@@ -113,6 +113,7 @@ describe('applyRemovalOutcome', () => {
     const outcome: RemovalOutcome = {
       removed: [ref('spotify:track:t1'), ref('spotify:track:t3'), ref('spotify:track:t4')],
       failed: [],
+      provenance: 'host',
     };
     const next = applyRemovalOutcome(r, outcome, LIKED);
     expect(next.groups).toHaveLength(0);
@@ -124,7 +125,7 @@ describe('applyRemovalOutcome', () => {
   it('partial removal keeps groups with ≥2 survivors', () => {
     const r = resultOf([group('g0', [track(0), track(1), track(2)])]);
     // remove only t2 → 2 survivors → group remains
-    const next = applyRemovalOutcome(r, { removed: [ref('spotify:track:t2')], failed: [] }, LIKED);
+    const next = applyRemovalOutcome(r, { removed: [ref('spotify:track:t2')], failed: [], provenance: 'host' }, LIKED);
     expect(next.groups).toHaveLength(1);
     expect(next.groups[0].members).toHaveLength(2);
     expect(next.duplicateTrackCount).toBe(2);
@@ -138,6 +139,7 @@ describe('applyRemovalOutcome', () => {
     const outcome: RemovalOutcome = {
       removed: [ref('spotify:track:t1'), ref('spotify:track:t2')],
       failed: [],
+      provenance: 'host',
     };
     const next = applyRemovalOutcome(r, outcome, LIKED);
     expect(next.groups).toHaveLength(0);
@@ -160,6 +162,7 @@ describe('applyRemovalOutcome', () => {
     const outcome: RemovalOutcome = {
       removed: [],
       failed: [{ track: ref('spotify:track:t1'), reason: 'network' }],
+      provenance: 'host',
     };
     const next = applyRemovalOutcome(r, outcome, LIKED);
     expect(next.groups).toHaveLength(1);
@@ -173,6 +176,7 @@ describe('applyRemovalOutcome', () => {
     const outcome: RemovalOutcome = {
       removed: [ref('spotify:track:t1')],
       failed: [{ track: ref('spotify:track:t2'), reason: 'rate-limited' }],
+      provenance: 'host',
     };
     const next = applyRemovalOutcome(r, outcome, LIKED);
     // t1 dropped, t0 + t2 survive → group remains with 2 members
@@ -184,7 +188,7 @@ describe('applyRemovalOutcome', () => {
 
   it('throws outcome-mismatch when a removed key matches no member', () => {
     const r = resultOf([group('g0', [track(0), track(1)])]);
-    const outcome: RemovalOutcome = { removed: [ref('spotify:track:ghost')], failed: [] };
+    const outcome: RemovalOutcome = { removed: [ref('spotify:track:ghost')], failed: [], provenance: 'host' };
     try {
       applyRemovalOutcome(r, outcome, LIKED);
       expect.unreachable('should have thrown');
@@ -197,7 +201,7 @@ describe('applyRemovalOutcome', () => {
 
   it('preserves scan-time diagnostics unchanged', () => {
     const r = resultOf([group('g0', [track(0), track(1), track(2)])]);
-    const next = applyRemovalOutcome(r, { removed: [ref('spotify:track:t2')], failed: [] }, LIKED);
+    const next = applyRemovalOutcome(r, { removed: [ref('spotify:track:t2')], failed: [], provenance: 'host' }, LIKED);
     expect(next.collectionKey).toBe(r.collectionKey);
     expect(next.completedAt).toBe(r.completedAt);
     expect(next.skippedLocalCount).toBe(r.skippedLocalCount);
@@ -208,7 +212,7 @@ describe('applyRemovalOutcome', () => {
 
   it('does not mutate the input DetectionResult', () => {
     const r = resultOf([group('g0', [track(0), track(1), track(2)])]);
-    const next = applyRemovalOutcome(r, { removed: [ref('spotify:track:t2')], failed: [] }, LIKED);
+    const next = applyRemovalOutcome(r, { removed: [ref('spotify:track:t2')], failed: [], provenance: 'host' }, LIKED);
     // original untouched
     expect(r.groups).toHaveLength(1);
     expect(r.groups[0].members).toHaveLength(3);
@@ -227,6 +231,7 @@ describe('applyRemovalOutcome', () => {
     const outcome: RemovalOutcome = {
       removed: [ref('spotify:track:dup', 'uid-drop')],
       failed: [],
+      provenance: 'host',
     };
     const next = applyRemovalOutcome(r, outcome, PLAYLIST);
     expect(next.groups).toHaveLength(1);
@@ -237,7 +242,7 @@ describe('applyRemovalOutcome', () => {
 
   it('idempotence: re-applying an all-success outcome throws outcome-mismatch', () => {
     const r = resultOf([group('g0', [track(0), track(1)])]);
-    const outcome: RemovalOutcome = { removed: [ref('spotify:track:t1')], failed: [] };
+    const outcome: RemovalOutcome = { removed: [ref('spotify:track:t1')], failed: [], provenance: 'host' };
     const once = applyRemovalOutcome(r, outcome, LIKED);
     expect(once.groups).toHaveLength(0);
     // applying the same outcome again: t1 is no longer present → mismatch
@@ -252,6 +257,7 @@ describe('applyRemovalOutcome', () => {
     const outcome: RemovalOutcome = {
       removed: [ref('spotify:track:t1'), ref('spotify:track:t4')],
       failed: [],
+      provenance: 'host',
     };
     const next = applyRemovalOutcome(r, outcome, LIKED);
     expect(next.groups).toHaveLength(1);

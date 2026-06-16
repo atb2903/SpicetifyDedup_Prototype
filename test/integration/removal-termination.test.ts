@@ -146,6 +146,40 @@ async function seedRealLoadedPlaylist(
   return store;
 }
 
+/**
+ * Build a real store loaded with a playlist duplicate group whose removable
+ * (later) copy carries **no** `uid`. `computeRemoveSet` throws
+ * `playlist-member-missing-uid` for such a member, so `confirmRemoval` takes the
+ * compute-failed branch (no host call). Mirrors `seedRealLoadedPlaylist` but
+ * drops the duplicate's `uid`.
+ */
+async function seedComputeFailingPlaylist(
+  executor: FakeRemovalExecutor,
+  scheduler: Scheduler,
+): Promise<ReturnType<typeof createDetectionStore>> {
+  const dupNoUid: RawTrack = {
+    uri: 'spotify:track:dup',
+    id: 'dup',
+    name: 'Repro Song',
+    artists: [{ uri: 'spotify:artist:a0', name: 'Repro Artist' }],
+    album: { uri: 'spotify:album:al0', name: 'Repro Album' },
+    position: 1,
+    durationMs: 210_000,
+    // uid deliberately omitted → computeRemoveSet throws on this member.
+  };
+  const tracks = [rawPlaylistTrack('spotify:track:dup', KEPT_UID, 0), dupNoUid];
+  const scanner = createDetectionScanner(
+    fakeEnumerator(tracks),
+    new InlineCatalogEnricher(),
+  );
+  const store = createDetectionStore(scanner, executor, scheduler);
+  await store.getState().scanCollection(PLAYLIST_URI, {
+    kind: 'playlist',
+    playlistUri: PLAYLIST_URI,
+  });
+  return store;
+}
+
 // ── Tests ───────────────────────────────────────────────────────────────────
 
 describe('removal termination — happy path (Defect B / WP05 regression guard)', () => {
@@ -190,6 +224,40 @@ describe('removal termination — happy path (Defect B / WP05 regression guard)'
   });
 });
 
+describe('removal termination — compute-failed path (T011 routing guard)', () => {
+  it('a compute failure terminates to partial carrying the truthful zero-track outcome, never none', async () => {
+    const executor = new FakeRemovalExecutor({ kind: 'ok' });
+    const scheduler = makeFakeScheduler();
+    const store = await seedComputeFailingPlaylist(executor, scheduler);
+
+    const before = store.getState().rows[PLAYLIST_URI];
+    if (before?.kind !== 'loaded') throw new Error('expected loaded');
+    expect(before.result.removableTrackCount).toBe(1);
+
+    store.getState().requestRemoval(PLAYLIST_URI);
+    // 1 removable (≤ 25) → single confirm; computeRemoveSet throws before any
+    // host call, so the executor is never reached.
+    await store.getState().confirmRemoval(PLAYLIST_URI);
+    await flush();
+
+    expect(executor.calls.length).toBe(0);
+
+    const after = store.getState().rows[PLAYLIST_URI];
+    if (after?.kind !== 'loaded') throw new Error('expected loaded');
+    // T011: compute-failed must reach `partial`, NOT a false `none`.
+    expect(after.removal.phase).toBe('partial');
+    expect(after.removal.phase).not.toBe('none');
+    // Counts unchanged — nothing was removed (result passed through verbatim).
+    expect(after.result.removableTrackCount).toBe(before.result.removableTrackCount);
+    expect(after.result.duplicateTrackCount).toBe(before.result.duplicateTrackCount);
+    // The outcome is truthful: compute-failed, both partitions empty.
+    if (after.removal.phase !== 'partial') throw new Error('expected partial');
+    expect(after.removal.outcome.provenance).toBe('compute-failed');
+    expect(after.removal.outcome.removed.length).toBe(0);
+    expect(after.removal.outcome.failed.length).toBe(0);
+  });
+});
+
 describe('removal termination — stall path (Defect A + ceiling / WP03 guard)', () => {
   it('a never-settling executor terminates to partial with unchanged counts, never none', async () => {
     const executor = new FakeRemovalExecutor({ kind: 'hang' });
@@ -226,12 +294,11 @@ describe('removal termination — stall path (Defect A + ceiling / WP03 guard)',
     expect(after.result.duplicateTrackCount).toBe(
       before.result.duplicateTrackCount,
     );
-    // The stall outcome is all-failed with the `stalled:` reason convention.
+    // The stall outcome is all-failed and carries the typed `'stalled'`
+    // provenance — no `reason`-string prefix (NFR-004).
     if (after.removal.phase !== 'partial') throw new Error('expected partial');
     expect(after.removal.outcome.removed.length).toBe(0);
     expect(after.removal.outcome.failed.length).toBeGreaterThan(0);
-    expect(
-      after.removal.outcome.failed.every((f) => f.reason.startsWith('stalled:')),
-    ).toBe(true);
+    expect(after.removal.outcome.provenance).toBe('stalled');
   });
 });

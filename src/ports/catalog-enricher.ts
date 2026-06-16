@@ -6,10 +6,13 @@
  * This file declares `CatalogEnricher` (the port) and `EnrichmentSlot`
  * (the discriminated union that wraps each per-track result). Both are
  * consumed by `DetectionScanner` and produced by adapters:
- * - `SpicetifyCatalogEnricher` (WP05) — issues batched
- *   `GET /v1/tracks?ids=…` calls via `Spicetify.CosmosAsync`.
- * - `FakeCatalogEnricher` (WP04) — uses an in-memory fixture map for
- *   store and integration tests.
+ * - `InlineCatalogEnricher` — the production enricher; a pure, host-free local
+ *   transform over the Platform data already carried inline by each track
+ *   (ADR-0011). There is **no** Web-API `SpicetifyCatalogEnricher` adapter; the
+ *   `GET /v1/tracks?ids=…` path was abandoned (the public Web API is
+ *   unreachable from the client — ADR-0010/ADR-0011).
+ * - `FakeCatalogEnricher` — uses an in-memory fixture map for store and
+ *   integration tests.
  *
  * Canonical contract:
  * `kitty-specs/duplicate-track-detection-01KTFH5H/contracts/catalog-enricher-port.md`
@@ -70,16 +73,10 @@ export interface CatalogEnricher {
    *   as `tracks`, aligned by position. `unenriched` slots hold the track's
    *   `position` and original URI for counting by the scanner.
    *
-   * @throws `DetectionError('auth-token-expired', …)` when the catalog returns
-   *   a 401 or a body matching `/access token expired/i`.
-   * @throws `DetectionError('rate-limit-unparseable', …)` when the catalog
-   *   returns 429 and the `Retry-After` header is missing or malformed.
-   * @throws `DetectionError('network-failure', …, { cause })` on 5xx or
-   *   host-level network error.
-   * @throws `DetectionError('malformed-enrichment-payload', …)` when the 200
-   *   response body does not conform to the expected track shape.
-   * @throws `DetectionError('catalog-rejected', …, { context: { status } })`
-   *   on any other 4xx response.
+   * @throws `DetectionError('auth-token-expired', …)` when a host auth-expiry is
+   *   detected (the one reachable enricher reason — ADR-0011/ADR-0018). The
+   *   inline production enricher is a pure local transform and does not perform
+   *   catalog lookups, so the abandoned Web-API reasons no longer apply.
    * @throws `DOMException('AbortError')` when `signal` aborts before the call
    *   resolves. Not surfaced to the store as `failed`.
    */

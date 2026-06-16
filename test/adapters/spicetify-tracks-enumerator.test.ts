@@ -41,6 +41,18 @@ function makeItem(i: number, overrides: Record<string, unknown> = {}) {
   };
 }
 
+/** Build a podcast episode item WITHOUT an artists array. */
+function makeEpisodeItem(i: number, overrides: Record<string, unknown> = {}) {
+  return {
+    type: 'episode',
+    uri: `spotify:episode:EP${String(i).padStart(4, '0')}`,
+    name: `Episode ${i}`,
+    duration: { milliseconds: 3600000 + i },
+    album: { uri: `spotify:show:SHOW${i}`, name: `Show ${i}` },
+    ...overrides,
+  };
+}
+
 /** Build a local-file item. */
 function makeLocalItem(i: number) {
   return {
@@ -929,7 +941,19 @@ describe('SpicetifyTracksEnumerator — page shape: non-object response', () => 
 // ---------------------------------------------------------------------------
 
 describe('SpicetifyTracksEnumerator — auth-expired detection branches', () => {
-  it('maps status === 401 on error object to auth-token-expired', async () => {
+  it('maps code === 401 on error object to auth-token-expired (the field Spicetify.CosmosAsync populates — ADR-0010)', async () => {
+    const platform = makePlatform({
+      getTracks: async () => { throw Object.assign(new Error('forbidden'), { code: 401 }); },
+    });
+    const enumerator = new SpicetifyTracksEnumerator(platform);
+    await expect(
+      enumerator.enumerate(likedRequest(), neverAborted(), vi.fn()),
+    ).rejects.toSatisfy(
+      (e: unknown) => isDetectionError(e) && (e as DetectionError).reason === 'auth-token-expired',
+    );
+  });
+
+  it('maps { status: 401 } to enumerator-failed — NOT auth-token-expired (corrected field, regression pin for finding D)', async () => {
     const platform = makePlatform({
       getTracks: async () => { throw Object.assign(new Error('forbidden'), { status: 401 }); },
     });
@@ -937,7 +961,7 @@ describe('SpicetifyTracksEnumerator — auth-expired detection branches', () => 
     await expect(
       enumerator.enumerate(likedRequest(), neverAborted(), vi.fn()),
     ).rejects.toSatisfy(
-      (e: unknown) => isDetectionError(e) && (e as DetectionError).reason === 'auth-token-expired',
+      (e: unknown) => isDetectionError(e) && (e as DetectionError).reason === 'enumerator-failed',
     );
   });
 
@@ -996,9 +1020,10 @@ describe('SpicetifyTracksEnumerator — auth-expired detection branches', () => 
 // ---------------------------------------------------------------------------
 
 describe('SpicetifyTracksEnumerator — isLocalFile branch', () => {
-  it('treats non-object items in array as non-local (falls through to parseItem which throws)', async () => {
-    // When an item in the page is a primitive, isLocalFile returns false,
-    // and parseLibraryTrackItem throws enumerator-failed.
+  it('skips non-object items in the array (not type === track) without failing', async () => {
+    // A primitive item is not local and not `type === 'track'`, so the classifier
+    // gate (T012) skips it — it never reaches parseLibraryTrackItem. The collection
+    // scans to completion with an empty result rather than failing.
     const platform = makePlatform({
       getTracks: async () => ({
         items: [42], // primitive item
@@ -1008,10 +1033,184 @@ describe('SpicetifyTracksEnumerator — isLocalFile branch', () => {
       }),
     });
     const enumerator = new SpicetifyTracksEnumerator(platform);
+    const result = await enumerator.enumerate(likedRequest(), neverAborted(), vi.fn());
+    expect(result).toHaveLength(0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// SpicetifyTracksEnumerator — non-track classifier gate (T012, FR-001, finding A)
+// ---------------------------------------------------------------------------
+
+describe('SpicetifyTracksEnumerator — non-track classifier gate', () => {
+  it('skips an episode without an artists array (no failure)', async () => {
+    const platform = makePlatform({
+      getTracks: async () => ({
+        items: [makeEpisodeItem(0), makeItem(1)],
+        totalLength: 2,
+        offset: 0,
+        limit: 200,
+      }),
+    });
+    const enumerator = new SpicetifyTracksEnumerator(platform);
+    const result = await enumerator.enumerate(likedRequest(), neverAborted(), vi.fn());
+    expect(result.map((t) => t.uri)).toEqual(['spotify:track:TRACK0001']);
+  });
+
+  it('skips an episode that DOES carry an artists array — type check precedes shape parse (key edge case)', async () => {
+    const platform = makePlatform({
+      getTracks: async () => ({
+        items: [
+          makeEpisodeItem(0, { artists: [{ uri: 'spotify:artist:HOST', name: 'Host' }] }),
+          makeItem(1),
+        ],
+        totalLength: 2,
+        offset: 0,
+        limit: 200,
+      }),
+    });
+    const enumerator = new SpicetifyTracksEnumerator(platform);
+    const result = await enumerator.enumerate(likedRequest(), neverAborted(), vi.fn());
+    // The episode is excluded, never deduped as a track; only the genuine track remains.
+    expect(result.map((t) => t.uri)).toEqual(['spotify:track:TRACK0001']);
+  });
+
+  it('an all-episode collection yields an empty result with no failure (SC-001)', async () => {
+    const platform = makePlatform({
+      getTracks: async () => ({
+        items: [makeEpisodeItem(0), makeEpisodeItem(1), makeEpisodeItem(2)],
+        totalLength: 3,
+        offset: 0,
+        limit: 200,
+      }),
+    });
+    const enumerator = new SpicetifyTracksEnumerator(platform);
+    const result = await enumerator.enumerate(likedRequest(), neverAborted(), vi.fn());
+    expect(result).toHaveLength(0);
+  });
+
+  it('a mixed collection scans to completion considering only genuine tracks; episodes do not shift positions', async () => {
+    const platform = makePlatform({
+      getTracks: async () => ({
+        items: [makeItem(1), makeEpisodeItem(0), makeLocalItem(9), makeItem(2)],
+        totalLength: 4,
+        offset: 0,
+        limit: 200,
+      }),
+    });
+    const enumerator = new SpicetifyTracksEnumerator(platform);
+    const result = await enumerator.enumerate(likedRequest(), neverAborted(), vi.fn());
+    expect(result.map((t) => t.uri)).toEqual([
+      'spotify:track:TRACK0001',
+      'spotify:track:TRACK0002',
+    ]);
+    expect(result.map((t) => t.position)).toEqual([0, 1]);
+  });
+
+  it('a malformed GENUINE track (type === track, missing artists) still fails loud → enumerator-failed', async () => {
+    const malformed = {
+      type: 'track',
+      uri: 'spotify:track:BROKEN',
+      name: 'Broken',
+      album: { uri: '', name: '' },
+      // artists intentionally omitted — the type-gate lets it through to parse
+    };
+    const platform = makePlatform({
+      getTracks: async () => ({ items: [malformed], totalLength: 1, offset: 0, limit: 200 }),
+    });
+    const enumerator = new SpicetifyTracksEnumerator(platform);
+    let caughtError: unknown;
+    try {
+      await enumerator.enumerate(likedRequest(), neverAborted(), vi.fn());
+    } catch (e) {
+      caughtError = e;
+    }
+    expect(isDetectionError(caughtError)).toBe(true);
+    const err = caughtError as DetectionError;
+    expect(err.reason).toBe('enumerator-failed');
+    expect(err.context?.['phase']).toBe('validating-item');
+    expect(err.context?.['missingField']).toBe('artists');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// SpicetifyTracksEnumerator — requirePlatform / host-unavailable (T013, NFR-002, finding I)
+// ---------------------------------------------------------------------------
+
+describe('SpicetifyTracksEnumerator — host availability (requirePlatform)', () => {
+  /** Temporarily set globalThis.Spicetify, run fn, then restore. */
+  async function withSpicetify(value: unknown, fn: () => Promise<void>): Promise<void> {
+    const prev = (globalThis as Record<string, unknown>)['Spicetify'];
+    try {
+      if (value === undefined) {
+        delete (globalThis as Record<string, unknown>)['Spicetify'];
+      } else {
+        (globalThis as Record<string, unknown>)['Spicetify'] = value;
+      }
+      await fn();
+    } finally {
+      if (prev === undefined) {
+        delete (globalThis as Record<string, unknown>)['Spicetify'];
+      } else {
+        (globalThis as Record<string, unknown>)['Spicetify'] = prev;
+      }
+    }
+  }
+
+  it('throws host-unavailable when the Spicetify global is absent (no host call)', async () => {
+    await withSpicetify(undefined, async () => {
+      const enumerator = new SpicetifyTracksEnumerator(); // no inject → reads globalThis
+      await expect(
+        enumerator.enumerate(likedRequest(), neverAborted(), vi.fn()),
+      ).rejects.toSatisfy(
+        (e: unknown) => isDetectionError(e) && (e as DetectionError).reason === 'host-unavailable',
+      );
+    });
+  });
+
+  it('throws host-unavailable when Spicetify.Platform is absent', async () => {
+    await withSpicetify({}, async () => {
+      const enumerator = new SpicetifyTracksEnumerator();
+      await expect(
+        enumerator.enumerate(likedRequest(), neverAborted(), vi.fn()),
+      ).rejects.toSatisfy(
+        (e: unknown) => isDetectionError(e) && (e as DetectionError).reason === 'host-unavailable',
+      );
+    });
+  });
+
+  it('throws host-unavailable when LibraryAPI.getTracks is missing for a liked-songs scan', async () => {
+    await withSpicetify({ Platform: { LibraryAPI: {}, PlaylistAPI: { getContents: vi.fn() } } }, async () => {
+      const enumerator = new SpicetifyTracksEnumerator();
+      await expect(
+        enumerator.enumerate(likedRequest(), neverAborted(), vi.fn()),
+      ).rejects.toSatisfy(
+        (e: unknown) => isDetectionError(e) && (e as DetectionError).reason === 'host-unavailable',
+      );
+    });
+  });
+
+  it('throws host-unavailable when PlaylistAPI.getContents is missing for a playlist scan', async () => {
+    await withSpicetify({ Platform: { LibraryAPI: { getTracks: vi.fn() }, PlaylistAPI: {} } }, async () => {
+      const enumerator = new SpicetifyTracksEnumerator();
+      await expect(
+        enumerator.enumerate(playlistRequest(), neverAborted(), vi.fn()),
+      ).rejects.toSatisfy(
+        (e: unknown) => isDetectionError(e) && (e as DetectionError).reason === 'host-unavailable',
+      );
+    });
+  });
+
+  it('throws host-unavailable when an injected platform lacks the needed method', async () => {
+    // Injected platform present but missing LibraryAPI.getTracks.
+    const broken = { LibraryAPI: {}, PlaylistAPI: { getContents: vi.fn() } } as unknown as ConstructorParameters<
+      typeof SpicetifyTracksEnumerator
+    >[0];
+    const enumerator = new SpicetifyTracksEnumerator(broken);
     await expect(
       enumerator.enumerate(likedRequest(), neverAborted(), vi.fn()),
     ).rejects.toSatisfy(
-      (e: unknown) => isDetectionError(e) && (e as DetectionError).reason === 'enumerator-failed',
+      (e: unknown) => isDetectionError(e) && (e as DetectionError).reason === 'host-unavailable',
     );
   });
 });

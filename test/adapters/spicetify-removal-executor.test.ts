@@ -99,6 +99,7 @@ describe('SpicetifyRemovalExecutor — liked-songs happy path', () => {
     expect(platform.PlaylistAPI.remove).not.toHaveBeenCalled();
     expect(outcome.removed).toEqual(tracks);
     expect(outcome.failed).toEqual([]);
+    expect(outcome.provenance).toBe('host');
   });
 });
 
@@ -405,17 +406,23 @@ describe('SpicetifyRemovalExecutor — host-unavailable guard', () => {
 // Abort
 // ---------------------------------------------------------------------------
 
-describe('SpicetifyRemovalExecutor — abort', () => {
-  it('throws AbortError immediately when already aborted (no host call)', async () => {
+describe('SpicetifyRemovalExecutor — boundary abort (FR-003)', () => {
+  it('already aborted at entry → resolves with an empty host partial (no host call)', async () => {
     const platform = makePlatform();
     const exec = new SpicetifyRemovalExecutor(platform);
-    await expect(
-      exec.remove(likedTarget(), likedRefs(BATCH_SIZE + 1), alreadyAborted()),
-    ).rejects.toMatchObject({ name: 'AbortError' });
+    const outcome = await exec.remove(
+      likedTarget(),
+      likedRefs(BATCH_SIZE + 1),
+      alreadyAborted(),
+    );
+    // No mutation attempted; the accumulated partial is empty but host-truthful.
     expect(platform.LibraryAPI.remove).not.toHaveBeenCalled();
+    expect(outcome.removed).toEqual([]);
+    expect(outcome.failed).toEqual([]);
+    expect(outcome.provenance).toBe('host');
   });
 
-  it('aborts before the 2nd batch → throws AbortError, no further host calls', async () => {
+  it('aborts before the 2nd batch → resolves with the accumulated partial, no further host calls', async () => {
     const controller = new AbortController();
     let call = 0;
     const platform = makePlatform({
@@ -426,11 +433,16 @@ describe('SpicetifyRemovalExecutor — abort', () => {
       },
     });
     const exec = new SpicetifyRemovalExecutor(platform);
-    await expect(
-      exec.remove(likedTarget(), likedRefs(BATCH_SIZE + 1), controller.signal),
-    ).rejects.toMatchObject({ name: 'AbortError' });
-    // Only the first batch ran; the abort check before batch 2 throws.
+    const tracks = likedRefs(BATCH_SIZE + 1);
+    const outcome = await exec.remove(likedTarget(), tracks, controller.signal);
+    // Only the first batch ran; the abort check before batch 2 stops the loop
+    // and the call resolves with the first batch's removed tracks (FR-003).
     expect(platform.LibraryAPI.remove).toHaveBeenCalledTimes(1);
+    expect(outcome.provenance).toBe('host');
+    expect(outcome.removed).toEqual(tracks.slice(0, BATCH_SIZE));
+    expect(outcome.failed).toEqual([]);
+    // No un-attempted track is invented into `failed`.
+    expect(outcome.removed.length + outcome.failed.length).toBe(BATCH_SIZE);
   });
 });
 

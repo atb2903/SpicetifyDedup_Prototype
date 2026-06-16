@@ -38,6 +38,7 @@ import type {
   OwnerIdentity,
 } from '../domain/view-models';
 import { PlaylistsLoaderError } from '../domain/errors';
+import { looksLikeHostAuthExpired } from '../domain/host-auth';
 
 export class SpicetifyPlaylistsLoader implements PlaylistsLoader {
   async load(): Promise<{
@@ -86,7 +87,7 @@ export class SpicetifyPlaylistsLoader implements PlaylistsLoader {
     try {
       raw = await (api as { getContents: () => Promise<unknown> }).getContents();
     } catch (cause) {
-      if (this.looksLikeAuthExpired(cause)) {
+      if (looksLikeHostAuthExpired(cause)) {
         throw new PlaylistsLoaderError(
           'host-auth-expired',
           'Spicetify.Platform.RootlistAPI.getContents() rejected with an auth-expired signal',
@@ -289,34 +290,5 @@ export class SpicetifyPlaylistsLoader implements PlaylistsLoader {
       );
     }
     return { trackCount: totalLength };
-  }
-
-  /**
-   * Empirically-derived predicate for host auth-expired rejections.
-   *
-   * The desktop client's internal APIs don't expose a typed error code;
-   * rejections surface as plain `Error` instances whose `message` or
-   * attached `status` carries the signal. We accept any of:
-   *   - an HTTP-401 status property
-   *   - "401" appearing in the message
-   *   - the substring "token" + ("expired" | "invalid") in the message
-   *
-   * This branch may be unreachable in practice if the client refreshes
-   * tokens before the call surfaces. The contract suite stubs an error
-   * shaped to satisfy this predicate so the branch is unit-test-covered
-   * regardless.
-   */
-  private looksLikeAuthExpired(cause: unknown): boolean {
-    if (typeof cause !== 'object' || cause === null) return false;
-    const status = (cause as { status?: unknown }).status;
-    if (status === 401) return true;
-    const message = (cause as { message?: unknown }).message;
-    if (typeof message !== 'string') return false;
-    const lower = message.toLowerCase();
-    if (lower.includes('401')) return true;
-    return (
-      lower.includes('token') &&
-      (lower.includes('expired') || lower.includes('invalid'))
-    );
   }
 }

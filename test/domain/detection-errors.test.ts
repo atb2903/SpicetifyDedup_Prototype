@@ -5,15 +5,13 @@ import {
   type DetectionErrorReason,
 } from '../../src/domain/detection-errors';
 
-// ── All seven reasons (data-model §6.1) ──────────────────────────────────────
+// ── All five reachable reasons (data-model §1) ───────────────────────────────
 
 const REASONS = [
   'auth-token-expired',
-  'rate-limit-unparseable',
-  'network-failure',
-  'malformed-enrichment-payload',
   'enumerator-failed',
-  'catalog-rejected',
+  'host-unavailable',
+  'internal-error',
   'aborted',
 ] as const satisfies readonly DetectionErrorReason[];
 
@@ -28,7 +26,7 @@ describe('DetectionError', () => {
   });
 
   it('sets name to "DetectionError" for recognizable stack traces', () => {
-    const e = new DetectionError('network-failure', 'no network');
+    const e = new DetectionError('host-unavailable', 'host not ready');
     expect(e.name).toBe('DetectionError');
   });
 
@@ -39,18 +37,18 @@ describe('DetectionError', () => {
   });
 
   it('preserves cause when provided', () => {
-    const original = new Error('underlying network error');
-    const e = new DetectionError('network-failure', 'wrapped', {
+    const original = new Error('underlying internal error');
+    const e = new DetectionError('internal-error', 'wrapped', {
       cause: original,
     });
     expect(e.cause).toBe(original);
   });
 
   it('preserves cause when cause is a non-Error value (e.g. string)', () => {
-    const e = new DetectionError('catalog-rejected', 'rejected', {
-      cause: 'status 403',
+    const e = new DetectionError('internal-error', 'rejected', {
+      cause: 'unexpected value',
     });
-    expect(e.cause).toBe('status 403');
+    expect(e.cause).toBe('unexpected value');
   });
 
   it('leaves cause undefined when no options passed', () => {
@@ -64,8 +62,8 @@ describe('DetectionError', () => {
   });
 
   it('preserves context when provided', () => {
-    const ctx = { statusCode: 403, url: 'https://example.com' } as const;
-    const e = new DetectionError('catalog-rejected', 'rejected', {
+    const ctx = { detail: 'diagnostic', url: 'https://example.com' } as const;
+    const e = new DetectionError('internal-error', 'rejected', {
       context: ctx,
     });
     expect(e.context).toEqual(ctx);
@@ -83,8 +81,8 @@ describe('DetectionError', () => {
 
   it('accepts both cause and context simultaneously', () => {
     const cause = new Error('root cause');
-    const context = { retryAfter: 60 };
-    const e = new DetectionError('rate-limit-unparseable', 'bad header', {
+    const context = { detail: 'diagnostic' };
+    const e = new DetectionError('internal-error', 'unexpected fault', {
       cause,
       context,
     });
@@ -94,14 +92,14 @@ describe('DetectionError', () => {
 
   it('round-trips all fields on construction', () => {
     const cause = new Error('src');
-    const context = { info: 'payload was null' };
+    const context = { info: 'unexpected internal fault' };
     const e = new DetectionError(
-      'malformed-enrichment-payload',
-      'unexpected shape',
+      'internal-error',
+      'unexpected fault',
       { cause, context },
     );
-    expect(e.reason).toBe('malformed-enrichment-payload');
-    expect(e.message).toBe('unexpected shape');
+    expect(e.reason).toBe('internal-error');
+    expect(e.message).toBe('unexpected fault');
     expect(e.name).toBe('DetectionError');
     expect(e.cause).toBe(cause);
     expect(e.context).toEqual(context);

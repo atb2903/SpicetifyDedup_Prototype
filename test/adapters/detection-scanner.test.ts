@@ -294,19 +294,19 @@ describe('createDetectionScanner — enumerator throws DetectionError', () => {
 });
 
 describe('createDetectionScanner — enricher throws DetectionError', () => {
-  it('re-throws rate-limit-unparseable unchanged', async () => {
+  it('re-throws the enricher DetectionError unchanged', async () => {
     const tracks = [makeRawTrack(0)];
     const fakeEnumerator = new FakeTracksEnumerator({ tracks });
     const fakeEnricher = new FakeCatalogEnricher({
       catalog: new Map(),
-      forceMode: 'rate-limit-unparseable',
+      forceMode: 'auth-expired',
     });
     const scanner = createDetectionScanner(fakeEnumerator, fakeEnricher);
     await expect(
       scanner.scan(LIKED_SONGS_REQUEST, neverAborted(), vi.fn()),
     ).rejects.toSatisfy(
       (e: unknown) =>
-        e instanceof DetectionError && e.reason === 'rate-limit-unparseable',
+        e instanceof DetectionError && e.reason === 'auth-token-expired',
     );
   });
 });

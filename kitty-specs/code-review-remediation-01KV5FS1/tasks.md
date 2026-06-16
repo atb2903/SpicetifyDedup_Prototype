@@ -43,6 +43,7 @@
 | T019 | `DedupPage` named routing helper (no inline IIFE) | WP03 | |
 | T020 | Rebuild architecture test on the TypeScript Compiler API | WP04 | |
 | T021 | Architecture fixtures: re-export / dynamic import() / type-only edges | WP04 | |
+| T022 | Route `removeComplete` on `provenance` (FR-003/FR-009 end-to-end) | WP01 | | [D] |
 
 ---
 
@@ -80,6 +81,7 @@ Included subtasks:
 - [x] T008 Decompose `confirmRemoval` into named helpers (WP01)
 - [x] T009 Document `reset()` placement (comment + ADR) (WP01)
 - [x] T010 ADRs for B, C/D/I, K, N (WP01)
+- [x] T022 Route `removeComplete` on `provenance` (FR-003/FR-009 end-to-end) (WP01)
 
 Implementation sketch: domain types first (T001, T003) so the file compiles, then
 the producers that must change atomically with them (T002 enricher, T004 executor,
@@ -108,7 +110,7 @@ the suite won't compile. Live-verify artefact required (Finding B).
 
 Included subtasks:
 
-- [x] T011 New `src/domain/host-auth.ts` shared auth-expired predicate (WP02)
+- [ ] T011 New `src/domain/host-auth.ts` shared auth-expired predicate (WP02)
 - [ ] T012 Enumerator classifier gate — skip non-track items (WP02)
 - [ ] T013 Enumerator `requirePlatform` — remove unsafe cast (WP02)
 - [ ] T014 Enumerator auth via shared predicate (`code`) (WP02)

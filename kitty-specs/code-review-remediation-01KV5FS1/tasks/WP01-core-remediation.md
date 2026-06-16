@@ -29,7 +29,7 @@ subtasks:
 - T008
 - T009
 - T010
-- T011
+- T022
 phase: Phase 1 - Foundational
 assignee: ''
 agent: "claude:opus:reviewer:reviewer"
@@ -375,7 +375,7 @@ referenced from the code comments they govern.
 
 ---
 
-### T011 — Route `removeComplete` on `provenance` (FR-003/FR-009 end-to-end)
+### T022 — Route `removeComplete` on `provenance` (FR-003/FR-009 end-to-end)
 
 **Purpose**: The truthful provenance-carrying outcomes from T007 must reach the
 `partial` view, or WP03's compute-failed/stalled copy is dead code. `removeComplete`
@@ -419,7 +419,7 @@ compute-failed and stalled outcomes.
 - [ ] `grep -R "startsWith('stalled:'\|startsWith('executor-failed:'" src` → empty.
 - [ ] ADRs (B; C/D/I; K; N) written under `.claude/adr/`.
 - [ ] `ports/catalog-enricher.ts` JSDoc no longer references a `SpicetifyCatalogEnricher` adapter (C-006).
-- [ ] `removeComplete` routes compute-failed/stalled/executor-failed to `partial`; host full-success still → `none`; routing is provenance-based, not `failed.length`-only (T011).
+- [ ] `removeComplete` routes compute-failed/stalled/executor-failed to `partial`; host full-success still → `none`; routing is provenance-based, not `failed.length`-only (T022).
 - [ ] **Live-verify artefact (Finding B / FR-003)**: per the project live-verification
       protocol, drive the user through a real multi-batch removal on a large
       collection — confirm the reported removed-count equals what the host deleted

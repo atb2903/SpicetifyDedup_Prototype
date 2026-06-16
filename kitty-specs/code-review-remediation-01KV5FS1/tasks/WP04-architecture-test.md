@@ -15,7 +15,8 @@ subtasks:
 - T021
 phase: Phase 3 - Structural enforcement
 assignee: ''
-agent: ''
+agent: "claude:opus:implementer:implementer"
+shell_pid: "12167"
 history:
 - timestamp: '2026-06-15T11:46:50Z'
   agent: system
@@ -125,3 +126,7 @@ import-kind handlers; gates green.
 - Confirm a fixture exists for each previously-missed form and that removing the
   forbidden edge makes the rule pass (no false-positive-only test).
 - Confirm no `dependency-cruiser`/`ts-morph` dependency was added.
+
+## Activity Log
+
+- 2026-06-16T09:25:35Z – claude:opus:implementer:implementer – shell_pid=12167 – Started implementation via action command

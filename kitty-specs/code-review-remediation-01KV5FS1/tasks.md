@@ -33,10 +33,10 @@
 | T009 | Document `reset()` placement (comment + ADR) | WP01 | | [D] |
 | T010 | ADRs for B, C/D/I, K, N | WP01 | | [D] |
 | T011 | New `src/domain/host-auth.ts` shared auth-expired predicate | WP02 | [D] |
-| T012 | Enumerator classifier gate (skip non-track items) | WP02 | |
-| T013 | Enumerator `requirePlatform` (remove unsafe cast) | WP02 | |
-| T014 | Enumerator auth via shared predicate (`code`, not `status`) | WP02 | |
-| T015 | Playlists-loader auth via shared predicate | WP02 | |
+| T012 | Enumerator classifier gate (skip non-track items) | WP02 | | [D] |
+| T013 | Enumerator `requirePlatform` (remove unsafe cast) | WP02 | | [D] |
+| T014 | Enumerator auth via shared predicate (`code`, not `status`) | WP02 | | [D] |
+| T015 | Playlists-loader auth via shared predicate | WP02 | | [D] |
 | T016 | Remove local domain-type re-declarations in UI (import from domain) | WP03 | [P] |
 | T017 | `DetectionFailedView` message map (internal-error, host-unavailable, no phantom suffix) | WP03 | |
 | T018 | `RemovalOutcomeView` provenance-driven (no `startsWith`) | WP03 | |
@@ -110,11 +110,11 @@ the suite won't compile. Live-verify artefact required (Finding B).
 
 Included subtasks:
 
-- [ ] T011 New `src/domain/host-auth.ts` shared auth-expired predicate (WP02)
-- [ ] T012 Enumerator classifier gate — skip non-track items (WP02)
-- [ ] T013 Enumerator `requirePlatform` — remove unsafe cast (WP02)
-- [ ] T014 Enumerator auth via shared predicate (`code`) (WP02)
-- [ ] T015 Playlists-loader auth via shared predicate (WP02)
+- [x] T011 New `src/domain/host-auth.ts` shared auth-expired predicate (WP02)
+- [x] T012 Enumerator classifier gate — skip non-track items (WP02)
+- [x] T013 Enumerator `requirePlatform` — remove unsafe cast (WP02)
+- [x] T014 Enumerator auth via shared predicate (`code`) (WP02)
+- [x] T015 Playlists-loader auth via shared predicate (WP02)
 
 Prompt: `tasks/WP02-host-adapters.md`.
 

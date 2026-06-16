@@ -1,0 +1,10 @@
+{
+  "created_at": "2026-06-16T10:25:42.713708+00:00",
+  "friendly_name": "residual review findings remediation",
+  "mission_id": "01KV7ZEA8XN0Z58E5J1RZETADT",
+  "mission_number": null,
+  "mission_slug": "residual-review-findings-remediation-01KV7ZEA",
+  "mission_type": "software-dev",
+  "slug": "residual-review-findings-remediation-01KV7ZEA",
+  "target_branch": "main"
+}

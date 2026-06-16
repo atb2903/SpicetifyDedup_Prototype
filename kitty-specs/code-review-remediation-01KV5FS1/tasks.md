@@ -37,10 +37,10 @@
 | T013 | Enumerator `requirePlatform` (remove unsafe cast) | WP02 | | [D] |
 | T014 | Enumerator auth via shared predicate (`code`, not `status`) | WP02 | | [D] |
 | T015 | Playlists-loader auth via shared predicate | WP02 | | [D] |
-| T016 | Remove local domain-type re-declarations in UI (import from domain) | WP03 | [P] |
-| T017 | `DetectionFailedView` message map (internal-error, host-unavailable, no phantom suffix) | WP03 | |
-| T018 | `RemovalOutcomeView` provenance-driven (no `startsWith`) | WP03 | |
-| T019 | `DedupPage` named routing helper (no inline IIFE) | WP03 | |
+| T016 | Remove local domain-type re-declarations in UI (import from domain) | WP03 | [D] |
+| T017 | `DetectionFailedView` message map (internal-error, host-unavailable, no phantom suffix) | WP03 | | [D] |
+| T018 | `RemovalOutcomeView` provenance-driven (no `startsWith`) | WP03 | | [D] |
+| T019 | `DedupPage` named routing helper (no inline IIFE) | WP03 | | [D] |
 | T020 | Rebuild architecture test on the TypeScript Compiler API | WP04 | |
 | T021 | Architecture fixtures: re-export / dynamic import() / type-only edges | WP04 | |
 | T022 | Route `removeComplete` on `provenance` (FR-003/FR-009 end-to-end) | WP01 | | [D] |
@@ -135,10 +135,10 @@ Prompt: `tasks/WP02-host-adapters.md`.
 
 Included subtasks:
 
-- [ ] T016 Remove local domain-type re-declarations in UI (WP03)
-- [ ] T017 `DetectionFailedView` message map + drop phantom suffix (WP03)
-- [ ] T018 `RemovalOutcomeView` provenance-driven (no `startsWith`) (WP03)
-- [ ] T019 `DedupPage` named routing helper (WP03)
+- [x] T016 Remove local domain-type re-declarations in UI (WP03)
+- [x] T017 `DetectionFailedView` message map + drop phantom suffix (WP03)
+- [x] T018 `RemovalOutcomeView` provenance-driven (no `startsWith`) (WP03)
+- [x] T019 `DedupPage` named routing helper (WP03)
 
 Prompt: `tasks/WP03-ui-remediation.md`.
 

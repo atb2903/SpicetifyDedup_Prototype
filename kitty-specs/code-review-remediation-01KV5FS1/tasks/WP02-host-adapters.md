@@ -19,7 +19,8 @@ subtasks:
 - T015
 phase: Phase 2 - Host adapters & UI
 assignee: ''
-agent: ''
+agent: "claude:opus:implementer:implementer"
+shell_pid: "258855"
 history:
 - timestamp: '2026-06-15T11:46:50Z'
   agent: system
@@ -192,3 +193,7 @@ remains in the enumerator.
 - Confirm both adapters inspect `code`, and that `{ status: 401 }` is explicitly
   shown **not** to match (regression pin for finding D).
 - Confirm `requirePlatform` throws before any host call and the unsafe cast is gone.
+
+## Activity Log
+
+- 2026-06-16T00:02:54Z – claude:opus:implementer:implementer – shell_pid=258855 – Started implementation via action command

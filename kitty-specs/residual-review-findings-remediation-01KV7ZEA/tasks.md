@@ -156,7 +156,7 @@ Prompt: `tasks/WP05-removal-termination-resilience.md`.
 
 Included subtasks:
 
-- [ ] T012 Remove orphaned RemovalErrorCode 'stalled' — NEW-5 (WP06)
+- [x] T012 Remove orphaned RemovalErrorCode 'stalled' — NEW-5 (WP06)
 
 Prompt: `tasks/WP06-remove-orphaned-stalled-code.md`.
 

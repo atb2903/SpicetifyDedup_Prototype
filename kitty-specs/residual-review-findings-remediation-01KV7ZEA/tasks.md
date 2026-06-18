@@ -21,7 +21,7 @@
 
 | ID | Description | WP | Parallel |
 |----|-------------|----|----------|
-| T001 | EnumerationResult return type + genuine local tally | WP01 | [D] |
+| T001 | EnumerationResult return type + genuine local tally | WP01 | [D] | [D] |
 | T002 | Scanner consumes reported tally; delete inference | WP01 | | [D] |
 | T003 | UI summary truthfulness + ADR-0021 | WP01 | | [D] |
 | T004 | Liked-Songs count fetch auth-expiry classification | WP02 | [D] |
@@ -52,9 +52,9 @@
 
 Included subtasks:
 
-- [ ] T001 EnumerationResult return type + genuine local tally (WP01)
-- [ ] T002 Scanner consumes reported tally; delete inference (WP01)
-- [ ] T003 UI summary truthfulness + ADR-0021 (WP01)
+- [x] T001 EnumerationResult return type + genuine local tally (WP01)
+- [x] T002 Scanner consumes reported tally; delete inference (WP01)
+- [x] T003 UI summary truthfulness + ADR-0021 (WP01)
 
 Prompt: `tasks/WP01-enumerator-local-tally.md`.
 

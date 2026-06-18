@@ -181,3 +181,4 @@ passes once the fake is non-abort-aware; watchdog/abort-path coverage stays 100%
 
 - (pending)
 - 2026-06-18T15:39:44Z – claude:opus:implementer:implementer – shell_pid=39259 – Assigned agent via action command
+- 2026-06-18T15:51:20Z – claude:opus:implementer:implementer – shell_pid=39259 – Ready for review: abort-while-stalled terminal dispatch (FR-008); applyTerminalOutcome JSDoc accurate (FR-011); ADR-0019+watchdog/executeRemoveSet JSDoc state batch-boundary limit (FR-009); non-abort-aware hang fake + cooperative stall-resolve script + faithful termination test that fails against old fake (FR-010); no termination mechanism added (C-001); tsc clean, 100% coverage, architecture green

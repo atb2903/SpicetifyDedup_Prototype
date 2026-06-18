@@ -24,7 +24,9 @@ authoritative_surface: src/ui/RemovalOutcomeView
 execution_mode: code_change
 owned_files:
 - src/ui/RemovalOutcomeView.tsx
+- src/ui/RemoveDuplicatesButton.tsx
 - test/ui/RemovalOutcomeView.test.tsx
+- test/ui/RemoveDuplicatesButton.test.tsx
 tags: []
 ---
 
@@ -102,3 +104,5 @@ exhaustiveness (`_exhaustive: never`) preserved.
 
 - (pending)
 - 2026-06-18T11:41:27Z – claude:opus:implementer:implementer – shell_pid=25853 – Assigned agent via action command
+- 2026-06-18T11:43:07Z – claude:opus:implementer:implementer – shell_pid=25853 – Blocked: ownership/scope conflict. WP04 owns only src/ui/RemovalOutcomeView.tsx, but the dispatchable retry control is RemoveDuplicatesButton (rendered by DetectionLoadedSummary.tsx, self-gated in RemoveDuplicatesButton.tsx) which reappears whenever removal.phase==='partial'. compute-failed maps to 'partial' (detection-state.ts removalAfterComplete), and D-2 mandates leaving that mapping intact, so the live retry button stays clickable. RemovalOutcomeView renders ONLY a text message (incl. the 'You can try again' phrase); it does not render or receive the retry button and cannot suppress it from within this file. To withhold the interactive retry control (FR-007/SC-004: 'no retry control') an UNOWNED file (DetectionLoadedSummary.tsx or RemoveDuplicatesButton.tsx) must change. Stopping per the WP prompt's escalation instruction rather than editing out of scope or weakening the gate to a text-only change. Need: expand WP04 ownership to include the button-gating file, or add a sibling WP.
+- 2026-06-18T15:35:42Z – claude:opus:implementer:implementer – shell_pid=25853 – Ready for review: RemoveDuplicatesButton withholds retry for compute-failed (provenance-gated, FSM intact); RemovalOutcomeView compute-failed message terminal; gates green

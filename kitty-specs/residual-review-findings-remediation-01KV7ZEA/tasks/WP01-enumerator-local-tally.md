@@ -166,3 +166,4 @@ count. Existing scanner abort/empty-collection tests stay green.
 
 - (pending)
 - 2026-06-18T11:17:22Z – claude:opus:implementer:implementer – shell_pid=15264 – Assigned agent via action command
+- 2026-06-18T11:26:41Z – claude:opus:implementer:implementer – shell_pid=15264 – Ready for review: EnumerationResult return-type, scanner inference removed, ADR-0021, boundary tests, gates green. Note: test/integration/removal-termination.test.ts updated (forced by the enumerate() contract change; its inline TracksEnumerator double implements the changed port).

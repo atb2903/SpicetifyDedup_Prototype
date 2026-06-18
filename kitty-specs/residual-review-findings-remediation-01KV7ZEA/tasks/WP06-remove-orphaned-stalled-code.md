@@ -1,18 +1,21 @@
 ---
 work_package_id: WP06
-title: "NEW-5 — remove orphaned RemovalErrorCode 'stalled' dead code"
+title: NEW-5 — remove orphaned RemovalErrorCode 'stalled' dead code
 dependencies: []
 requirement_refs:
 - FR-012
 planning_base_branch: main
 merge_target_branch: main
 branch_strategy: Planning artifacts for this feature were generated on main. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into main unless the human explicitly redirects the landing branch.
+base_branch: kitty/mission-residual-review-findings-remediation-01KV7ZEA
+base_commit: bd014fd7e410d050e22156101d25f543593945ce
+created_at: '2026-06-18T15:55:21.550648+00:00'
 subtasks:
 - T012
 phase: Phase 3 - Dead code
 assignee: ''
 agent: ''
-shell_pid: ''
+shell_pid: '45439'
 history:
 - timestamp: '2026-06-18T00:00:00Z'
   agent: system

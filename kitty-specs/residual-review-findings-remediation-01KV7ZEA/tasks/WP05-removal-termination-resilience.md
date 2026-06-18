@@ -20,8 +20,8 @@ subtasks:
 - T011
 phase: Phase 2 - Removal resilience
 assignee: ''
-agent: ''
-shell_pid: '39259'
+agent: "claude:opus:implementer:implementer"
+shell_pid: "39259"
 history:
 - timestamp: '2026-06-18T00:00:00Z'
   agent: system
@@ -180,3 +180,4 @@ passes once the fake is non-abort-aware; watchdog/abort-path coverage stays 100%
 ## Activity Log
 
 - (pending)
+- 2026-06-18T15:39:44Z – claude:opus:implementer:implementer – shell_pid=39259 – Assigned agent via action command

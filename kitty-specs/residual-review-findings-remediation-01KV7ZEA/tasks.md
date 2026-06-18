@@ -71,7 +71,7 @@ Prompt: `tasks/WP01-enumerator-local-tally.md`.
 
 Included subtasks:
 
-- [ ] T004 Liked-Songs count fetch auth-expiry classification (WP02)
+- [x] T004 Liked-Songs count fetch auth-expiry classification (WP02)
 
 Prompt: `tasks/WP02-likedsongs-auth-expiry.md`.
 

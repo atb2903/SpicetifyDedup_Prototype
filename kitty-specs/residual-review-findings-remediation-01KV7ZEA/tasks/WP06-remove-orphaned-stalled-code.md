@@ -96,3 +96,4 @@ existing `isRemovalError` / code-handling tests green; full suite + strict typec
 
 - (pending)
 - 2026-06-18T15:55:22Z – claude:opus:implementer:implementer – shell_pid=45439 – Assigned agent via action command
+- 2026-06-18T15:57:33Z – claude:opus:implementer:implementer – shell_pid=45439 – Ready for review: removed orphaned RemovalErrorCode 'stalled' + JSDoc; provenance/FSM untouched (D-3); no producer existed; gates green

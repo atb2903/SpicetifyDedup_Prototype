@@ -117,71 +117,56 @@ Liked-Songs count fetch rejects with an auth-expired signal → auth-expired err
 - Regression: `stalled` / `executor-failed` / `host`-partial outcomes still
   offer retry.
 
-### WP05 — sibling/FR-008: AbortError-while-stalled still terminates
+### WP05 — Removal termination resilience + honest docs/test (atomic) (FR-008, FR-009, FR-010, FR-011)
 
-**Behavioural (store).** Defensive guard so a `stalled` operation whose executor
-*rejects* (rather than resolves) with `AbortError` still reaches a terminal
-outcome.
-
-| File | Change |
-|---|---|
-| `src/store/detection-store.ts` | In `executeRemoveSet`'s catch (`:618-625`): when `e` is an `AbortError` **and** `stalled === true`, dispatch a terminal `'stalled'` outcome (e.g. `removed: []`, `failed: removeSet.tracks`, `provenance: 'stalled'`) via `applyTerminalOutcome` instead of swallowing; a non-stalled `AbortError` (genuine user cancel/reset) is still swallowed. Correct the `:620` comment that asserts "a stall never lands here". |
-
-**Test strategy (TDD):**
-- Executor configured to reject with `AbortError` *after* the watchdog trips →
-  store dispatches `removeComplete` (row leaves `removing`, lands `partial`).
-- Regression: a plain user-cancel `AbortError` (watchdog not tripped) is still
-  swallowed (row already moved to `idle`).
-
-> Sequencing note: WP04 and WP05 both touch the removal terminal path
-> (`detection-state.ts` / `detection-store.ts`); run them sequentially.
-
-### WP06 — NEW-3 + NEW-5: doc accuracy + dead-code removal (FR-011, FR-012)
-
-**Non-behavioural** (doc + dead type). No production behaviour changes.
+**Atomic WP.** All edits coupled through `src/store/detection-store.ts` (the
+AbortError-while-stalled guard, the `applyTerminalOutcome` JSDoc, the
+watchdog/`executeRemoveSet` JSDoc) plus the RISK-1 fake + termination test that
+exercise the same path. Merged into one WP because spec-kitty's one-file-per-WP
+ownership rule forbids three WPs sharing `detection-store.ts` (user decision
+2026-06-18; mirrors the prior mission's atomic-store-WP precedent). Per **C-001**
+no termination mechanism is reintroduced.
 
 | File | Change |
 |---|---|
-| `src/store/detection-store.ts` | Rewrite `applyTerminalOutcome` JSDoc (`:535-539`): it is the apply path for **host-success** and **stalled-partial** outcomes too (possibly non-empty `removed`, see callers `:612`, `:617`), not only synthesised empty-`removed` cases. State the true no-throw rationale: every `removed` key is a real member of `result` by construction, so `applyRemovalOutcome` cannot throw `outcome-mismatch`. (FR-011) |
-| `src/domain/removal-errors.ts` | Remove `'stalled'` from `RemovalErrorCode` (`:44`) and delete its JSDoc bullet (`:34-37`). Verified no producer of `RemovalError('stalled')` exists. Do **not** touch `RemovalOutcomeProvenance.'stalled'` (D-3). (FR-012) |
+| `src/store/detection-store.ts` (FR-008) | In `executeRemoveSet`'s catch (`:618-625`): when `e` is `AbortError` **and** `stalled === true`, dispatch a terminal `'stalled'` outcome (`removed: []`, `failed: removeSet.tracks`, `provenance: 'stalled'`) via `applyTerminalOutcome` instead of swallowing; non-stalled `AbortError` still swallowed. Correct the `:620` comment. |
+| `src/store/detection-store.ts` (FR-011 / NEW-3) | Rewrite `applyTerminalOutcome` JSDoc (`:535-539`): also the apply path for host-success (`:617`) and stalled-partial (`:611-612`) outcomes (possibly non-empty `removed`). True no-throw rationale: every removed key is a real member of `result` by construction. |
+| `src/store/detection-store.ts` (FR-009) | Align `createStallWatchdog` / `executeRemoveSet` (`:558-573`) JSDoc with the batch-boundary abort limit. |
+| `.claude/adr/0019-…md` (FR-009) | Correct any never-settling-terminates claim; state the abort takes effect only at batch boundaries and cannot interrupt an in-flight host await. |
+| `src/adapters/fake-removal-executor.ts` (FR-010) | Make the `hang` double **non**-abort-aware (`:225` + hang path) so it models a never-settling host call. |
+| `test/integration/removal-termination.test.ts` (FR-010) | Assert real behaviour: a never-settling host call leaves the row in `removing`; route-reset is the escape. No "watchdog terminates the call" assertion. |
 
-**Test strategy:** NEW-3 is doc-only (no test). NEW-5: a type-level/exhaustiveness
-assertion that the union has exactly the four remaining codes and the full suite
-+ strict typecheck still pass (proving no reference to the removed member). The
-existing `isRemovalError` / code-handling tests must remain green.
+**Test strategy (TDD):** FR-008 — stalled-then-reject dispatches `removeComplete`
+(row → `partial`); user-cancel abort still swallowed. FR-010 — the rewritten test
+fails against the old abort-aware fake and passes once it is non-abort-aware;
+watchdog/abort coverage stays 100%. FR-009/011 are doc-only.
 
-### WP07 — RISK-1 + NEW-3-ADR: honest termination docs + faithful stall test (FR-009, FR-010)
+### WP06 — NEW-5: remove orphaned `RemovalErrorCode 'stalled'` (FR-012)
 
-**Docs + test-double + test rewrite.** Per C-001 no termination mechanism is
-reintroduced.
+**Dead-code removal (type-only).** Independent file — no coupling to WP05.
 
 | File | Change |
 |---|---|
-| `.claude/adr/0019-per-batch-stall-watchdog-and-faithful-partial.md` | Correct any claim that a never-settling host call is guaranteed to terminate; state the watchdog's abort takes effect only at **batch boundaries** and cannot interrupt an in-flight host await. (FR-009) |
-| watchdog + removal JSDoc | Align JSDoc (e.g. `createStallWatchdog`, `executeRemoveSet` `:558-573`) with the batch-boundary limitation. (FR-009) |
-| `src/adapters/fake-removal-executor.ts` | Make the `hang` test double **non**-abort-aware (`:225` and the hang path) so it models a genuinely never-settling host call. (FR-010) |
-| `test/integration/removal-termination.test.ts` | Assert real production behaviour: a never-settling host call leaves the row in `removing`; route-reset is the documented escape. No assertion that the watchdog *terminates* the in-flight call. (FR-010) |
+| `src/domain/removal-errors.ts` | Remove `'stalled'` from `RemovalErrorCode` (`:44`) and delete its JSDoc bullet (`:34-37`). Verified no producer of `RemovalError('stalled')`. Do **not** touch `RemovalOutcomeProvenance.'stalled'` (D-3). |
 
-**Test strategy:** the rewritten termination test is itself the deliverable; it
-must fail against the old abort-aware fake (proving it now reflects production)
-and pass once the fake is non-abort-aware. Coverage of the watchdog/abort paths
-must stay at 100% (NFR-001).
+**Test strategy (TDD):** a type-level/exhaustiveness assertion that the union has
+exactly the four remaining codes; `grep -R "RemovalError('stalled'" src` empty;
+full suite + strict typecheck pass; existing `isRemovalError` tests green.
 
 ## 5. Sequencing & dependencies
 
-| Order | WP | Touches | Independent of |
-|---|---|---|---|
-| 1 | WP01 (NEW-1) | enumerator/scanner/summary | all removal WPs |
-| 2 | WP02 (DRIFT-1) | playlists loader | all others |
-| 3 | WP03 (NEW-2) | removal executor | store/UI |
-| 4 | WP04 (NEW-4) | RemovalOutcomeView | — |
-| 5 | WP05 (FR-008) | detection-store | (after WP04: shared removal path) |
-| 6 | WP06 (NEW-3/NEW-5) | detection-store JSDoc, removal-errors | (after WP05: shared file) |
-| 7 | WP07 (RISK-1) | ADR, watchdog JSDoc, fake, termination test | — |
+All six WPs have **disjoint file ownership and are mutually independent** (each in
+its own lane, `lane-a`..`lane-f`). Per the sequential-subagent preference they run
+one at a time in the recommended order below.
 
-WP01–WP03 are mutually independent and could be parallelised, but per the
-sequential-subagent preference they run one at a time. WP04→WP05→WP06 share
-removal store/state/error files and **must** be sequential.
+| Order | WP | Owns |
+|---|---|---|
+| 1 | WP01 (NEW-1) | enumerator port + adapters, scanner, summary, ADR-0021 |
+| 2 | WP02 (DRIFT-1) | playlists loader |
+| 3 | WP03 (NEW-2) | removal executor |
+| 4 | WP04 (NEW-4) | RemovalOutcomeView |
+| 5 | WP05 (sibling + RISK-1 + NEW-3) | detection-store, ADR-0019, fake-removal-executor, termination test |
+| 6 | WP06 (NEW-5) | removal-errors |
 
 ## 6. Gates & risk boundaries
 
@@ -191,13 +176,13 @@ removal store/state/error files and **must** be sequential.
 - **Risk boundaries (C-002)** unchanged and re-verified by the existing suite:
   no silent mutation, per-action confirmation, second confirmation > 25,
   single-collection scope, no auto-run on launch.
-- **C-001**: WP07 reviewers confirm no promise-race/timer-wins termination was
+- **C-001**: WP05 reviewers confirm no promise-race/timer-wins termination was
   reintroduced.
 - **C-004**: no opportunistic refactors outside the eight findings.
 
 ## 7. ADR obligations (DIRECTIVE_003)
 
-- **WP01** is a load-bearing port-contract change → author a new ADR recording
-  the `EnumerationResult` return-type decision and why the tally moved off the
-  progress event (the NEW-1 root cause). New ADR under `.claude/adr/`.
-- **WP07** edits ADR-0019 (honesty correction) — not a new ADR.
+- **WP01** is a load-bearing port-contract change → author a new ADR (0021)
+  recording the `EnumerationResult` return-type decision and why the tally moved
+  off the progress event (the NEW-1 root cause). New ADR under `.claude/adr/`.
+- **WP05** edits ADR-0019 (honesty correction) — not a new ADR.

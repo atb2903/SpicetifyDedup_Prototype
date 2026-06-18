@@ -14,8 +14,8 @@ subtasks:
 - T007
 phase: Phase 2 - Removal resilience
 assignee: ''
-agent: ''
-shell_pid: '25853'
+agent: "claude:opus:implementer:implementer"
+shell_pid: "25853"
 history:
 - timestamp: '2026-06-18T00:00:00Z'
   agent: system
@@ -101,3 +101,4 @@ exhaustiveness (`_exhaustive: never`) preserved.
 ## Activity Log
 
 - (pending)
+- 2026-06-18T11:41:27Z – claude:opus:implementer:implementer – shell_pid=25853 – Assigned agent via action command

@@ -133,10 +133,10 @@ Prompt: `tasks/WP04-compute-failed-terminal.md`.
 
 Included subtasks:
 
-- [ ] T008 AbortError-while-stalled defensive terminal dispatch (WP05)
-- [ ] T009 Rewrite applyTerminalOutcome JSDoc — NEW-3 (WP05)
-- [ ] T010 Honest termination docs — ADR-0019 + watchdog/removal JSDoc (WP05)
-- [ ] T011 Non-abort-aware hang fake + faithful termination test (WP05)
+- [x] T008 AbortError-while-stalled defensive terminal dispatch (WP05)
+- [x] T009 Rewrite applyTerminalOutcome JSDoc — NEW-3 (WP05)
+- [x] T010 Honest termination docs — ADR-0019 + watchdog/removal JSDoc (WP05)
+- [x] T011 Non-abort-aware hang fake + faithful termination test (WP05)
 
 Prompt: `tasks/WP05-removal-termination-resilience.md`.
 

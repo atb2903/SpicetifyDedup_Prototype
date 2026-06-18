@@ -1,0 +1,122 @@
+{
+  "version": 1,
+  "mission_slug": "residual-review-findings-remediation-01KV7ZEA",
+  "mission_id": "01KV7ZEA8XN0Z58E5J1RZETADT",
+  "mission_branch": "kitty/mission-residual-review-findings-remediation-01KV7ZEA",
+  "target_branch": "main",
+  "lanes": [
+    {
+      "lane_id": "lane-a",
+      "wp_ids": [
+        "WP01"
+      ],
+      "write_scope": [
+        ".claude/adr/0021-enumeration-result-return-type.md",
+        "src/adapters/detection-scanner.ts",
+        "src/adapters/fake-tracks-enumerator.ts",
+        "src/adapters/spicetify-tracks-enumerator.ts",
+        "src/domain/detection-types.ts",
+        "src/ports/tracks-enumerator.ts",
+        "src/ui/DetectionLoadedSummary.tsx",
+        "test/adapters/detection-scanner.test.ts",
+        "test/adapters/fake-tracks-enumerator.test.ts",
+        "test/adapters/spicetify-tracks-enumerator.test.ts",
+        "test/ui/DetectionLoadedSummary.test.tsx"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "artifact-rendering",
+        "legacy-cleanup"
+      ],
+      "depends_on_lanes": [],
+      "parallel_group": 0
+    },
+    {
+      "lane_id": "lane-b",
+      "wp_ids": [
+        "WP02"
+      ],
+      "write_scope": [
+        "src/adapters/spicetify-playlists-loader.ts",
+        "test/adapters/spicetify-playlists-loader.test.ts"
+      ],
+      "predicted_surfaces": [
+        "api"
+      ],
+      "depends_on_lanes": [],
+      "parallel_group": 0
+    },
+    {
+      "lane_id": "lane-c",
+      "wp_ids": [
+        "WP03"
+      ],
+      "write_scope": [
+        "src/adapters/spicetify-removal-executor.ts",
+        "test/adapters/spicetify-removal-executor.test.ts"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "legacy-cleanup"
+      ],
+      "depends_on_lanes": [],
+      "parallel_group": 0
+    },
+    {
+      "lane_id": "lane-d",
+      "wp_ids": [
+        "WP04"
+      ],
+      "write_scope": [
+        "src/ui/RemovalOutcomeView.tsx",
+        "test/ui/RemovalOutcomeView.test.tsx"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "artifact-rendering",
+        "legacy-cleanup"
+      ],
+      "depends_on_lanes": [],
+      "parallel_group": 0
+    },
+    {
+      "lane_id": "lane-e",
+      "wp_ids": [
+        "WP05"
+      ],
+      "write_scope": [
+        ".claude/adr/0019-per-batch-stall-watchdog-and-faithful-partial.md",
+        "src/adapters/fake-removal-executor.ts",
+        "src/store/detection-store.ts",
+        "test/adapters/fake-removal-executor.test.ts",
+        "test/integration/removal-termination.test.ts",
+        "test/store/detection-store.test.ts"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "legacy-cleanup"
+      ],
+      "depends_on_lanes": [],
+      "parallel_group": 0
+    },
+    {
+      "lane_id": "lane-f",
+      "wp_ids": [
+        "WP06"
+      ],
+      "write_scope": [
+        "src/domain/removal-errors.ts",
+        "test/domain/removal-errors.test.ts"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "legacy-cleanup"
+      ],
+      "depends_on_lanes": [],
+      "parallel_group": 0
+    }
+  ],
+  "computed_at": "2026-06-18T11:15:41.764559+00:00",
+  "computed_from": "dependency_graph+ownership",
+  "planning_artifact_wps": []
+}

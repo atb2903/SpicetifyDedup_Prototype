@@ -4,13 +4,18 @@
 **Planning base**: `main` · **Merge target**: `main` · **branch_matches_target**: true
 **Generated**: 2026-06-18
 
-> **Decomposition decision.** The eight findings (RISK-1, NEW-1..5, DRIFT-1, and
-> the latent AbortError-while-stalled sibling) split cleanly by file ownership
-> into seven small WPs. Each FR maps to exactly one WP. The only hard sequencing
-> is the removal store/error chain: **WP05 → WP06 → WP07** all edit
-> `src/store/detection-store.ts` (WP07 because `createStallWatchdog` lives there),
-> so they cannot be parallelised or reordered. WP01–WP05 are mutually independent.
-> Per the user's standing preference, all WPs are executed **sequentially**.
+> **Decomposition decision (recorded with the user, 2026-06-18).** Three of the
+> findings — the AbortError-while-stalled sibling (FR-008), RISK-1's honest
+> termination docs/test (FR-009/010), and NEW-3's `applyTerminalOutcome` JSDoc
+> (FR-011) — are all edit-coupled through the hub file
+> `src/store/detection-store.ts` (incl. `createStallWatchdog`/`executeRemoveSet`).
+> Under spec-kitty's one-file-per-WP ownership rule, no dependency ordering lets
+> them be separate WPs. The user chose to keep them in **one atomic WP (WP05)**
+> rather than fragment FR-009 across WPs — consistent with the prior mission's
+> atomic-store-WP precedent. WP05 therefore has 4 subtasks. The remaining findings
+> split cleanly: NEW-1 (WP01), DRIFT-1 (WP02), NEW-2 (WP03), NEW-4 (WP04), NEW-5
+> (WP06). All six WPs have disjoint file ownership and are mutually independent;
+> per the user's standing preference they are executed **sequentially**.
 
 ## Subtask Index
 
@@ -24,10 +29,10 @@
 | T006 | Per-track fallback progress emission | WP03 | | [D] |
 | T007 | compute-failed terminal, no-retry view branch | WP04 | [D] |
 | T008 | AbortError-while-stalled defensive terminal dispatch | WP05 | [D] |
-| T009 | Rewrite applyTerminalOutcome JSDoc (NEW-3) | WP06 | [D] |
-| T010 | Remove orphaned RemovalErrorCode 'stalled' (NEW-5) | WP06 | | [D] |
-| T011 | Honest termination docs (ADR-0019 + watchdog/removal JSDoc) | WP07 | [D] |
-| T012 | Non-abort-aware hang fake + faithful termination test | WP07 | | [D] |
+| T009 | Rewrite applyTerminalOutcome JSDoc (NEW-3) | WP05 | | [D] |
+| T010 | Honest termination docs (ADR-0019 + watchdog/removal JSDoc) | WP05 | | [D] |
+| T011 | Non-abort-aware hang fake + faithful termination test | WP05 | | [D] |
+| T012 | Remove orphaned RemovalErrorCode 'stalled' (NEW-5) | WP06 | [D] |
 
 ---
 
@@ -35,15 +40,14 @@
 
 ### WP01 — NEW-1: true local-only skip tally via EnumerationResult return type
 
-- **Goal**: Stop `skippedLocalCount` folding skipped non-track items (episodes)
-  into the local-file count. Enumerator returns `{ tracks, skippedLocalCount }`;
-  scanner reads it directly instead of inferring `hostTotalLength − scannedTrackCount`.
+- **Goal**: Stop `skippedLocalCount` folding skipped non-track items (episodes) into
+  the local-file count. Enumerator returns `{ tracks, skippedLocalCount }`; scanner
+  reads it directly instead of inferring `hostTotalLength − scannedTrackCount`.
 - **Priority**: P1.
 - **Requirements**: FR-001, FR-002, FR-003.
 - **Independent test**: enumerator counts only `spotify:local:` skips (episodes
-  excluded + uncounted); scanner surfaces the reported tally regardless of host
-  total; AS-1/AS-2 UI scenarios; boundary tests on skip counts; full `npm run
-  test:coverage` 100% + `npx tsc --noEmit` + architecture test green.
+  excluded + uncounted); scanner surfaces the reported tally regardless of host total;
+  AS-1/AS-2 UI scenarios; boundary tests on skip counts; full gates green.
 - **Dependencies**: none.
 
 Included subtasks:
@@ -56,9 +60,9 @@ Prompt: `tasks/WP01-enumerator-local-tally.md`.
 
 ### WP02 — DRIFT-1: Liked-Songs count fetch auth-expiry classification
 
-- **Goal**: Apply the shared `looksLikeHostAuthExpired` predicate to the
-  Liked-Songs count sub-fetch so auth-expiry there yields the same guidance as a
-  rootlist auth-expiry (fully realises prior FR-007).
+- **Goal**: Apply the shared `looksLikeHostAuthExpired` predicate to the Liked-Songs
+  count sub-fetch so auth-expiry there yields the same guidance as a rootlist
+  auth-expiry (fully realises prior FR-007).
 - **Priority**: P2.
 - **Requirements**: FR-004.
 - **Independent test**: count-fetch auth-expiry → auth-expired error (not generic);
@@ -82,9 +86,9 @@ Prompt: `tasks/WP02-likedsongs-auth-expiry.md`.
   so the store's stall watchdog re-arms on genuine progress.
 - **Priority**: P1.
 - **Requirements**: FR-005, FR-006.
-- **Independent test**: abort mid-fallback stops further per-track calls; progress
-  fires per track; the RISK-1 in-flight-await limit asserted honestly (no
-  termination mechanism added — C-001); BATCH_SIZE boundary tests; gates green.
+- **Independent test**: abort mid-fallback stops further per-track calls; progress fires
+  per track; the RISK-1 in-flight-await limit asserted honestly (no termination mechanism
+  added — C-001); BATCH_SIZE boundary tests; gates green.
 - **Dependencies**: none.
 
 Included subtasks:
@@ -110,76 +114,60 @@ Included subtasks:
 
 Prompt: `tasks/WP04-compute-failed-terminal.md`.
 
-### WP05 — sibling/FR-008: AbortError-while-stalled still dispatches a terminal outcome
+### WP05 — Removal termination resilience + honest docs/test (atomic)
 
-- **Goal**: When the executor rejects with `AbortError` after the watchdog tripped
-  (`stalled`), still dispatch a terminal `'stalled'` outcome instead of swallowing
-  and leaving the row in `removing`.
+- **Goal**: Land every change on the removal termination / outcome-apply path that is
+  coupled through `src/store/detection-store.ts`: the AbortError-while-stalled guard
+  (FR-008), the corrected `applyTerminalOutcome` JSDoc (FR-011 / NEW-3), the honest
+  batch-boundary termination docs (FR-009 / RISK-1 — ADR-0019 + watchdog/`executeRemoveSet`
+  JSDoc), and the faithful stall test with a non-abort-aware `hang` fake (FR-010 / RISK-1).
 - **Priority**: P1.
-- **Requirements**: FR-008.
-- **Independent test**: stalled-then-reject dispatches `removeComplete` (row →
-  partial); user-cancel abort still swallowed; resolve-path stall handling
-  unchanged; gates green.
+- **Requirements**: FR-008, FR-009, FR-010, FR-011.
+- **Independent test**: stalled-then-reject dispatches a terminal outcome (row → partial);
+  user-cancel abort still swallowed; `applyTerminalOutcome` JSDoc accurate; ADR-0019/JSDoc
+  state the batch-boundary limit with no never-settling termination guarantee; `hang` fake
+  non-abort-aware and termination test asserts the row stays `removing` (route-reset escape)
+  and would fail against the old fake; **no promise-race/timer mechanism added (C-001)**;
+  watchdog/abort coverage 100%; full gates green.
 - **Dependencies**: none.
 
 Included subtasks:
 
 - [ ] T008 AbortError-while-stalled defensive terminal dispatch (WP05)
+- [ ] T009 Rewrite applyTerminalOutcome JSDoc — NEW-3 (WP05)
+- [ ] T010 Honest termination docs — ADR-0019 + watchdog/removal JSDoc (WP05)
+- [ ] T011 Non-abort-aware hang fake + faithful termination test (WP05)
 
-Prompt: `tasks/WP05-abort-while-stalled-guard.md`.
+Prompt: `tasks/WP05-removal-termination-resilience.md`.
 
 ---
 
-## Phase 3 — Docs & dead code
+## Phase 3 — Dead code
 
-### WP06 — NEW-3 + NEW-5: applyTerminalOutcome JSDoc accuracy + remove orphaned RemovalErrorCode 'stalled'
+### WP06 — NEW-5: remove orphaned RemovalErrorCode 'stalled'
 
-- **Goal**: Correct the false `applyTerminalOutcome` "removed is always empty"
-  JSDoc invariant (NEW-3); remove the orphaned `RemovalErrorCode.'stalled'` member
-  and its stale JSDoc (NEW-5), leaving `RemovalOutcomeProvenance.'stalled'` untouched.
+- **Goal**: Remove the orphaned `'stalled'` member from the `RemovalErrorCode` union and
+  its stale JSDoc; leave the live `RemovalOutcomeProvenance.'stalled'` untouched (D-3).
 - **Priority**: P3.
-- **Requirements**: FR-011, FR-012.
-- **Independent test**: JSDoc describes the host-success / stalled-partial apply
-  paths and the by-construction no-throw rationale; `RemovalErrorCode` has exactly
-  four members; `grep -R "RemovalError('stalled'" src` empty; gates green.
-- **Dependencies**: WP05 (shared `src/store/detection-store.ts`).
+- **Requirements**: FR-012.
+- **Independent test**: `RemovalErrorCode` has exactly four members; `grep -R
+  "RemovalError('stalled'" src` empty; provenance/FSM/watchdog untouched; gates green.
+- **Dependencies**: none.
 
 Included subtasks:
 
-- [ ] T009 Rewrite applyTerminalOutcome JSDoc — NEW-3 (WP06)
-- [ ] T010 Remove orphaned RemovalErrorCode 'stalled' — NEW-5 (WP06)
+- [ ] T012 Remove orphaned RemovalErrorCode 'stalled' — NEW-5 (WP06)
 
-Prompt: `tasks/WP06-doc-accuracy-deadcode.md`.
-
-### WP07 — RISK-1: honest termination docs (ADR-0019 + JSDoc) and faithful stall test
-
-- **Goal**: Document the batch-boundary abort limitation honestly (ADR-0019 +
-  watchdog/removal JSDoc) and make the `hang` fake non-abort-aware so the stall
-  test reflects real production behaviour. No termination mechanism reintroduced.
-- **Priority**: P3.
-- **Requirements**: FR-009, FR-010.
-- **Independent test**: docs state the batch-boundary limit with no never-settling
-  termination guarantee; `hang` fake no longer resolves on abort; termination test
-  asserts row stays `removing` (route-reset escape) and would fail against the old
-  fake; no promise-race/timer mechanism added (C-001); watchdog/abort coverage 100%.
-- **Dependencies**: WP06 (shared `src/store/detection-store.ts`).
-
-Included subtasks:
-
-- [ ] T011 Honest termination docs — ADR-0019 + watchdog/removal JSDoc (WP07)
-- [ ] T012 Non-abort-aware hang fake + faithful termination test (WP07)
-
-Prompt: `tasks/WP07-honest-termination-docs-test.md`.
+Prompt: `tasks/WP06-remove-orphaned-stalled-code.md`.
 
 ---
 
 ## Dependency graph
 
 ```
-WP01  WP02  WP03  WP04   (all independent)
-WP05 ── WP06 ── WP07     (chain: shared detection-store.ts)
+WP01  WP02  WP03  WP04  WP05  WP06    (all independent; disjoint file ownership)
 ```
 
-WP01–WP05 are mutually independent; WP06 depends on WP05; WP07 depends on WP06.
-All WPs execute sequentially per the user's standing preference. Recommended
-order: **WP01 → WP02 → WP03 → WP04 → WP05 → WP06 → WP07**.
+All six WPs are mutually independent (disjoint owned files) and execute sequentially
+per the user's standing preference. Recommended order:
+**WP01 → WP02 → WP03 → WP04 → WP05 → WP06**.

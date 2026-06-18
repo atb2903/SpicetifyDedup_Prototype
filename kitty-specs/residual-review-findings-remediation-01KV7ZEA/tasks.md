@@ -93,8 +93,8 @@ Prompt: `tasks/WP02-likedsongs-auth-expiry.md`.
 
 Included subtasks:
 
-- [ ] T005 Abort check between per-track fallback retries (WP03)
-- [ ] T006 Per-track fallback progress emission (WP03)
+- [x] T005 Abort check between per-track fallback retries (WP03)
+- [x] T006 Per-track fallback progress emission (WP03)
 
 Prompt: `tasks/WP03-fallback-abort-progress.md`.
 

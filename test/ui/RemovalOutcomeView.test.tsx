@@ -125,6 +125,23 @@ describe('RemovalOutcomeView — compute-failed (FR-009)', () => {
     expect(text).toMatch(/couldn.t (be )?comput/i);
   });
 
+  it('is TERMINAL — no retry-invitation wording (NEW-4 / FR-007 / SC-004)', () => {
+    const outcome: RemovalOutcome = {
+      removed: [],
+      failed: [],
+      provenance: 'compute-failed',
+    };
+    render(<RemovalOutcomeView outcome={outcome} />);
+    const text = screen.getByRole('status').textContent ?? '';
+    // No "try again" / "retry" invitation — retry cannot be dispatched.
+    expect(text).not.toMatch(/try again/i);
+    expect(text).not.toMatch(/\bretry\b/i);
+    // States the operation cannot be retried and points to the route reset
+    // (leaving / returning to the page) as the way out.
+    expect(text).toMatch(/can.?not be retried|cannot be retried/i);
+    expect(text).toMatch(/leav|return|page/i);
+  });
+
   it('preserves role="status" on the compute-failed path', () => {
     const outcome: RemovalOutcome = {
       removed: [],

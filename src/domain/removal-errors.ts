@@ -31,17 +31,12 @@
  *   originating rejection in `cause`.
  * - `'host-unavailable'` — `Spicetify.Platform.{LibraryAPI,PlaylistAPI}` is
  *   absent at removal time (extension loaded before the host APIs).
- * - `'stalled'` — the store's stall-ceiling fired: the executor promise neither
- *   resolved nor rejected before `STALL_CEILING_MS`. Routed through the existing
- *   non-`AbortError` catch → all-failed `partial`; distinct from `AbortError` so
- *   the user-cancel swallow branch is never taken.
  */
 export type RemovalErrorCode =
   | 'malformed-result'
   | 'outcome-mismatch'
   | 'executor-failed'
-  | 'host-unavailable'
-  | 'stalled';
+  | 'host-unavailable';
 
 // ── §4.2 — RemovalError class ────────────────────────────────────────────────
 

@@ -608,6 +608,45 @@ describe('SpicetifyPlaylistsLoader — liked songs', () => {
     );
   });
 
+  it('throws host-auth-expired when the count fetch rejects with code 401 (DRIFT-1 — same predicate as the rootlist path)', async () => {
+    stubSpicetify({
+      getContents: async () => rootlistOf([]),
+      getTracks: async () => {
+        throw Object.assign(new Error('unauthorized'), { code: 401 });
+      },
+    });
+    await expectReason(
+      new SpicetifyPlaylistsLoader().load(),
+      'host-auth-expired',
+    );
+  });
+
+  it('throws host-auth-expired when the count fetch rejects with a "token expired" message', async () => {
+    stubSpicetify({
+      getContents: async () => rootlistOf([]),
+      getTracks: async () => {
+        throw new Error('Access token expired');
+      },
+    });
+    await expectReason(
+      new SpicetifyPlaylistsLoader().load(),
+      'host-auth-expired',
+    );
+  });
+
+  it('throws liked-songs-fetch-failed (NOT host-auth-expired) when the count fetch rejects with a non-auth signal', async () => {
+    stubSpicetify({
+      getContents: async () => rootlistOf([]),
+      getTracks: async () => {
+        throw Object.assign(new Error('something else broke'), { status: 500 });
+      },
+    });
+    await expectReason(
+      new SpicetifyPlaylistsLoader().load(),
+      'liked-songs-fetch-failed',
+    );
+  });
+
   it.each([
     ['response is a string', 'not-json'],
     ['response is null', null],

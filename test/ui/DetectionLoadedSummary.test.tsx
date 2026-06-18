@@ -205,6 +205,22 @@ describe('DetectionLoadedSummary', () => {
       // Match either "1 local file" or "1 local files" (singular gracefully handled)
       expect(screen.getByText(/Skipped 1 local file/)).toBeInTheDocument();
     });
+
+    // NEW-1 (AS-1 / FR-002): a truthful zero skippedLocalCount renders NO local
+    // annotation and NEVER an "episode" label. The summary surfaces only genuine
+    // local files; skipped non-track items (episodes) are invisible. With the
+    // enumerator now reporting a genuine local-only tally, an episodes-but-no-
+    // locals collection arrives here as skippedLocalCount === 0.
+    it('renders no local annotation and no episode label for episodes-but-no-locals (NEW-1, AS-1)', () => {
+      render(
+        <DetectionLoadedSummary
+          result={makeResult({ skippedLocalCount: 0 })}
+        />,
+      );
+      expect(screen.queryByText(/Skipped/)).not.toBeInTheDocument();
+      expect(screen.queryByText(/local file/)).not.toBeInTheDocument();
+      expect(screen.queryByText(/episode/i)).not.toBeInTheDocument();
+    });
   });
 
   describe('unenrichedCount annotation', () => {

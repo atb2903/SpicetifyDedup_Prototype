@@ -15,17 +15,24 @@
  *      outcome without a host call.
  *   3. Batch the ordered tracks into runs of `BATCH_SIZE` (no re-order, no
  *      dedup — the domain produced them in the correct later-copies order).
- *   4. Check the `AbortSignal` at each batch boundary; on abort, **resolve with
- *      the accumulated host-truthful partial** (`provenance: 'host'`) rather
- *      than throwing `AbortError` (FR-003 / ADR-0019). The store decides whether
- *      an aborted partial means *stall* (apply, re-stamp) or *cancel* (discard).
+ *   4. Check the `AbortSignal` at each batch boundary **and between per-track
+ *      fallback retries**; on abort, **resolve with the accumulated host-truthful
+ *      partial** (`provenance: 'host'`) rather than throwing `AbortError`
+ *      (FR-003 / FR-005 / ADR-0019). The store decides whether an aborted partial
+ *      means *stall* (apply, re-stamp) or *cancel* (discard). RISK-1 (accepted,
+ *      C-001): the one single-track host await already in flight when the signal
+ *      trips is not interruptible — abort-responsiveness is *between* retries only.
  *   5. Per-batch partial failure with per-track fallback (live-verify
  *      2026-06-12): a fulfilled batch's tracks go to `removed`; a *rejected*
  *      batch is NOT marked wholesale failed — instead each track is retried with
  *      its own single-track host call (resolves → `removed`, rejects → `failed`
- *      with the rejection message). The remaining batches are still attempted.
- *      `onProgress` fires once per batch (after any fallback) with the updated
- *      cumulative `removedSoFar`.
+ *      with the rejection message). The fallback checks the abort signal before
+ *      each retry and stops issuing further single-track deletions once aborted
+ *      (FR-005) — it does NOT always run to the end of the batch. The remaining
+ *      batches are still attempted. `onProgress` fires once for a fulfilled batch
+ *      and once per per-track retry for a fallback batch (FR-006), so a long
+ *      fallback re-arms the store's stall watchdog instead of looking stalled;
+ *      `removedSoFar` is monotonic non-decreasing and `<= total`.
  *   6. Return `{ removed, failed, provenance: 'host' }` with
  *      `removed.length + failed.length === tracks.length` (full run) or
  *      `<= tracks.length` (boundary-abort partial).
@@ -128,15 +135,18 @@ export class SpicetifyRemovalExecutor implements RemovalExecutor {
    *
    * @param target - The single collection to delete from (C-003).
    * @param tracks - Ordered occurrences to delete (not re-ordered/deduped).
-   * @param signal - Checked at each batch boundary (before starting a batch);
-   *   if aborted, the loop stops and the call **resolves with the accumulated
-   *   partial** (`provenance: 'host'`) rather than throwing — every track
-   *   removed before the abort is reported truthfully (FR-003). An in-progress
-   *   per-track fallback for the current batch is allowed to complete; the abort
-   *   guard sits at batch boundaries, not mid-fallback.
-   * @param onProgress - Optional; invoked once per batch (after any per-track
-   *   fallback) with the cumulative `removedSoFar` and the `total` requested
-   *   (NFR-002). Fires even for a fully-failed batch (count unchanged).
+   * @param signal - Checked at each batch boundary (before starting a batch)
+   *   AND before each per-track fallback retry; if aborted, the loop stops and
+   *   the call **resolves with the accumulated partial** (`provenance: 'host'`)
+   *   rather than throwing — every track removed before the abort is reported
+   *   truthfully (FR-003 / FR-005). A mid-fallback abort stops further single-
+   *   track deletions promptly; the one single-track host await already in flight
+   *   is allowed to complete (RISK-1, C-001 — not interruptible).
+   * @param onProgress - Optional; invoked once for a fulfilled batch and once per
+   *   per-track retry for a fallback batch (FR-006), with the cumulative
+   *   `removedSoFar` (monotonic, `<= total`) and the `total` requested (NFR-002).
+   *   Fires per retry even when a retry fails (count unchanged) so the store's
+   *   stall watchdog re-arms on genuine fallback activity.
    * @returns Promise resolving with the aggregate {@link RemovalOutcome}
    *   (`provenance: 'host'`; `removed.length + failed.length === tracks.length`
    *   for a full run, or `<= tracks.length` for a boundary-abort partial).
@@ -180,8 +190,10 @@ export class SpicetifyRemovalExecutor implements RemovalExecutor {
 
       try {
         await this.dispatchBatch(target, occurrences, platform);
-        // 5a. Fulfilled — all batch tracks removed.
+        // 5a. Fulfilled — all batch tracks removed. Report progress once for the
+        // fulfilled batch (the fallback path below emits per-track instead).
         removed.push(...batch);
+        onProgress?.({ removedSoFar: removed.length, total });
       } catch {
         // 5b. Bulk batch rejected. The host (PlaylistAPI) is atomic
         // reject-whole, so NOTHING was removed (live-verified 2026-06-12).
@@ -189,6 +201,17 @@ export class SpicetifyRemovalExecutor implements RemovalExecutor {
         // removes that one track; one that rejects fails only that track. This
         // cannot double-remove because the atomic reject removed nothing.
         for (const track of batch) {
+          // 5b-i. Abort check BETWEEN per-track retries (FR-005). A long fallback
+          // for a rejected batch must not keep issuing single-track host
+          // deletions after the user cancels — on abort, stop and return the
+          // accumulated host-truthful partial (consistent with the batch-boundary
+          // abort above). RISK-1 (accepted, C-001): the ONE single-track host
+          // await already in flight cannot be interrupted, so responsiveness is
+          // between retries only; no in-flight termination is engineered here.
+          if (signal.aborted) {
+            return { removed, failed, provenance: 'host' };
+          }
+
           const single = this.prepareBatch(target, [track]);
           try {
             await this.dispatchBatch(target, single, platform);
@@ -197,13 +220,15 @@ export class SpicetifyRemovalExecutor implements RemovalExecutor {
             const reason = cause instanceof Error ? cause.message : String(cause);
             failed.push({ track, reason });
           }
+
+          // 5b-ii. Per-track progress (FR-006). Emit after each single-track
+          // retry so the store's stall watchdog re-arms on genuine fallback
+          // activity instead of treating a long fallback as a stall. Reuses the
+          // existing { removedSoFar, total } shape (decision D-4 — no new event
+          // variant); `removedSoFar` is monotonic non-decreasing and <= total.
+          onProgress?.({ removedSoFar: removed.length, total });
         }
       }
-
-      // 5c. Report progress once per batch (after any fallback) with the
-      // up-to-date cumulative count — fired even for a fully-failed batch so the
-      // UI counter reflects every batch boundary.
-      onProgress?.({ removedSoFar: removed.length, total });
     }
 
     // 6. Aggregate outcome (every requested track accounted for exactly once).

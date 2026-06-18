@@ -319,6 +319,211 @@ describe('SpicetifyRemovalExecutor — per-track fallback (playlist atomic rejec
 });
 
 // ---------------------------------------------------------------------------
+// Per-track fallback abort (FR-005) + per-track progress (FR-006) + RISK-1
+//
+// After a rejected bulk batch the executor retries each track individually. The
+// abort signal is checked BEFORE each single-track retry: once aborted, the loop
+// breaks and the call resolves with the accumulated host-truthful partial — no
+// further single-track host deletions are issued (FR-005). RISK-1 (accepted,
+// C-001): the ONE single-track host await already in flight when the signal trips
+// is NOT interruptible; abort-responsiveness is BETWEEN retries only.
+// ---------------------------------------------------------------------------
+
+describe('SpicetifyRemovalExecutor — per-track fallback abort (FR-005 / RISK-1)', () => {
+  it('abort after retry 0 (before any retry) → no single-track host calls, empty partial', async () => {
+    // Abort the bulk-batch path itself: signal already aborted means the batch
+    // boundary stops first; but to target the fallback specifically we abort the
+    // signal at the moment the bulk rejects, before the first retry is issued.
+    const controller = new AbortController();
+    let singleCalls = 0;
+    const libraryRemove = vi.fn<LibraryRemove>((param: { uris: string[] }) => {
+      if (param.uris.length > 1) {
+        controller.abort(); // abort during the bulk reject — before any retry
+        return Promise.reject(new Error('bulk boom'));
+      }
+      singleCalls += 1;
+      return Promise.resolve();
+    });
+    const platform = makePlatform();
+    platform.LibraryAPI.remove = libraryRemove;
+    const exec = new SpicetifyRemovalExecutor(platform);
+    const tracks = likedRefs(3);
+    const outcome = await exec.remove(likedTarget(), tracks, controller.signal);
+    // The abort check before retry 0 fires → zero single-track host calls.
+    expect(singleCalls).toBe(0);
+    expect(outcome.removed).toEqual([]);
+    expect(outcome.failed).toEqual([]);
+    expect(outcome.provenance).toBe('host');
+  });
+
+  it('abort mid-fallback after the 2nd retry → at most 2 single-track calls; in-flight await completed; accumulated partial returned (RISK-1)', async () => {
+    const controller = new AbortController();
+    let singleCalls = 0;
+    let inFlightCompleted = false;
+    const libraryRemove = vi.fn<LibraryRemove>((param: { uris: string[] }) => {
+      if (param.uris.length > 1) return Promise.reject(new Error('bulk boom'));
+      singleCalls += 1;
+      const thisCall = singleCalls;
+      return Promise.resolve().then(() => {
+        if (thisCall === 2) {
+          controller.abort(); // abort while the 2nd retry's await is in flight
+          inFlightCompleted = true; // the in-flight await ran to completion
+        }
+        // retries 1 and 2 resolve (removed); the loop must break before retry 3.
+      });
+    });
+    const platform = makePlatform();
+    platform.LibraryAPI.remove = libraryRemove;
+    const exec = new SpicetifyRemovalExecutor(platform);
+    const tracks = likedRefs(5); // one batch of 5 → fallback of up to 5 retries
+    const outcome = await exec.remove(likedTarget(), tracks, controller.signal);
+    // At most k+1 = 2 single-track host calls issued (no retry 3,4,5).
+    expect(singleCalls).toBeLessThanOrEqual(2);
+    expect(singleCalls).toBe(2);
+    // RISK-1: the one in-flight retry await was allowed to complete, not cancelled.
+    expect(inFlightCompleted).toBe(true);
+    // Accumulated host-truthful partial: the 2 completed retries are in removed,
+    // and no un-attempted track is invented into failed.
+    expect(outcome.removed).toEqual([tracks[0], tracks[1]]);
+    expect(outcome.failed).toEqual([]);
+    expect(outcome.provenance).toBe('host');
+  });
+
+  it('abort after the LAST retry of the batch → all retries issued, no extra calls, full partial', async () => {
+    const controller = new AbortController();
+    let singleCalls = 0;
+    const libraryRemove = vi.fn<LibraryRemove>((param: { uris: string[] }) => {
+      if (param.uris.length > 1) return Promise.reject(new Error('bulk boom'));
+      singleCalls += 1;
+      const thisCall = singleCalls;
+      return Promise.resolve().then(() => {
+        if (thisCall === 3) controller.abort(); // abort as the last retry resolves
+      });
+    });
+    const platform = makePlatform();
+    platform.LibraryAPI.remove = libraryRemove;
+    const exec = new SpicetifyRemovalExecutor(platform);
+    const tracks = likedRefs(3); // batch of 3 → exactly 3 retries
+    const outcome = await exec.remove(likedTarget(), tracks, controller.signal);
+    expect(singleCalls).toBe(3);
+    expect(outcome.removed).toEqual(tracks);
+    expect(outcome.failed).toEqual([]);
+    expect(outcome.provenance).toBe('host');
+  });
+
+  it('progress fires per per-track retry up to the abort point (FR-006), then stops', async () => {
+    const controller = new AbortController();
+    let singleCalls = 0;
+    const libraryRemove = vi.fn<LibraryRemove>((param: { uris: string[] }) => {
+      if (param.uris.length > 1) return Promise.reject(new Error('bulk boom'));
+      singleCalls += 1;
+      const thisCall = singleCalls;
+      return Promise.resolve().then(() => {
+        if (thisCall === 2) controller.abort();
+      });
+    });
+    const platform = makePlatform();
+    platform.LibraryAPI.remove = libraryRemove;
+    const exec = new SpicetifyRemovalExecutor(platform);
+    const onProgress = vi.fn<(e: RemovalProgressEvent) => void>();
+    const tracks = likedRefs(5);
+    await exec.remove(likedTarget(), tracks, controller.signal, onProgress);
+    // Progress fired for the 2 issued retries only (non-decreasing), then loop broke.
+    expect(onProgress).toHaveBeenCalledTimes(2);
+    expect(onProgress.mock.calls[0]![0]).toEqual({ removedSoFar: 1, total: 5 });
+    expect(onProgress.mock.calls[1]![0]).toEqual({ removedSoFar: 2, total: 5 });
+  });
+
+  it('BATCH_SIZE boundary: a rejected bulk batch of 99 aborts at retry 0 → no single calls', async () => {
+    const controller = new AbortController();
+    let singleCalls = 0;
+    const libraryRemove = vi.fn<LibraryRemove>((param: { uris: string[] }) => {
+      if (param.uris.length > 1) {
+        controller.abort();
+        return Promise.reject(new Error('bulk boom'));
+      }
+      singleCalls += 1;
+      return Promise.resolve();
+    });
+    const platform = makePlatform();
+    platform.LibraryAPI.remove = libraryRemove;
+    const exec = new SpicetifyRemovalExecutor(platform);
+    const outcome = await exec.remove(likedTarget(), likedRefs(BATCH_SIZE - 1), controller.signal);
+    expect(singleCalls).toBe(0);
+    expect(outcome.removed).toEqual([]);
+  });
+
+  it('BATCH_SIZE boundary: a rejected bulk batch of 100 aborts at the last retry → all 100 retries issued', async () => {
+    const controller = new AbortController();
+    let singleCalls = 0;
+    const libraryRemove = vi.fn<LibraryRemove>((param: { uris: string[] }) => {
+      if (param.uris.length > 1) return Promise.reject(new Error('bulk boom'));
+      singleCalls += 1;
+      const thisCall = singleCalls;
+      return Promise.resolve().then(() => {
+        if (thisCall === BATCH_SIZE) controller.abort();
+      });
+    });
+    const platform = makePlatform();
+    platform.LibraryAPI.remove = libraryRemove;
+    const exec = new SpicetifyRemovalExecutor(platform);
+    const tracks = likedRefs(BATCH_SIZE);
+    const outcome = await exec.remove(likedTarget(), tracks, controller.signal);
+    expect(singleCalls).toBe(BATCH_SIZE);
+    expect(outcome.removed).toHaveLength(BATCH_SIZE);
+  });
+
+  it('BATCH_SIZE boundary: 101 tracks, first batch (100) rejects + aborts mid-fallback → second batch never starts', async () => {
+    const controller = new AbortController();
+    let singleCalls = 0;
+    const libraryRemove = vi.fn<LibraryRemove>((param: { uris: string[] }) => {
+      if (param.uris.length > 1) return Promise.reject(new Error('bulk boom'));
+      singleCalls += 1;
+      const thisCall = singleCalls;
+      return Promise.resolve().then(() => {
+        if (thisCall === 50) controller.abort(); // abort halfway through batch 1's fallback
+      });
+    });
+    const platform = makePlatform();
+    platform.LibraryAPI.remove = libraryRemove;
+    const exec = new SpicetifyRemovalExecutor(platform);
+    const tracks = likedRefs(BATCH_SIZE + 1);
+    const outcome = await exec.remove(likedTarget(), tracks, controller.signal);
+    // 50 single retries issued in batch 1's fallback, then loop broke; batch 2
+    // (the +1 tail) never ran → only those 50 single calls (no tail bulk).
+    expect(singleCalls).toBe(50);
+    expect(outcome.removed).toHaveLength(50);
+    expect(outcome.removed).toEqual(tracks.slice(0, 50));
+    expect(outcome.failed).toEqual([]);
+    expect(outcome.provenance).toBe('host');
+  });
+
+  it('RISK-1 documented limit: the single in-flight retry await is not interruptible (it resolves)', async () => {
+    // Prove there is NO promise-race/timer that terminates the in-flight host
+    // await: the retry whose await is in flight when abort trips resolves fully,
+    // and its track lands in `removed`.
+    const controller = new AbortController();
+    let firstRetrySettled = false;
+    const libraryRemove = vi.fn<LibraryRemove>((param: { uris: string[] }) => {
+      if (param.uris.length > 1) return Promise.reject(new Error('bulk boom'));
+      return Promise.resolve().then(() => {
+        controller.abort(); // abort while THIS await is in flight
+        firstRetrySettled = true;
+      });
+    });
+    const platform = makePlatform();
+    platform.LibraryAPI.remove = libraryRemove;
+    const exec = new SpicetifyRemovalExecutor(platform);
+    const tracks = likedRefs(4);
+    const outcome = await exec.remove(likedTarget(), tracks, controller.signal);
+    // The in-flight await ran to completion (not cancelled) and its track removed.
+    expect(firstRetrySettled).toBe(true);
+    expect(outcome.removed).toEqual([tracks[0]]);
+    expect(outcome.failed).toEqual([]);
+  });
+});
+
+// ---------------------------------------------------------------------------
 // Host-unavailable guard
 // ---------------------------------------------------------------------------
 
@@ -519,9 +724,10 @@ describe('SpicetifyRemovalExecutor — progress', () => {
     });
   });
 
-  it('emits onProgress after a fully-failed batch (post-fallback) with unchanged removedSoFar', async () => {
-    // Bulk rejects, every single-track retry also rejects → nothing removed, but
-    // onProgress still fires once per batch with the (unchanged) cumulative count.
+  it('emits onProgress per per-track retry in a fully-failed batch with unchanged removedSoFar (FR-006)', async () => {
+    // Bulk rejects, every single-track retry also rejects → nothing removed. Each
+    // per-track retry still fires onProgress so the store stall watchdog re-arms
+    // on genuine fallback activity even when removedSoFar does not advance.
     const platform = makePlatform({
       libraryRemove: () => Promise.reject(new Error('boom')),
     });
@@ -530,12 +736,13 @@ describe('SpicetifyRemovalExecutor — progress', () => {
     const outcome = await exec.remove(likedTarget(), likedRefs(2), neverAborted(), onProgress);
     expect(outcome.removed).toEqual([]);
     expect(outcome.failed).toHaveLength(2);
-    // One onProgress for the single (failed) batch.
-    expect(onProgress).toHaveBeenCalledTimes(1);
+    // One onProgress per per-track retry (2 retries) — removedSoFar stays 0.
+    expect(onProgress).toHaveBeenCalledTimes(2);
     expect(onProgress.mock.calls[0]![0]).toEqual({ removedSoFar: 0, total: 2 });
+    expect(onProgress.mock.calls[1]![0]).toEqual({ removedSoFar: 0, total: 2 });
   });
 
-  it('emits onProgress with the partial removedSoFar after a fallback that removes some', async () => {
+  it('emits onProgress per per-track retry with monotonically non-decreasing removedSoFar (FR-006)', async () => {
     const badUri = 'spotify:track:LIKED00000';
     const platform = makePlatform({
       libraryRemove: (param: { uris: string[] }) => {
@@ -547,9 +754,19 @@ describe('SpicetifyRemovalExecutor — progress', () => {
     const exec = new SpicetifyRemovalExecutor(platform);
     const onProgress = vi.fn<(e: RemovalProgressEvent) => void>();
     await exec.remove(likedTarget(), likedRefs(2), neverAborted(), onProgress);
-    // One batch; after fallback exactly one track removed.
-    expect(onProgress).toHaveBeenCalledTimes(1);
-    expect(onProgress.mock.calls[0]![0]).toEqual({ removedSoFar: 1, total: 2 });
+    // One batch, 2 per-track retries: first (bad) fails (0), second succeeds (1).
+    expect(onProgress).toHaveBeenCalledTimes(2);
+    expect(onProgress.mock.calls[0]![0]).toEqual({ removedSoFar: 0, total: 2 });
+    expect(onProgress.mock.calls[1]![0]).toEqual({ removedSoFar: 1, total: 2 });
+    // removedSoFar is non-decreasing and within [0, total] on every emit.
+    const seq = onProgress.mock.calls.map((c) => c[0]!.removedSoFar);
+    for (let i = 1; i < seq.length; i++) {
+      expect(seq[i]!).toBeGreaterThanOrEqual(seq[i - 1]!);
+    }
+    seq.forEach((v) => {
+      expect(v).toBeGreaterThanOrEqual(0);
+      expect(v).toBeLessThanOrEqual(2);
+    });
   });
 
   it('omitted onProgress is tolerated (no throw)', async () => {

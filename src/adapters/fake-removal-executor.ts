@@ -47,20 +47,29 @@ export const FAKE_FAIL_REASON = 'fake-fail';
  *   removed. (Playlist identity is by `uid`.)
  * - `throw` — the whole call rejects with `error` (inject a `RemovalError` or
  *   any value), modelling an unattributable whole-operation fault.
- * - `hang` — the call is recorded in `calls`, then **makes no progress and does
- *   not settle until `signal` aborts**, modelling a host call that hangs on a
- *   batch (no `onProgress`). It is abort-aware: once aborted (the store's stall
- *   watchdog firing, or a user cancel/reset), it **resolves with the accumulated
- *   host partial** (`provenance: 'host'`) — here an all-failed partition, since a
- *   pure hang confirmed nothing — mirroring the real adapter's boundary-abort
- *   contract (FR-003). With a never-aborting signal it never settles.
+ * - `hang` — the call is recorded in `calls`, then **genuinely never settles**:
+ *   it makes no progress (no `onProgress`) and does **not** resolve or reject,
+ *   even when `signal` aborts (FR-010). This models a real host call that hangs
+ *   *inside* a batch — the store's stall watchdog aborts the controller, but the
+ *   abort is only observable at a batch boundary, so an in-flight await like this
+ *   is never interrupted. Used to prove that a never-settling call leaves the row
+ *   in `removing` and is escaped only by a route-reset (it must NOT pretend the
+ *   watchdog terminates it). The only way this promise leaves `pending` is GC.
+ * - `stall-resolve` — the call is recorded, makes no progress, and **resolves
+ *   with its accumulated host partial once `signal` aborts** (`provenance:
+ *   'host'`; here an all-failed partition, since nothing was confirmed). This
+ *   models the **cooperative boundary-abort** contract a real adapter honours:
+ *   on abort at a batch boundary it returns what it has rather than throwing
+ *   (FR-003). The store re-stamps it `'stalled'` on a watchdog trip. With a
+ *   never-aborting signal it never settles.
  */
 export type FakeRemovalScript =
   | { kind: 'ok' }
   | { kind: 'partial'; failUris: ReadonlyArray<string> }
   | { kind: 'partial-uids'; failUids: ReadonlyArray<string> }
   | { kind: 'throw'; error: unknown }
-  | { kind: 'hang' };
+  | { kind: 'hang' }
+  | { kind: 'stall-resolve' };
 
 /**
  * A recorded `remove` invocation, for assertions about single-collection scope
@@ -119,9 +128,10 @@ export class FakeRemovalExecutor implements RemovalExecutor {
    *   `DOMException('AbortError')` before recording or scripting.
    * @param onProgress - If provided, invoked once with a terminal
    *   `{ removedSoFar, total }` after partitioning. Never called under the
-   *   `hang` script.
-   * @returns The aggregate outcome, or — under the `hang` script — a promise
-   *   that never settles.
+   *   `hang` or `stall-resolve` scripts.
+   * @returns The aggregate outcome; under `stall-resolve` a promise that
+   *   resolves an all-failed partial once `signal` aborts; under `hang` a
+   *   promise that **never settles** (not even on abort).
    * @throws `DOMException('AbortError')` if `signal` is pre-aborted.
    * @throws the injected `error` if the active script is `throw`.
    */
@@ -146,19 +156,29 @@ export class FakeRemovalExecutor implements RemovalExecutor {
       return Promise.reject(script.error);
     }
 
-    // Hanging host call: makes no progress and does not settle until the signal
-    // aborts (the store's stall watchdog, or a cancel/reset). On abort it
-    // resolves with the accumulated host partial — a pure hang confirmed
-    // nothing, so every requested track is `failed` (FR-003 / data-model §4).
-    // With a never-aborting signal it never settles. Recorded above (parity with
-    // `throw`) so callers can assert the call reached the executor.
+    // Genuinely never-settling host call: makes no progress and never resolves
+    // or rejects — not even on abort (FR-010). Models a host call that hangs
+    // *inside* a batch; the store's watchdog abort is only observable at a batch
+    // boundary, so an in-flight await like this is never interrupted. Recorded
+    // above (parity with `throw`) so callers can assert the call was reached.
     if (script.kind === 'hang') {
+      // No abort listener: the returned promise stays pending forever.
+      return new Promise<RemovalOutcome>(() => {});
+    }
+
+    // Cooperative boundary-abort: makes no progress, then resolves its
+    // accumulated host partial once the signal aborts (the store's stall
+    // watchdog, or a cancel/reset). A pure stall confirmed nothing, so every
+    // requested track is `failed` (FR-003 / data-model §4). The store re-stamps
+    // `'stalled'` on a watchdog trip. With a never-aborting signal it never
+    // settles. Models the real adapter's boundary-abort-resolve contract.
+    if (script.kind === 'stall-resolve') {
       // The entry guard above already rejected a pre-aborted signal, so the
       // signal is live here; resolve only once it later aborts.
       return new Promise<RemovalOutcome>((resolve) => {
         signal.addEventListener(
           'abort',
-          () => resolve(hangPartial(tracks)),
+          () => resolve(stallPartial(tracks)),
           { once: true },
         );
       });
@@ -179,18 +199,29 @@ export class FakeRemovalExecutor implements RemovalExecutor {
 // ---------------------------------------------------------------------------
 
 /**
- * Build the host partial a hung call resolves with once its signal aborts: a
- * pure hang confirmed nothing, so every requested track is `failed`. Carries
- * `provenance: 'host'` (the store re-stamps `'stalled'` when its watchdog
- * tripped). Total accounting holds: `removed.length + failed.length === total`.
+ * The scripts that reach the synchronous partitioning stage: every kind except
+ * the ones that return early (`throw` rejects; `hang` never settles;
+ * `stall-resolve` resolves only on abort).
+ */
+type SettlingScript = Exclude<
+  FakeRemovalScript,
+  { kind: 'throw' } | { kind: 'hang' } | { kind: 'stall-resolve' }
+>;
+
+/**
+ * Build the host partial a `stall-resolve` call resolves with once its signal
+ * aborts: a pure stall confirmed nothing, so every requested track is `failed`.
+ * Carries `provenance: 'host'` (the store re-stamps `'stalled'` when its
+ * watchdog tripped). Total accounting holds:
+ * `removed.length + failed.length === total`.
  *
  * @param tracks - The requested occurrences.
  * @returns An all-failed host {@link RemovalOutcome}.
  */
-function hangPartial(tracks: ReadonlyArray<TrackRef>): RemovalOutcome {
+function stallPartial(tracks: ReadonlyArray<TrackRef>): RemovalOutcome {
   return {
     removed: [],
-    failed: tracks.map((track) => ({ track, reason: 'removal aborted while hung' })),
+    failed: tracks.map((track) => ({ track, reason: 'removal aborted while stalled' })),
     provenance: 'host',
   };
 }
@@ -201,13 +232,13 @@ function hangPartial(tracks: ReadonlyArray<TrackRef>): RemovalOutcome {
  * track lands in exactly one partition).
  *
  * @param tracks - Requested occurrences.
- * @param script - An `ok`, `partial`, or `partial-uids` script (the `throw`
- *   and `hang` scripts return before reaching here).
+ * @param script - An `ok`, `partial`, or `partial-uids` script (the `throw`,
+ *   `hang`, and `stall-resolve` scripts return before reaching here).
  * @returns The partitioned {@link RemovalOutcome}.
  */
 function partition(
   tracks: ReadonlyArray<TrackRef>,
-  script: Exclude<FakeRemovalScript, { kind: 'throw' } | { kind: 'hang' }>,
+  script: SettlingScript,
 ): RemovalOutcome {
   const removed: TrackRef[] = [];
   const failed: Array<{ track: TrackRef; reason: string }> = [];
@@ -230,14 +261,11 @@ function partition(
  * Decide whether `track` fails under `script`.
  *
  * @param track - A requested occurrence.
- * @param script - An `ok`, `partial`, or `partial-uids` script (the `throw`
- *   and `hang` scripts return before reaching here).
+ * @param script - An `ok`, `partial`, or `partial-uids` script (the `throw`,
+ *   `hang`, and `stall-resolve` scripts return before reaching here).
  * @returns `true` iff the track should be reported as failed.
  */
-function shouldFail(
-  track: TrackRef,
-  script: Exclude<FakeRemovalScript, { kind: 'throw' } | { kind: 'hang' }>,
-): boolean {
+function shouldFail(track: TrackRef, script: SettlingScript): boolean {
   switch (script.kind) {
     case 'partial':
       return script.failUris.includes(track.uri);

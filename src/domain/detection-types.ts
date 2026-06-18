@@ -120,6 +120,34 @@ export type EnrichedTrack = {
   uid?: string;
 };
 
+// ── §1.3 — EnumerationResult ─────────────────────────────────────────────────
+
+/**
+ * The return value of `TracksEnumerator.enumerate`. Carries both the ordered,
+ * post-filter `RawTrack` list AND a genuine local-only skip tally so the
+ * scanner can surface `DetectionResult.skippedLocalCount` directly instead of
+ * inferring it from a progress-derived host total (which conflated skipped
+ * non-track items — e.g. podcast episodes — into the "local files" count; see
+ * NEW-1 / ADR-0021).
+ *
+ * The tally rides the *return value*, not the `ProgressEvent` union: load-bearing
+ * summary data must not depend on the fire-and-forget progress seam (ADR-0008).
+ */
+export type EnumerationResult = {
+  /**
+   * The full ordered list of non-local `RawTrack` objects in host-native
+   * iteration order. `RawTrack.position` is `0..length-1` in that order.
+   */
+  tracks: ReadonlyArray<RawTrack>;
+  /**
+   * Count of **genuine local files** (`spotify:local:…` URIs) skipped during
+   * enumeration. Counts ONLY local files: non-track items (e.g. podcast
+   * episodes) are excluded from `tracks` AND uncounted here — they are
+   * invisible to the summary (FR-002). Always ≥ 0.
+   */
+  skippedLocalCount: number;
+};
+
 // ── §3.1 — DuplicateGroup ────────────────────────────────────────────────────
 
 /**

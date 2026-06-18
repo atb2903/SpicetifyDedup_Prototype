@@ -13,7 +13,12 @@
  * - `integration/detection-end-to-end.test.ts` (WP06) — full row-click-to-summary.
  */
 import type { TracksEnumerator } from '../ports/tracks-enumerator';
-import type { RawTrack, ScanRequest, ProgressEvent } from '../domain/detection-types';
+import type {
+  RawTrack,
+  ScanRequest,
+  ProgressEvent,
+  EnumerationResult,
+} from '../domain/detection-types';
 import { DetectionError } from '../domain/detection-errors';
 
 /**
@@ -25,14 +30,19 @@ export interface FakeTracksEnumeratorOptions {
   /** Page size for simulated pagination. Default 200. */
   pageSize?: number;
   /**
-   * Optional override: host's reported `totalLength` including locals.
-   * Default = `tracks.length` (no locals simulated).
+   * Optional override: host's reported `totalLength` used solely for the
+   * `enumerating` progress event's `total` field. Default = `tracks.length`.
    *
-   * Use this to simulate a collection where some tracks were local files
-   * filtered before becoming `RawTrack`s, so the scanner can derive
-   * `skippedLocalCount = hostTotalLength - tracks.length`.
+   * This drives ONLY the progress signal; it no longer derives the skip tally
+   * (NEW-1 / ADR-0021). To express a local-only skip count, use
+   * {@link FakeTracksEnumeratorOptions.skippedLocalCount}.
    */
   hostTotalLength?: number;
+  /**
+   * Local-only skip tally reported on the {@link EnumerationResult}. Mirrors
+   * the production adapter's genuine `spotify:local:` count. Default 0.
+   */
+  skippedLocalCount?: number;
   /**
    * If `true`, throws `DetectionError('enumerator-failed', 'fake failure')`
    * on the first page. Used for error-path coverage.
@@ -55,12 +65,14 @@ export class FakeTracksEnumerator implements TracksEnumerator {
   private readonly tracks: ReadonlyArray<RawTrack>;
   private readonly pageSize: number;
   private readonly hostTotalLength: number;
+  private readonly skippedLocalCount: number;
   private readonly failOnFirstPage: boolean;
 
   constructor(opts: FakeTracksEnumeratorOptions) {
     this.tracks = opts.tracks;
     this.pageSize = opts.pageSize ?? 200;
     this.hostTotalLength = opts.hostTotalLength ?? opts.tracks.length;
+    this.skippedLocalCount = opts.skippedLocalCount ?? 0;
     this.failOnFirstPage = opts.failOnFirstPage ?? false;
   }
 
@@ -72,7 +84,8 @@ export class FakeTracksEnumerator implements TracksEnumerator {
    *   is returned regardless of the request kind).
    * @param signal - Abort signal; checked at each page boundary.
    * @param onProgress - Progress callback invoked after each page.
-   * @returns Full fixture track array on success.
+   * @returns An `EnumerationResult` mirroring the production return shape:
+   *   `{ tracks, skippedLocalCount }`.
    * @throws DetectionError('enumerator-failed') if `failOnFirstPage` is set.
    * @throws DOMException('AbortError') if `signal` is aborted.
    */
@@ -80,7 +93,7 @@ export class FakeTracksEnumerator implements TracksEnumerator {
     _request: ScanRequest,
     signal: AbortSignal,
     onProgress: (event: ProgressEvent) => void,
-  ): Promise<ReadonlyArray<RawTrack>> {
+  ): Promise<EnumerationResult> {
     // Force-failure path.
     if (this.failOnFirstPage) {
       throw new DetectionError('enumerator-failed', 'fake failure');
@@ -88,7 +101,7 @@ export class FakeTracksEnumerator implements TracksEnumerator {
 
     // Empty fixture: resolve immediately with no progress event.
     if (this.tracks.length === 0) {
-      return [];
+      return { tracks: [], skippedLocalCount: this.skippedLocalCount };
     }
 
     // Page through the fixture.
@@ -112,7 +125,7 @@ export class FakeTracksEnumerator implements TracksEnumerator {
       });
     }
 
-    return this.tracks;
+    return { tracks: this.tracks, skippedLocalCount: this.skippedLocalCount };
   }
 }
 

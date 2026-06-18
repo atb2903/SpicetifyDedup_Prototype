@@ -269,6 +269,13 @@ export class SpicetifyPlaylistsLoader implements PlaylistsLoader {
         }
       ).getTracks({ limit: 1, offset: 0 });
     } catch (cause) {
+      if (looksLikeHostAuthExpired(cause)) {
+        throw new PlaylistsLoaderError(
+          'host-auth-expired',
+          'Spicetify.Platform.LibraryAPI.getTracks() rejected with an auth-expired signal',
+          { cause },
+        );
+      }
       throw new PlaylistsLoaderError(
         'liked-songs-fetch-failed',
         'Spicetify.Platform.LibraryAPI.getTracks() rejected',

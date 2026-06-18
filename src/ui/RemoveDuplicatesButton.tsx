@@ -9,12 +9,24 @@
  * Visibility rule (contract §RemoveDuplicatesButton, AS-1/AS-2):
  *   render iff `row.kind === 'loaded'`
  *           && `row.result.removableTrackCount > 0`
- *           && `row.removal.phase ∈ {'none', 'partial'}`.
+ *           && `row.removal.phase ∈ {'none', 'partial'}`
+ *           && NOT (`phase === 'partial'`
+ *                   && `row.removal.outcome.provenance === 'compute-failed'`).
  *
  * For every other case the component returns `null` (renders nothing):
  * - unscanned / scanning / failed / absent row,
  * - `removableTrackCount === 0` (AS-7 — the button hides once nothing remains),
- * - `phase ∈ {'confirming','confirming2','removing'}`.
+ * - `phase ∈ {'confirming','confirming2','removing'}`,
+ * - the TERMINAL `compute-failed` exception (NEW-4 / FR-007 / SC-004): a
+ *   `compute-failed` outcome (computeRemoveSet threw before any host call) maps
+ *   to `partial`, which would normally re-offer retry — but retrying recomputes
+ *   the SAME RemoveSet and deterministically fails again (a dead-end). The
+ *   button reads the provenance the `partial` substate carries and withholds
+ *   the retry control, so "retry cannot be dispatched". The
+ *   `compute-failed → partial` FSM mapping is left intact (D-2); the dead-end is
+ *   gated here at the UI layer by PROVENANCE, not by forking a new FSM phase.
+ *   Other `partial` provenances (`stalled`/`executor-failed`/`host`) still show
+ *   the retry button, since recompute could legitimately succeed.
  *
  * Design choice — return `null` rather than render-but-disable for the
  * confirming/confirming2/removing phases. The contract's primary rule is
@@ -83,8 +95,17 @@ export function RemoveDuplicatesButton({
   if (row?.kind !== 'loaded') return null;
   const count = row.result.removableTrackCount;
   if (count <= 0) return null;
-  const phase = row.removal.phase;
+  const removal = row.removal;
+  const phase = removal.phase;
   if (phase !== 'none' && phase !== 'partial') return null;
+  // Terminal exception (NEW-4 / FR-007 / SC-004): a `compute-failed` outcome
+  // maps to `partial`, but retrying would recompute the SAME RemoveSet and
+  // deterministically fail again (a dead-end). Read the provenance the
+  // `partial` substate carries and withhold the retry control entirely — the
+  // FSM mapping stays intact (D-2), the dead-end is gated at the UI layer.
+  if (phase === 'partial' && removal.outcome.provenance === 'compute-failed') {
+    return null;
+  }
 
   return (
     <button

@@ -165,7 +165,7 @@ describe('FakeRemovalExecutor — throw script', () => {
 /** Sentinel resolved on the next microtask, raced against the hang promise. */
 const SETTLED = Symbol('settled');
 
-describe('FakeRemovalExecutor — hang script', () => {
+describe('FakeRemovalExecutor — hang script (genuinely never-settling, FR-010)', () => {
   it('records the call with a snapshot copy of tracks before hanging', async () => {
     const exec = new FakeRemovalExecutor({ kind: 'hang' });
     const tracks = [likedTrack(0), likedTrack(1)];
@@ -204,21 +204,65 @@ describe('FakeRemovalExecutor — hang script', () => {
     expect(exec.calls).toHaveLength(0);
   });
 
-  it('resolves with an all-failed host partial once the signal aborts mid-hang (FR-003)', async () => {
+  it('does NOT settle even after the signal aborts mid-flight (FR-010 — abort does not interrupt an in-flight await)', async () => {
     const exec = new FakeRemovalExecutor({ kind: 'hang' });
     const tracks = [likedTrack(0), likedTrack(1)];
     const controller = new AbortController();
     const pending = exec.remove(LIKED, tracks, controller.signal);
-    // It hangs until aborted — recorded, but does not settle yet.
     expect(exec.calls).toHaveLength(1);
-    const stillHanging = await Promise.race([pending, Promise.resolve(SETTLED)]);
-    expect(stillHanging).toBe(SETTLED);
-    // Abort → resolves with the host-truthful partial (nothing confirmed).
+    // Aborting the signal does NOT make the hung call settle — it models a host
+    // call hanging inside a batch, beyond the reach of the boundary abort.
+    controller.abort();
+    const winner = await Promise.race([pending, Promise.resolve(SETTLED)]);
+    expect(winner).toBe(SETTLED);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// stall-resolve script (cooperative boundary-abort)
+// ---------------------------------------------------------------------------
+
+describe('FakeRemovalExecutor — stall-resolve script (cooperative boundary-abort, FR-003)', () => {
+  it('records the call but does not settle until the signal aborts', async () => {
+    const exec = new FakeRemovalExecutor({ kind: 'stall-resolve' });
+    const tracks = [likedTrack(0), likedTrack(1)];
+    const controller = new AbortController();
+    const pending = exec.remove(LIKED, tracks, controller.signal);
+    expect(exec.calls).toHaveLength(1);
+    expect(exec.calls[0]?.target).toEqual(LIKED);
+    const stillPending = await Promise.race([pending, Promise.resolve(SETTLED)]);
+    expect(stillPending).toBe(SETTLED);
+  });
+
+  it('resolves with an all-failed host partial once the signal aborts (FR-003)', async () => {
+    const exec = new FakeRemovalExecutor({ kind: 'stall-resolve' });
+    const tracks = [likedTrack(0), likedTrack(1)];
+    const controller = new AbortController();
+    const pending = exec.remove(LIKED, tracks, controller.signal);
     controller.abort();
     const outcome = await pending;
     expect(outcome.removed).toEqual([]);
     expect(outcome.failed.map((f) => f.track)).toEqual(tracks);
     expect(outcome.provenance).toBe('host');
+    assertInvariant(outcome, tracks, byUri);
+  });
+
+  it('does not invoke onProgress', async () => {
+    const exec = new FakeRemovalExecutor({ kind: 'stall-resolve' });
+    const onProgress = vi.fn();
+    const controller = new AbortController();
+    void exec.remove(LIKED, [likedTrack(0)], controller.signal, onProgress);
+    await Promise.resolve();
+    expect(onProgress).not.toHaveBeenCalled();
+    controller.abort();
+  });
+
+  it('a pre-aborted signal throws AbortError before recording, even under stall-resolve', async () => {
+    const exec = new FakeRemovalExecutor({ kind: 'stall-resolve' });
+    await expect(exec.remove(LIKED, [likedTrack(0)], abortedSignal())).rejects.toSatisfy(
+      (e: unknown) => e instanceof DOMException && e.name === 'AbortError',
+    );
+    expect(exec.calls).toHaveLength(0);
   });
 });
 

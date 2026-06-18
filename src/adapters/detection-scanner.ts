@@ -70,16 +70,17 @@ export function createDetectionScanner(
       }
 
       // ── Step 2: Enumerate tracks ───────────────────────────────────────────
-      // Track the last reported hostTotalLength so we can derive skippedLocalCount.
-      let hostTotalLength: number | null = null;
-      const enumerationProgress = (event: ProgressEvent) => {
-        if (event.stage === 'enumerating' && event.total !== null) {
-          hostTotalLength = event.total;
-        }
-        onProgress(event);
-      };
-
-      const rawTracks = await enumerator.enumerate(request, signal, enumerationProgress);
+      // The enumerator reports a genuine local-only skip tally on its return
+      // value (NEW-1 / ADR-0021). The scanner reads it directly rather than
+      // inferring `hostTotalLength − scannedTrackCount`, which conflated skipped
+      // non-track items (e.g. podcast episodes) into the local count. The
+      // `onProgress` passthrough is unchanged (the `ProgressEvent` union still
+      // carries no tally — D-1).
+      const { tracks: rawTracks, skippedLocalCount } = await enumerator.enumerate(
+        request,
+        signal,
+        onProgress,
+      );
 
       // ── Step 3: Post-enumeration abort check ──────────────────────────────
       if (signal.aborted) {
@@ -133,9 +134,6 @@ export function createDetectionScanner(
       );
 
       const scannedTrackCount = rawTracks.length;
-      const skippedLocalCount = hostTotalLength !== null
-        ? Math.max(0, hostTotalLength - scannedTrackCount)
-        : 0;
 
       // ── Step 9: Derive the collection key ─────────────────────────────────
       const collectionKey =

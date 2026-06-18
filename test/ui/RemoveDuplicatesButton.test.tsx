@@ -24,10 +24,17 @@ import {
   type DetectionStoreState,
 } from '../../src/store/detection-store';
 import { FakeRemovalExecutor } from '../../src/adapters/fake-removal-executor';
+import { createDetectionScanner } from '../../src/adapters/detection-scanner';
+import { InlineCatalogEnricher } from '../../src/adapters/inline-catalog-enricher';
 import type { DetectionScanner } from '../../src/ports/detection-scanner';
+import type { TracksEnumerator } from '../../src/ports/tracks-enumerator';
 import type {
   DetectionResult,
   DuplicateGroup,
+  RawTrack,
+  ScanRequest,
+  ProgressEvent,
+  EnumerationResult,
 } from '../../src/domain/detection-types';
 import type { StoreApi } from 'zustand/vanilla';
 
@@ -95,11 +102,76 @@ async function makeLoadedStore(
   return store;
 }
 
-function renderButton(store: StoreApi<DetectionStoreState>, displayName = 'My Playlist') {
+// ── compute-failed seed (NEW-4 / FR-007) ────────────────────────────────────
+
+/** A playlist URI used as both the scan request target and the collection key. */
+const PLAYLIST_URI = 'spotify:playlist:repro2song';
+const KEPT_UID = '610a666b423c78e4';
+
+/** A `RawTrack` for a playlist occurrence (mirrors the termination integration). */
+function rawPlaylistTrack(uri: string, uid: string | undefined, position: number): RawTrack {
+  return {
+    uri,
+    id: uri.split(':')[2]!,
+    name: 'Repro Song',
+    artists: [{ uri: 'spotify:artist:a0', name: 'Repro Artist' }],
+    album: { uri: 'spotify:album:al0', name: 'Repro Album' },
+    position,
+    durationMs: 210_000,
+    ...(uid === undefined ? {} : { uid }),
+  };
+}
+
+/** A `TracksEnumerator` double returning a fixed `RawTrack[]` (no local skips). */
+function fakeEnumerator(tracks: ReadonlyArray<RawTrack>): TracksEnumerator {
+  return {
+    async enumerate(
+      _request: ScanRequest,
+      signal: AbortSignal,
+      onProgress: (event: ProgressEvent) => void,
+    ): Promise<EnumerationResult> {
+      if (signal.aborted) throw new DOMException('aborted', 'AbortError');
+      onProgress({ stage: 'enumerating', processed: tracks.length, total: tracks.length });
+      return { tracks, skippedLocalCount: 0 };
+    },
+  };
+}
+
+/**
+ * Drive a REAL store to phase `partial` with `outcome.provenance === 'compute-failed'`
+ * (NEW-4): a playlist whose duplicate member lacks a `uid` makes `computeRemoveSet`
+ * throw before any host call, so the FSM lands `compute-failed → partial`.
+ */
+async function makeComputeFailedPartialStore(): Promise<StoreApi<DetectionStoreState>> {
+  const dupNoUid = rawPlaylistTrack('spotify:track:dup', undefined, 1);
+  const tracks = [rawPlaylistTrack('spotify:track:dup', KEPT_UID, 0), dupNoUid];
+  const scanner = createDetectionScanner(
+    fakeEnumerator(tracks),
+    new InlineCatalogEnricher(),
+  );
+  const store = createDetectionStore(scanner, new FakeRemovalExecutor({ kind: 'ok' }));
+  await act(async () => {
+    await store.getState().scanCollection(PLAYLIST_URI, {
+      kind: 'playlist',
+      playlistUri: PLAYLIST_URI,
+    });
+  });
+  await act(async () => {
+    store.getState().requestRemoval(PLAYLIST_URI);
+    await store.getState().confirmRemoval(PLAYLIST_URI);
+  });
+  return store;
+}
+
+function renderButton(
+  store: StoreApi<DetectionStoreState>,
+  displayName = 'My Playlist',
+  collectionKey = KEY,
+) {
   return render(
     <DetectionStoreProvider store={store}>
       <RemoveDuplicatesButton
-        collectionKey={KEY}
+        collectionKey={collectionKey}
         target={TARGET}
         displayName={displayName}
       />
@@ -216,6 +288,48 @@ describe('RemoveDuplicatesButton — visibility gating', () => {
     expect(row?.kind === 'loaded' && row.removal.phase).toBe('removing');
     const { container } = renderButton(store);
     expect(container.firstChild).toBeNull();
+  });
+});
+
+describe('RemoveDuplicatesButton — compute-failed is terminal (NEW-4 / FR-007 / SC-004)', () => {
+  it('renders nothing for a partial row whose outcome provenance is compute-failed', async () => {
+    const store = await makeComputeFailedPartialStore();
+    const row = store.getState().rows[PLAYLIST_URI];
+    // Guard the fixture: a real compute-failed partial with removable tracks.
+    if (row?.kind !== 'loaded' || row.removal.phase !== 'partial') {
+      throw new Error('expected loaded + partial fixture');
+    }
+    expect(row.removal.outcome.provenance).toBe('compute-failed');
+    expect(row.result.removableTrackCount).toBeGreaterThan(0);
+
+    const { container } = renderButton(store, 'My Playlist', PLAYLIST_URI);
+    // Terminal: no retry control may be dispatched.
+    expect(container.firstChild).toBeNull();
+  });
+
+  it('STILL renders the retry button for a partial row with a non-compute-failed provenance (host)', async () => {
+    // FakeRemovalExecutor scripted to fail one track → partial / provenance host.
+    const store = createDetectionStore(
+      makeScanner(makeResult(2)),
+      new FakeRemovalExecutor({ kind: 'partial', failUris: ['spotify:track:b0'] }),
+    );
+    await act(async () => {
+      await store.getState().scanCollection(KEY, REQUEST);
+    });
+    await act(async () => {
+      store.getState().requestRemoval(KEY);
+      await store.getState().confirmRemoval(KEY);
+    });
+    const row = store.getState().rows[KEY];
+    if (row?.kind !== 'loaded' || row.removal.phase !== 'partial') {
+      throw new Error('expected loaded + partial fixture');
+    }
+    expect(row.removal.outcome.provenance).not.toBe('compute-failed');
+
+    renderButton(store);
+    expect(
+      screen.getByRole('button', { name: /Remove duplicates from My Playlist/ }),
+    ).toBeInTheDocument();
   });
 });
 

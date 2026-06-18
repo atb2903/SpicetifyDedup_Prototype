@@ -24,7 +24,12 @@
  * with the host-item boundary without re-entering the adapter.
  */
 import type { TracksEnumerator } from '../ports/tracks-enumerator';
-import type { RawTrack, ScanRequest, ProgressEvent } from '../domain/detection-types';
+import type {
+  RawTrack,
+  ScanRequest,
+  ProgressEvent,
+  EnumerationResult,
+} from '../domain/detection-types';
 import { DetectionError } from '../domain/detection-errors';
 import { looksLikeHostAuthExpired } from '../domain/host-auth';
 
@@ -285,7 +290,9 @@ export class SpicetifyTracksEnumerator implements TracksEnumerator {
    * @param request - Discriminated payload identifying Liked Songs or a playlist URI.
    * @param signal - Fires `'abort'` to cancel pagination.
    * @param onProgress - Invoked once per page with `{ stage: 'enumerating', processed, total }`.
-   * @returns Promise resolving with the full ordered list of `RawTrack`.
+   * @returns Promise resolving with an `EnumerationResult`: the ordered
+   *   `RawTrack` list plus the genuine local-only `skippedLocalCount` (counts
+   *   only `spotify:local:` items; non-track items stay uncounted — NEW-1).
    * @throws DetectionError('enumerator-failed') on bad request, shape drift, or network failure.
    * @throws DetectionError('auth-token-expired') on a host auth-expired signal.
    * @throws DOMException('AbortError') when `signal` aborts.
@@ -294,7 +301,7 @@ export class SpicetifyTracksEnumerator implements TracksEnumerator {
     request: ScanRequest,
     signal: AbortSignal,
     onProgress: (event: ProgressEvent) => void,
-  ): Promise<ReadonlyArray<RawTrack>> {
+  ): Promise<EnumerationResult> {
     // Pre-check
     this.validateRequest(request);
 
@@ -310,6 +317,7 @@ export class SpicetifyTracksEnumerator implements TracksEnumerator {
     let offset = 0;
     let total: number | null = null;
     let position = 0; // post-local-filter monotonic counter
+    let skippedLocalCount = 0; // genuine local-only tally (NEW-1); episodes never counted
 
     // eslint-disable-next-line no-constant-condition
     while (true) {
@@ -335,7 +343,14 @@ export class SpicetifyTracksEnumerator implements TracksEnumerator {
       // track and hide the fail-loud branch.
       const pageItems: RawTrack[] = [];
       for (const item of page.items) {
-        if (this.isLocalFile(item) || !this.isTrackKind(item)) {
+        // Count ONLY genuine local files toward the skip tally (NEW-1). A local
+        // file is skipped AND counted; a non-track item (episode) is skipped but
+        // left uncounted/invisible — it must never inflate the local count.
+        if (this.isLocalFile(item)) {
+          skippedLocalCount++;
+          continue;
+        }
+        if (!this.isTrackKind(item)) {
           continue;
         }
         const parsed = this.parseItem(item, position);
@@ -360,7 +375,7 @@ export class SpicetifyTracksEnumerator implements TracksEnumerator {
       offset += page.items.length;
     }
 
-    return tracks;
+    return { tracks, skippedLocalCount };
   }
 
   // ---------------------------------------------------------------------------

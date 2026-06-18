@@ -1166,12 +1166,13 @@ describe('createDetectionStore — WP03 T007: hang regressions (must terminate)'
     expect(row.result.removableTrackCount).toBe(1);
   });
 
-  // T007b — the ceiling repro: a never-settling executor. Advancing the
-  // injected scheduler past STALL_CEILING_MS must drive the row out of
-  // `removing` into `partial`.
-  it('T007b — never-settling executor terminates to partial past the ceiling', async () => {
+  // T007b — the ceiling repro: a no-progress executor that cooperatively
+  // resolves its partial at the boundary abort (`stall-resolve`). Advancing the
+  // injected scheduler past STALL_CEILING_MS trips the watchdog → abort → the
+  // executor resolves → the row leaves `removing` for `partial`.
+  it('T007b — no-progress executor terminates to partial past the ceiling (boundary abort)', async () => {
     const key = 'liked-songs';
-    const exec = new FakeRemovalExecutor({ kind: 'hang' });
+    const exec = new FakeRemovalExecutor({ kind: 'stall-resolve' });
     const scheduler = makeFakeScheduler();
     const ctrl = makeControllableScanner();
     const store = createDetectionStore(ctrl.scanner, exec, scheduler);
@@ -1243,7 +1244,7 @@ describe('createDetectionStore — WP03 T010: ceiling boundary (NFR-002)', () =>
   // → stalled → all-failed partial.
   it('at (= STALL_CEILING_MS) — deadline wins → stalled → partial', async () => {
     const key = 'liked-songs';
-    const exec = new FakeRemovalExecutor({ kind: 'hang' });
+    const exec = new FakeRemovalExecutor({ kind: 'stall-resolve' });
     const scheduler = makeFakeScheduler();
     const ctrl = makeControllableScanner();
     const store = createDetectionStore(ctrl.scanner, exec, scheduler);
@@ -1266,7 +1267,7 @@ describe('createDetectionStore — WP03 T010: ceiling boundary (NFR-002)', () =>
   // partial; removableTrackCount unchanged (nothing removed — truthful counts).
   it('over — past the ceiling → stalled → partial; counts unchanged; provenance stalled', async () => {
     const key = 'liked-songs';
-    const exec = new FakeRemovalExecutor({ kind: 'hang' });
+    const exec = new FakeRemovalExecutor({ kind: 'stall-resolve' });
     const scheduler = makeFakeScheduler();
     const ctrl = makeControllableScanner();
     const store = createDetectionStore(ctrl.scanner, exec, scheduler);
@@ -1358,7 +1359,7 @@ describe('createDetectionStore — WP01 T006: per-batch stall window boundary (F
   // Exactly 30 000 ms of no progress → at the window → the watchdog trips.
   it('at (= 30 000 ms no-progress) — trips → stalled partial', async () => {
     const key = 'liked-songs';
-    const exec = new FakeRemovalExecutor({ kind: 'hang' });
+    const exec = new FakeRemovalExecutor({ kind: 'stall-resolve' });
     const scheduler = makeFakeScheduler();
     const ctrl = makeControllableScanner();
     const store = createDetectionStore(ctrl.scanner, exec, scheduler);
@@ -1381,7 +1382,7 @@ describe('createDetectionStore — WP01 T006: per-batch stall window boundary (F
   // 30 001 ms of no progress → over the window → trips.
   it('over (30 001 ms no-progress) — trips → stalled partial', async () => {
     const key = 'liked-songs';
-    const exec = new FakeRemovalExecutor({ kind: 'hang' });
+    const exec = new FakeRemovalExecutor({ kind: 'stall-resolve' });
     const scheduler = makeFakeScheduler();
     const ctrl = makeControllableScanner();
     const store = createDetectionStore(ctrl.scanner, exec, scheduler);
@@ -1447,7 +1448,7 @@ describe('createDetectionStore — WP03 T011: stall ≠ cancel, no double-fire, 
   // Stall → partial (terminal).
   it('stall produces a terminal partial', async () => {
     const key = 'liked-songs';
-    const exec = new FakeRemovalExecutor({ kind: 'hang' });
+    const exec = new FakeRemovalExecutor({ kind: 'stall-resolve' });
     const scheduler = makeFakeScheduler();
     const ctrl = makeControllableScanner();
     const store = createDetectionStore(ctrl.scanner, exec, scheduler);
@@ -1524,7 +1525,7 @@ describe('createDetectionStore — WP03 T011: stall ≠ cancel, no double-fire, 
   // rejected by the in-flight lock — even across the stall path.
   it('no double-fire across the stall path — exactly one executor call', async () => {
     const key = 'liked-songs';
-    const exec = new FakeRemovalExecutor({ kind: 'hang' });
+    const exec = new FakeRemovalExecutor({ kind: 'stall-resolve' });
     const scheduler = makeFakeScheduler();
     const ctrl = makeControllableScanner();
     const store = createDetectionStore(ctrl.scanner, exec, scheduler);
@@ -1548,12 +1549,13 @@ describe('createDetectionStore — WP03 T011: stall ≠ cancel, no double-fire, 
     expect(exec.calls.length).toBe(1);
   });
 
-  // Stall is terminal & idempotent: after the watchdog trips and the (abort-aware
-  // hang) executor resolves its accumulated partial → `partial`. A redundant
-  // post-settlement watchdog re-arm or scheduler advance changes nothing.
+  // Stall is terminal & idempotent: after the watchdog trips and the cooperative
+  // (`stall-resolve`) executor resolves its accumulated partial at the boundary
+  // abort → `partial`. A redundant post-settlement watchdog re-arm or scheduler
+  // advance changes nothing.
   it('stall settles once to a terminal partial; a later advance is a no-op', async () => {
     const key = 'liked-songs';
-    const exec = new FakeRemovalExecutor({ kind: 'hang' });
+    const exec = new FakeRemovalExecutor({ kind: 'stall-resolve' });
     const scheduler = makeFakeScheduler();
     const ctrl = makeControllableScanner();
     const store = createDetectionStore(ctrl.scanner, exec, scheduler);
@@ -1658,11 +1660,12 @@ describe('createDetectionStore — WP03 T011: stall ≠ cancel, no double-fire, 
     expect(removalPhase(store, key)).toBe('none');
   });
 
-  // A pure hang (no progress) tripping the watchdog resolves to a stalled
-  // partial whose `removed` is truthfully empty — nothing was confirmed.
-  it('a pure-hang stall reports a truthful empty-removed stalled partial', async () => {
+  // A no-progress stall tripping the watchdog: the cooperative executor resolves
+  // its accumulated partial at the boundary abort → a stalled partial whose
+  // `removed` is truthfully empty (nothing was confirmed).
+  it('a no-progress stall reports a truthful empty-removed stalled partial', async () => {
     const key = 'liked-songs';
-    const exec = new FakeRemovalExecutor({ kind: 'hang' });
+    const exec = new FakeRemovalExecutor({ kind: 'stall-resolve' });
     const scheduler = makeFakeScheduler();
     const ctrl = makeControllableScanner();
     const store = createDetectionStore(ctrl.scanner, exec, scheduler);
@@ -1711,7 +1714,7 @@ describe('createDetectionStore — WP03 T011: stall ≠ cancel, no double-fire, 
   // >25 bulk: the second confirm is still required before the ceiling arms.
   it('confirmations intact — >25 requires the second confirm before the ceiling arms', async () => {
     const key = 'liked-songs';
-    const exec = new FakeRemovalExecutor({ kind: 'hang' });
+    const exec = new FakeRemovalExecutor({ kind: 'stall-resolve' });
     const scheduler = makeFakeScheduler();
     const ctrl = makeControllableScanner();
     const store = createDetectionStore(ctrl.scanner, exec, scheduler);
@@ -1734,5 +1737,106 @@ describe('createDetectionStore — WP03 T011: stall ≠ cancel, no double-fire, 
     await p;
     await flush();
     expect(removalPhase(store, key)).toBe('partial');
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// WP05 T008 — AbortError-while-stalled defensive terminal dispatch (FR-008)
+// A defensive executor that *rejects* with AbortError after the watchdog trips
+// must still terminate the row (→ stalled partial), never leaving it stuck on
+// `removing`. A genuine user-cancel AbortError (watchdog NOT tripped) is still
+// swallowed.
+// ═══════════════════════════════════════════════════════════════════════════
+
+/**
+ * A `RemovalExecutor` that never makes progress and, once its `signal` aborts,
+ * **rejects** with `AbortError` (rather than resolving a partial). Models a
+ * defensive host adapter whose in-flight call throws `AbortError` when the
+ * controller is aborted at a batch boundary. Records each call.
+ */
+function makeAbortRejectingExecutor(): RemovalExecutor & { calls: number } {
+  const state = { calls: 0 };
+  return {
+    get calls() {
+      return state.calls;
+    },
+    remove(
+      _target: RemovalTarget,
+      _tracks: ReadonlyArray<TrackRef>,
+      signal: AbortSignal,
+    ): Promise<RemovalOutcome> {
+      state.calls += 1;
+      return new Promise<RemovalOutcome>((_resolve, reject) => {
+        signal.addEventListener(
+          'abort',
+          () => reject(new DOMException('aborted', 'AbortError')),
+          { once: true },
+        );
+      });
+    },
+  };
+}
+
+describe('createDetectionStore — WP05 T008: AbortError-while-stalled dispatches a terminal outcome', () => {
+  it('a stalled executor that rejects AbortError still terminates → stalled partial (no stuck row)', async () => {
+    const key = 'liked-songs';
+    const exec = makeAbortRejectingExecutor();
+    const scheduler = makeFakeScheduler();
+    const ctrl = makeControllableScanner();
+    const store = createDetectionStore(ctrl.scanner, exec, scheduler);
+    const sp = store.getState().scanCollection(key, { kind: 'liked-songs' });
+    ctrl.resolveNext(makeRemovableResult(key, 2, false));
+    await sp;
+
+    store.getState().requestRemoval(key);
+    const p = store.getState().confirmRemoval(key);
+    expect(removalPhase(store, key)).toBe('removing');
+    expect(exec.calls).toBe(1);
+
+    // Window elapses → watchdog trips (stalled = true) → controller.abort() →
+    // the executor rejects AbortError. The catch must dispatch a terminal
+    // stalled outcome, not swallow it.
+    scheduler.advance(STALL_CEILING_MS);
+    await p;
+    await flush();
+
+    const row = store.getState().rows[key];
+    if (row?.kind !== 'loaded' || row.removal.phase !== 'partial')
+      throw new Error('expected partial');
+    // No host partial on rejection → removed empty, every requested track failed.
+    expect(row.removal.outcome.removed).toEqual([]);
+    expect(row.removal.outcome.failed.length).toBe(2);
+    expect(row.removal.outcome.provenance).toBe('stalled');
+    // Counts unchanged — nothing was actually removed (truthful).
+    expect(row.result.removableTrackCount).toBe(2);
+    // The watchdog timer was disarmed — no leftover pending timer.
+    expect(scheduler.pending).toBe(0);
+  });
+
+  it('a non-stalled user-cancel AbortError is still swallowed (row already moved)', async () => {
+    const key = 'liked-songs';
+    const exec = makeAbortRejectingExecutor();
+    const scheduler = makeFakeScheduler();
+    const ctrl = makeControllableScanner();
+    const store = createDetectionStore(ctrl.scanner, exec, scheduler);
+    const sp = store.getState().scanCollection(key, { kind: 'liked-songs' });
+    ctrl.resolveNext(makeRemovableResult(key, 2, false));
+    await sp;
+
+    store.getState().requestRemoval(key);
+    const p = store.getState().confirmRemoval(key);
+    expect(removalPhase(store, key)).toBe('removing');
+
+    // reset() aborts the controller WITHOUT the watchdog tripping (stalled stays
+    // false). The executor rejects AbortError → swallowed. The row was cleared
+    // by reset(); no terminal `removeComplete` is dispatched for it.
+    store.getState().reset();
+    await p;
+    await flush();
+
+    expect(store.getState().rows).toEqual({});
+    expect(store.getState().rows[key]).toBeUndefined();
+    // No leftover timer (disarmed in finally).
+    expect(scheduler.pending).toBe(0);
   });
 });

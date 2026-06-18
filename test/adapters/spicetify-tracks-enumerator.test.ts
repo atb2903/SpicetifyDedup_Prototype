@@ -111,7 +111,7 @@ describe('SpicetifyTracksEnumerator — pagination', () => {
       getTracks: async () => makePage(0, 0),
     });
     const enumerator = new SpicetifyTracksEnumerator(platform);
-    const result = await enumerator.enumerate(likedRequest(), neverAborted(), vi.fn());
+    const { tracks: result } = await enumerator.enumerate(likedRequest(), neverAborted(), vi.fn());
     expect(result).toHaveLength(0);
     expect(platform.LibraryAPI.getTracks).toHaveBeenCalledTimes(1);
   });
@@ -121,7 +121,7 @@ describe('SpicetifyTracksEnumerator — pagination', () => {
       getTracks: async () => makePage(1, 1),
     });
     const enumerator = new SpicetifyTracksEnumerator(platform);
-    const result = await enumerator.enumerate(likedRequest(), neverAborted(), vi.fn());
+    const { tracks: result } = await enumerator.enumerate(likedRequest(), neverAborted(), vi.fn());
     expect(result).toHaveLength(1);
     expect(result[0]?.position).toBe(0);
   });
@@ -131,7 +131,7 @@ describe('SpicetifyTracksEnumerator — pagination', () => {
       getTracks: async () => makePage(199, 199),
     });
     const enumerator = new SpicetifyTracksEnumerator(platform);
-    const result = await enumerator.enumerate(likedRequest(), neverAborted(), vi.fn());
+    const { tracks: result } = await enumerator.enumerate(likedRequest(), neverAborted(), vi.fn());
     expect(result).toHaveLength(199);
     expect(platform.LibraryAPI.getTracks).toHaveBeenCalledTimes(1);
   });
@@ -141,7 +141,7 @@ describe('SpicetifyTracksEnumerator — pagination', () => {
       getTracks: async () => makePage(200, 200),
     });
     const enumerator = new SpicetifyTracksEnumerator(platform);
-    const result = await enumerator.enumerate(likedRequest(), neverAborted(), vi.fn());
+    const { tracks: result } = await enumerator.enumerate(likedRequest(), neverAborted(), vi.fn());
     expect(result).toHaveLength(200);
     // Terminator: offset + items.length (0 + 200) >= totalLength (200) → break
     expect(platform.LibraryAPI.getTracks).toHaveBeenCalledTimes(1);
@@ -157,7 +157,7 @@ describe('SpicetifyTracksEnumerator — pagination', () => {
       },
     });
     const enumerator = new SpicetifyTracksEnumerator(platform);
-    const result = await enumerator.enumerate(likedRequest(), neverAborted(), vi.fn());
+    const { tracks: result } = await enumerator.enumerate(likedRequest(), neverAborted(), vi.fn());
     expect(result).toHaveLength(201);
     expect(call).toBe(2);
   });
@@ -171,7 +171,7 @@ describe('SpicetifyTracksEnumerator — pagination', () => {
       },
     });
     const enumerator = new SpicetifyTracksEnumerator(platform);
-    const result = await enumerator.enumerate(likedRequest(), neverAborted(), vi.fn());
+    const { tracks: result } = await enumerator.enumerate(likedRequest(), neverAborted(), vi.fn());
     expect(result).toHaveLength(401);
     expect(platform.LibraryAPI.getTracks).toHaveBeenCalledTimes(3);
   });
@@ -184,7 +184,7 @@ describe('SpicetifyTracksEnumerator — pagination', () => {
       },
     });
     const enumerator = new SpicetifyTracksEnumerator(platform);
-    const result = await enumerator.enumerate(likedRequest(), neverAborted(), vi.fn());
+    const { tracks: result } = await enumerator.enumerate(likedRequest(), neverAborted(), vi.fn());
     result.forEach((t, i) => expect(t.position).toBe(i));
   });
 });
@@ -204,7 +204,7 @@ describe('SpicetifyTracksEnumerator — local-file filtering', () => {
       }),
     });
     const enumerator = new SpicetifyTracksEnumerator(platform);
-    const result = await enumerator.enumerate(likedRequest(), neverAborted(), vi.fn());
+    const { tracks: result } = await enumerator.enumerate(likedRequest(), neverAborted(), vi.fn());
     expect(result).toHaveLength(0);
   });
 
@@ -218,7 +218,7 @@ describe('SpicetifyTracksEnumerator — local-file filtering', () => {
       }),
     });
     const enumerator = new SpicetifyTracksEnumerator(platform);
-    const result = await enumerator.enumerate(likedRequest(), neverAborted(), vi.fn());
+    const { tracks: result } = await enumerator.enumerate(likedRequest(), neverAborted(), vi.fn());
     expect(result).toHaveLength(2);
     // Positions reset to 0, 1 (post-filter)
     expect(result[0]?.position).toBe(0);
@@ -235,7 +235,7 @@ describe('SpicetifyTracksEnumerator — local-file filtering', () => {
       }),
     });
     const enumerator = new SpicetifyTracksEnumerator(platform);
-    const result = await enumerator.enumerate(likedRequest(), neverAborted(), vi.fn());
+    const { tracks: result } = await enumerator.enumerate(likedRequest(), neverAborted(), vi.fn());
     expect(result[0]?.uri).toBe('spotify:track:TRACK0005');
   });
 });
@@ -535,7 +535,7 @@ describe('SpicetifyTracksEnumerator — playlist path', () => {
       }),
     });
     const enumerator = new SpicetifyTracksEnumerator(platform);
-    const result = await enumerator.enumerate(likedRequest(), neverAborted(), vi.fn());
+    const { tracks: result } = await enumerator.enumerate(likedRequest(), neverAborted(), vi.fn());
     expect(result[0]?.id).toBe('TRACK0007');
   });
 });
@@ -553,7 +553,7 @@ describe('SpicetifyTracksEnumerator — globalThis fallback', () => {
     try {
       (globalThis as Record<string, unknown>)['Spicetify'] = { Platform: platform };
       const enumerator = new SpicetifyTracksEnumerator(); // no arg — triggers fallback branch
-      const result = await enumerator.enumerate(likedRequest(), neverAborted(), vi.fn());
+      const { tracks: result } = await enumerator.enumerate(likedRequest(), neverAborted(), vi.fn());
       expect(result).toHaveLength(1);
       expect(result[0]?.position).toBe(0);
       expect(platform.LibraryAPI.getTracks).toHaveBeenCalledTimes(1);
@@ -729,7 +729,8 @@ describe('SpicetifyTracksEnumerator — RawTrack shape', () => {
       }),
     });
     const enumerator = new SpicetifyTracksEnumerator(platform);
-    const result: ReadonlyArray<RawTrack> = await enumerator.enumerate(likedRequest(), neverAborted(), vi.fn());
+    const enumeration = await enumerator.enumerate(likedRequest(), neverAborted(), vi.fn());
+    const result: ReadonlyArray<RawTrack> = enumeration.tracks;
     const track = result[0]!;
     expect(track.uri).toBe('spotify:track:TRACK0042');
     expect(track.id).toBe('TRACK0042');
@@ -843,7 +844,7 @@ describe('SpicetifyTracksEnumerator — uid flows through a playlist page', () =
       }),
     });
     const enumerator = new SpicetifyTracksEnumerator(platform);
-    const result = await enumerator.enumerate(playlistRequest(), neverAborted(), vi.fn());
+    const { tracks: result } = await enumerator.enumerate(playlistRequest(), neverAborted(), vi.fn());
     expect(result.map((t) => t.uid)).toEqual(['uid-aaa', 'uid-bbb']);
   });
 
@@ -852,7 +853,7 @@ describe('SpicetifyTracksEnumerator — uid flows through a playlist page', () =
       getTracks: async () => makePage(2, 2),
     });
     const enumerator = new SpicetifyTracksEnumerator(platform);
-    const result = await enumerator.enumerate(likedRequest(), neverAborted(), vi.fn());
+    const { tracks: result } = await enumerator.enumerate(likedRequest(), neverAborted(), vi.fn());
     expect(result.every((t) => t.uid === undefined)).toBe(true);
   });
 });
@@ -1033,7 +1034,7 @@ describe('SpicetifyTracksEnumerator — isLocalFile branch', () => {
       }),
     });
     const enumerator = new SpicetifyTracksEnumerator(platform);
-    const result = await enumerator.enumerate(likedRequest(), neverAborted(), vi.fn());
+    const { tracks: result } = await enumerator.enumerate(likedRequest(), neverAborted(), vi.fn());
     expect(result).toHaveLength(0);
   });
 });
@@ -1053,7 +1054,7 @@ describe('SpicetifyTracksEnumerator — non-track classifier gate', () => {
       }),
     });
     const enumerator = new SpicetifyTracksEnumerator(platform);
-    const result = await enumerator.enumerate(likedRequest(), neverAborted(), vi.fn());
+    const { tracks: result } = await enumerator.enumerate(likedRequest(), neverAborted(), vi.fn());
     expect(result.map((t) => t.uri)).toEqual(['spotify:track:TRACK0001']);
   });
 
@@ -1070,7 +1071,7 @@ describe('SpicetifyTracksEnumerator — non-track classifier gate', () => {
       }),
     });
     const enumerator = new SpicetifyTracksEnumerator(platform);
-    const result = await enumerator.enumerate(likedRequest(), neverAborted(), vi.fn());
+    const { tracks: result } = await enumerator.enumerate(likedRequest(), neverAborted(), vi.fn());
     // The episode is excluded, never deduped as a track; only the genuine track remains.
     expect(result.map((t) => t.uri)).toEqual(['spotify:track:TRACK0001']);
   });
@@ -1085,7 +1086,7 @@ describe('SpicetifyTracksEnumerator — non-track classifier gate', () => {
       }),
     });
     const enumerator = new SpicetifyTracksEnumerator(platform);
-    const result = await enumerator.enumerate(likedRequest(), neverAborted(), vi.fn());
+    const { tracks: result } = await enumerator.enumerate(likedRequest(), neverAborted(), vi.fn());
     expect(result).toHaveLength(0);
   });
 
@@ -1099,7 +1100,7 @@ describe('SpicetifyTracksEnumerator — non-track classifier gate', () => {
       }),
     });
     const enumerator = new SpicetifyTracksEnumerator(platform);
-    const result = await enumerator.enumerate(likedRequest(), neverAborted(), vi.fn());
+    const { tracks: result } = await enumerator.enumerate(likedRequest(), neverAborted(), vi.fn());
     expect(result.map((t) => t.uri)).toEqual([
       'spotify:track:TRACK0001',
       'spotify:track:TRACK0002',
@@ -1212,5 +1213,148 @@ describe('SpicetifyTracksEnumerator — host availability (requirePlatform)', ()
     ).rejects.toSatisfy(
       (e: unknown) => isDetectionError(e) && (e as DetectionError).reason === 'host-unavailable',
     );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// SpicetifyTracksEnumerator — EnumerationResult.skippedLocalCount (NEW-1, FR-001/002)
+//
+// The genuine local-only tally counts ONLY `spotify:local:` items. Non-track
+// items (episodes) are excluded from `tracks` AND uncounted/invisible — they
+// must never inflate `skippedLocalCount`. Boundary coverage (NFR-005):
+// 0 local / 0 episode; exactly 1 local; exactly 1 episode; all-local page;
+// all-episode page.
+// ---------------------------------------------------------------------------
+
+describe('SpicetifyTracksEnumerator — skippedLocalCount tally (NEW-1)', () => {
+  it('returns the tracks array on the .tracks property of the result', async () => {
+    const platform = makePlatform({ getTracks: async () => makePage(2, 2) });
+    const enumerator = new SpicetifyTracksEnumerator(platform);
+    const result = await enumerator.enumerate(likedRequest(), neverAborted(), vi.fn());
+    expect(Array.isArray(result.tracks)).toBe(true);
+    expect(result.tracks).toHaveLength(2);
+    expect(typeof result.skippedLocalCount).toBe('number');
+  });
+
+  it('skippedLocalCount=0 when no local files and no episodes (boundary: 0/0)', async () => {
+    const platform = makePlatform({ getTracks: async () => makePage(3, 3) });
+    const enumerator = new SpicetifyTracksEnumerator(platform);
+    const result = await enumerator.enumerate(likedRequest(), neverAborted(), vi.fn());
+    expect(result.skippedLocalCount).toBe(0);
+    expect(result.tracks).toHaveLength(3);
+  });
+
+  it('skippedLocalCount=1 for exactly one local file (boundary: 1 local)', async () => {
+    const platform = makePlatform({
+      getTracks: async () => ({
+        items: [makeLocalItem(0), makeItem(1), makeItem(2)],
+        totalLength: 3,
+        offset: 0,
+        limit: 200,
+      }),
+    });
+    const enumerator = new SpicetifyTracksEnumerator(platform);
+    const result = await enumerator.enumerate(likedRequest(), neverAborted(), vi.fn());
+    expect(result.skippedLocalCount).toBe(1);
+    expect(result.tracks).toHaveLength(2);
+  });
+
+  it('skippedLocalCount=0 for exactly one episode — episodes are uncounted (boundary: 1 episode)', async () => {
+    const platform = makePlatform({
+      getTracks: async () => ({
+        items: [makeEpisodeItem(0), makeItem(1), makeItem(2)],
+        totalLength: 3,
+        offset: 0,
+        limit: 200,
+      }),
+    });
+    const enumerator = new SpicetifyTracksEnumerator(platform);
+    const result = await enumerator.enumerate(likedRequest(), neverAborted(), vi.fn());
+    // The episode is skipped but NOT counted as a local file (NEW-1 core fix).
+    expect(result.skippedLocalCount).toBe(0);
+    expect(result.tracks).toHaveLength(2);
+  });
+
+  it('counts only locals in a mixed local+episode+track page (NEW-1: episodes never inflate the tally)', async () => {
+    const platform = makePlatform({
+      getTracks: async () => ({
+        items: [
+          makeLocalItem(0),
+          makeEpisodeItem(1),
+          makeItem(2),
+          makeEpisodeItem(3),
+          makeLocalItem(4),
+          makeItem(5),
+        ],
+        totalLength: 6,
+        offset: 0,
+        limit: 200,
+      }),
+    });
+    const enumerator = new SpicetifyTracksEnumerator(platform);
+    const result = await enumerator.enumerate(likedRequest(), neverAborted(), vi.fn());
+    // 2 locals counted; 2 episodes excluded & uncounted; 2 genuine tracks kept.
+    expect(result.skippedLocalCount).toBe(2);
+    expect(result.tracks.map((t) => t.uri)).toEqual([
+      'spotify:track:TRACK0002',
+      'spotify:track:TRACK0005',
+    ]);
+  });
+
+  it('all-local page → skippedLocalCount equals the local count, tracks empty (boundary: all-local)', async () => {
+    const platform = makePlatform({
+      getTracks: async () => ({
+        items: [makeLocalItem(0), makeLocalItem(1), makeLocalItem(2)],
+        totalLength: 3,
+        offset: 0,
+        limit: 200,
+      }),
+    });
+    const enumerator = new SpicetifyTracksEnumerator(platform);
+    const result = await enumerator.enumerate(likedRequest(), neverAborted(), vi.fn());
+    expect(result.skippedLocalCount).toBe(3);
+    expect(result.tracks).toHaveLength(0);
+  });
+
+  it('all-episode page → skippedLocalCount=0, tracks empty (boundary: all-episode)', async () => {
+    const platform = makePlatform({
+      getTracks: async () => ({
+        items: [makeEpisodeItem(0), makeEpisodeItem(1), makeEpisodeItem(2)],
+        totalLength: 3,
+        offset: 0,
+        limit: 200,
+      }),
+    });
+    const enumerator = new SpicetifyTracksEnumerator(platform);
+    const result = await enumerator.enumerate(likedRequest(), neverAborted(), vi.fn());
+    expect(result.skippedLocalCount).toBe(0);
+    expect(result.tracks).toHaveLength(0);
+  });
+
+  it('accumulates the local tally across multiple pages', async () => {
+    const platform = makePlatform({
+      getTracks: async (params) => {
+        if (params.offset === 0) {
+          // page 1: 1 local + 199 tracks (200 items), total 202
+          return {
+            items: [makeLocalItem(0), ...Array.from({ length: 199 }, (_, i) => makeItem(i + 1))],
+            totalLength: 202,
+            offset: 0,
+            limit: 200,
+          };
+        }
+        // page 2: 1 local + 1 track (2 items)
+        return {
+          items: [makeLocalItem(900), makeItem(900)],
+          totalLength: 202,
+          offset: 200,
+          limit: 200,
+        };
+      },
+    });
+    const enumerator = new SpicetifyTracksEnumerator(platform);
+    const result = await enumerator.enumerate(likedRequest(), neverAborted(), vi.fn());
+    expect(result.skippedLocalCount).toBe(2);
+    expect(result.tracks).toHaveLength(200);
   });
 });

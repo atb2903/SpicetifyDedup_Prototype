@@ -18,11 +18,16 @@
  *      — it would fail against the pre-WP05 enricher (which dropped `uid`,
  *      making `computeRemoveSet` throw `playlist-member-missing-uid`).
  *
- *   2. **Stall path (Defect A + ceiling / WP03 proof).** The same real pipeline
- *      wired to a never-settling executor (`hang`) + a deterministic fake
- *      scheduler. Advancing past `STALL_CEILING_MS` drives the row out of
- *      `removing` into `partial` with **unchanged** counts and **never** `none`
- *      (no false success — FR-007); the executor records the `hang` call.
+ *   2. **Never-settling-host path (FR-009 / FR-010 — honest limit).** The same
+ *      real pipeline wired to a genuinely never-settling executor (`hang`, which
+ *      does NOT resolve on abort) + a deterministic fake scheduler. Advancing
+ *      past `STALL_CEILING_MS` trips the watchdog and aborts the controller, but
+ *      because the abort is only observable at a batch boundary it **cannot**
+ *      interrupt the in-flight host await: the row **stays in `removing`**. This
+ *      is the truthful production behaviour — the watchdog is NOT a termination
+ *      guarantee for an in-flight hang. The documented escape is a route-reset
+ *      (`reset()`), which discards the row. (This test fails against the old
+ *      abort-aware `hang` fake, which falsely resolved a partial on abort.)
  *
  * Architecture: imports from `src/store/`, `src/adapters/`, `src/ports/`, and
  * `src/domain/` only — within the allowed test import graph.
@@ -39,6 +44,7 @@ import type {
   RawTrack,
   ScanRequest,
   ProgressEvent,
+  EnumerationResult,
 } from '../../src/domain/detection-types';
 
 // ── Host-seam doubles ───────────────────────────────────────────────────────
@@ -78,10 +84,10 @@ function fakeEnumerator(tracks: ReadonlyArray<RawTrack>): TracksEnumerator {
       _request: ScanRequest,
       signal: AbortSignal,
       onProgress: (event: ProgressEvent) => void,
-    ): Promise<ReadonlyArray<RawTrack>> {
+    ): Promise<EnumerationResult> {
       if (signal.aborted) throw new DOMException('aborted', 'AbortError');
       onProgress({ stage: 'enumerating', processed: tracks.length, total: tracks.length });
-      return tracks;
+      return { tracks, skippedLocalCount: 0 };
     },
   };
 }
@@ -258,8 +264,8 @@ describe('removal termination — compute-failed path (T011 routing guard)', () 
   });
 });
 
-describe('removal termination — stall path (Defect A + ceiling / WP03 guard)', () => {
-  it('a never-settling executor terminates to partial with unchanged counts, never none', async () => {
+describe('removal termination — never-settling host path (FR-009 / FR-010 honest limit)', () => {
+  it('a genuinely never-settling host call leaves the row stuck in `removing`; the watchdog does NOT terminate it', async () => {
     const executor = new FakeRemovalExecutor({ kind: 'hang' });
     const scheduler = makeFakeScheduler();
     const store = await seedRealLoadedPlaylist(executor, scheduler);
@@ -269,7 +275,10 @@ describe('removal termination — stall path (Defect A + ceiling / WP03 guard)',
     expect(before.result.removableTrackCount).toBe(1);
 
     store.getState().requestRemoval(PLAYLIST_URI);
+    // Do NOT await — the host call never settles, so confirmRemoval's promise
+    // never resolves. Hold the reference only to acknowledge the pending work.
     const settle = store.getState().confirmRemoval(PLAYLIST_URI);
+    void settle;
 
     // The hung executor leaves the row in `removing`; the seam was reached.
     const mid = store.getState().rows[PLAYLIST_URI];
@@ -277,28 +286,27 @@ describe('removal termination — stall path (Defect A + ceiling / WP03 guard)',
     expect(mid.removal.phase).toBe('removing');
     expect(executor.calls.length).toBe(1);
 
-    // Advance past the ceiling → the stall fires → controller.abort().
+    // Advance past the ceiling → the watchdog trips → controller.abort(). But
+    // the abort is only observable at a batch boundary, so it cannot interrupt
+    // the in-flight host await: the row STAYS in `removing`. (This is exactly
+    // the assertion the old abort-aware `hang` fake would fail — it falsely
+    // resolved a partial here, moving the row to `partial`.)
     scheduler.advance(STALL_CEILING_MS);
-    await settle;
     await flush();
 
-    const after = store.getState().rows[PLAYLIST_URI];
-    if (after?.kind !== 'loaded') throw new Error('expected loaded');
-    // Left `removing`; landed on `partial`; NEVER a false success.
-    expect(after.removal.phase).toBe('partial');
-    expect(after.removal.phase).not.toBe('none');
-    // Counts unchanged — nothing was actually removed.
-    expect(after.result.removableTrackCount).toBe(
-      before.result.removableTrackCount,
-    );
-    expect(after.result.duplicateTrackCount).toBe(
-      before.result.duplicateTrackCount,
-    );
-    // The stall outcome is all-failed and carries the typed `'stalled'`
-    // provenance — no `reason`-string prefix (NFR-004).
-    if (after.removal.phase !== 'partial') throw new Error('expected partial');
-    expect(after.removal.outcome.removed.length).toBe(0);
-    expect(after.removal.outcome.failed.length).toBeGreaterThan(0);
-    expect(after.removal.outcome.provenance).toBe('stalled');
+    const stuck = store.getState().rows[PLAYLIST_URI];
+    if (stuck?.kind !== 'loaded') throw new Error('expected loaded');
+    expect(stuck.removal.phase).toBe('removing');
+    // Counts unchanged — nothing was removed, and no false terminal outcome.
+    expect(stuck.result.removableTrackCount).toBe(before.result.removableTrackCount);
+    expect(stuck.result.duplicateTrackCount).toBe(before.result.duplicateTrackCount);
+
+    // The documented escape: a route-reset discards the row entirely (FR-012 /
+    // ADR-0019). It aborts the controller (no effect on the hung call) and
+    // clears `rows`, so the stuck `removing` row is gone.
+    store.getState().reset();
+    await flush();
+    expect(store.getState().rows[PLAYLIST_URI]).toBeUndefined();
+    expect(store.getState().rows).toEqual({});
   });
 });

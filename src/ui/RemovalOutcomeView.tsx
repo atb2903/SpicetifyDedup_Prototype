@@ -19,7 +19,12 @@
  *   a truthful partial count is shown instead (FR-003 — never "removed nothing"
  *   when deletions occurred).
  * - `'compute-failed'` — `computeRemoveSet` threw before any host call (FR-009).
- *   The message names **no** track and **no** count.
+ *   The message names **no** track and **no** count, and is TERMINAL (NEW-4 /
+ *   FR-007 / SC-004): retrying would recompute the same RemoveSet and fail
+ *   again, so the copy invites **no** retry — it states the operation cannot be
+ *   retried and points to the route reset (leaving/returning to the page) as
+ *   the way out. The retry control itself is withheld upstream
+ *   (`RemoveDuplicatesButton`).
  * - `'executor-failed'` / `'host'` — a whole-operation executor fault or a
  *   host-reported per-track partial. The existing truthful "N didn't complete"
  *   message shows over `failed.length`.
@@ -61,10 +66,16 @@ export function RemovalOutcomeView({
   switch (outcome.provenance) {
     case 'compute-failed':
       // FR-009: no fabricated track, no count.
+      // NEW-4 / FR-007 / SC-004: TERMINAL — a `compute-failed` outcome would
+      // recompute the SAME RemoveSet on retry and deterministically fail again
+      // (a dead-end), so the retry control is withheld upstream
+      // (RemoveDuplicatesButton). The message must NOT invite a retry; it states
+      // the operation cannot be retried and points to the route reset (leaving
+      // and returning to the page) as the only way out.
       return (
         <p role="status" className={`${styles.outcome} ${styles.timedOut}`}>
-          The removal couldn’t be computed — nothing was changed. You can try
-          again.
+          The removal couldn’t be computed — nothing was changed. This operation
+          cannot be retried; leave and return to the page to start over.
         </p>
       );
 

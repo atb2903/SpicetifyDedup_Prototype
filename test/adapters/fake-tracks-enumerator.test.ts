@@ -43,7 +43,7 @@ describe('FakeTracksEnumerator — empty fixture', () => {
   it('resolves with [] immediately, emits no progress event', async () => {
     const onProgress = vi.fn();
     const enumerator = new FakeTracksEnumerator({ tracks: [] });
-    const result = await enumerator.enumerate(LIKED_SONGS_REQUEST, neverAborted(), onProgress);
+    const { tracks: result } = await enumerator.enumerate(LIKED_SONGS_REQUEST, neverAborted(), onProgress);
     expect(result).toEqual([]);
     expect(onProgress).not.toHaveBeenCalled();
   });
@@ -58,7 +58,7 @@ describe('FakeTracksEnumerator — single-page fixture', () => {
     const tracks = makeTracks(5);
     const onProgress = vi.fn();
     const enumerator = new FakeTracksEnumerator({ tracks, pageSize: 10 });
-    const result = await enumerator.enumerate(LIKED_SONGS_REQUEST, neverAborted(), onProgress);
+    const { tracks: result } = await enumerator.enumerate(LIKED_SONGS_REQUEST, neverAborted(), onProgress);
     expect(result).toEqual(tracks);
     expect(onProgress).toHaveBeenCalledTimes(1);
     expect(onProgress).toHaveBeenCalledWith({
@@ -79,7 +79,7 @@ describe('FakeTracksEnumerator — multi-page fixture', () => {
     const events: Array<{ processed: number; total: number | null }> = [];
     const onProgress = vi.fn((e) => events.push({ processed: e.processed, total: e.total }));
     const enumerator = new FakeTracksEnumerator({ tracks, pageSize: 100 });
-    const result = await enumerator.enumerate(LIKED_SONGS_REQUEST, neverAborted(), onProgress);
+    const { tracks: result } = await enumerator.enumerate(LIKED_SONGS_REQUEST, neverAborted(), onProgress);
     expect(result).toHaveLength(250);
     expect(onProgress).toHaveBeenCalledTimes(3);
     expect(events[0]).toEqual({ processed: 100, total: 250 });
@@ -111,7 +111,7 @@ describe('FakeTracksEnumerator — multi-page fixture', () => {
   it('returns all tracks in order', async () => {
     const tracks = makeTracks(250);
     const enumerator = new FakeTracksEnumerator({ tracks, pageSize: 100 });
-    const result = await enumerator.enumerate(LIKED_SONGS_REQUEST, neverAborted(), vi.fn());
+    const { tracks: result } = await enumerator.enumerate(LIKED_SONGS_REQUEST, neverAborted(), vi.fn());
     expect(result).toEqual(tracks);
   });
 });
@@ -241,5 +241,34 @@ describe('FakeTracksEnumerator — default pageSize', () => {
     const enumerator = new FakeTracksEnumerator({ tracks });
     await enumerator.enumerate(LIKED_SONGS_REQUEST, neverAborted(), onProgress);
     expect(onProgress).toHaveBeenCalledTimes(2);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// EnumerationResult shape — the fake mirrors the real return contract (NEW-1)
+// ---------------------------------------------------------------------------
+
+describe('FakeTracksEnumerator — EnumerationResult shape (NEW-1)', () => {
+  it('returns { tracks, skippedLocalCount } with skippedLocalCount defaulting to 0', async () => {
+    const tracks = makeTracks(3);
+    const enumerator = new FakeTracksEnumerator({ tracks });
+    const result = await enumerator.enumerate(LIKED_SONGS_REQUEST, neverAborted(), vi.fn());
+    expect(result.tracks).toEqual(tracks);
+    expect(result.skippedLocalCount).toBe(0);
+  });
+
+  it('reports the configured skippedLocalCount on the result', async () => {
+    const tracks = makeTracks(5);
+    const enumerator = new FakeTracksEnumerator({ tracks, skippedLocalCount: 7 });
+    const result = await enumerator.enumerate(LIKED_SONGS_REQUEST, neverAborted(), vi.fn());
+    expect(result.skippedLocalCount).toBe(7);
+    expect(result.tracks).toHaveLength(5);
+  });
+
+  it('empty fixture still returns the result shape with skippedLocalCount', async () => {
+    const enumerator = new FakeTracksEnumerator({ tracks: [], skippedLocalCount: 2 });
+    const result = await enumerator.enumerate(LIKED_SONGS_REQUEST, neverAborted(), vi.fn());
+    expect(result.tracks).toEqual([]);
+    expect(result.skippedLocalCount).toBe(2);
   });
 });

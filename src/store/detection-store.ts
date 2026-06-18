@@ -70,6 +70,15 @@ export const STALL_CEILING_MS = 30_000;
  * one-shot side effect, not a promise race (NFR-007 — the old `raceStallCeiling`
  * JSDoc claimed an unbacked tie-break; this design has no such claim).
  *
+ * **Limit (FR-009 / RISK-1, honest scope):** `onStall` here aborts the shared
+ * `AbortController`. That abort is observed only at a **batch boundary** — when
+ * the executor next checks `signal` between batches — and a resolving executor
+ * then returns its accumulated partial. The abort **cannot interrupt an
+ * in-flight host await**: a host call that never settles (e.g. a hung network
+ * request inside a batch) is not terminated by the watchdog. There is **no**
+ * guarantee that a never-settling call terminates; in that case the row stays in
+ * `removing` and route-reset (`reset()`) is the documented escape (ADR-0019).
+ *
  * @param ms        - The per-batch window in milliseconds (`STALL_CEILING_MS`).
  * @param scheduler - Injected timer seam (deterministic under a fake in tests).
  * @param onStall   - Side effect run exactly once when the window elapses
@@ -533,16 +542,33 @@ function executorFailedOutcome(removeSet: RemoveSet, cause: unknown): RemovalOut
 }
 
 /**
- * Apply a synthesised outcome to the row and dispatch the terminal
- * `removeComplete` (T007). The outcome's `removed` is empty in every synthesised
- * case, so `applyRemovalOutcome` is a no-op transform that cannot throw
- * `outcome-mismatch`; the row's counts stay truthful (nothing dropped).
+ * Apply a terminal `RemovalOutcome` to the row and dispatch the terminal
+ * `removeComplete` (T007). This is the single apply path for **every** terminal
+ * outcome `executeRemoveSet` produces, not only the empty-`removed` ones:
+ *
+ * - **host-success** (`provenance: 'host'`, `removed` non-empty) — the executor
+ *   resolved with the tracks it actually deleted.
+ * - **stalled-partial** (`provenance: 'stalled'`) — a resolving executor's
+ *   accumulated host partial re-stamped on a watchdog trip; `removed` may be
+ *   non-empty (FR-003 — never forced to `[]`).
+ * - **stalled-reject** (`provenance: 'stalled'`, `removed: []`) — a defensive
+ *   executor that rejected `AbortError` after the watchdog tripped (FR-008).
+ * - **executor-failed** / **compute-failed** (`removed: []`) — synthesised
+ *   all-failed / no-op outcomes.
+ *
+ * So `removed` is **not** always empty. The no-throw guarantee does not rest on
+ * emptiness: every key in `outcome.removed` is, **by construction**, a real
+ * member of `result` (host-success/stalled-partial removed sets come from the
+ * executor acting on `removeSet`, which was derived from `result`; the
+ * synthesised outcomes carry `removed: []`). `applyRemovalOutcome` therefore
+ * never encounters a removed key absent from `result`, so it cannot throw
+ * `outcome-mismatch`; the row's counts stay truthful.
  *
  * @param dispatch - The row dispatch closure.
  * @param key      - The collection key.
- * @param result   - The pre-removal `DetectionResult` (unchanged on no removal).
+ * @param result   - The pre-removal `DetectionResult`.
  * @param target   - The removal target (selects the apply key function).
- * @param outcome  - The synthesised terminal outcome (empty `removed`).
+ * @param outcome  - The terminal outcome (`removed` may be non-empty).
  */
 function applyTerminalOutcome(
   dispatch: RowDispatch,
@@ -559,15 +585,25 @@ function applyTerminalOutcome(
  * Run the (already-computed) RemoveSet against the executor under the per-batch
  * stall watchdog, then apply the resulting outcome with truthful provenance.
  *
- * Outcomes (T007):
+ * Outcomes (T007 / FR-008):
  * - executor resolves, watchdog never tripped → pass the executor's `'host'`
  *   outcome through (full or boundary-abort partial — FR-003).
- * - watchdog tripped (genuine no-progress hang) → the abort makes the executor
- *   resolve with its accumulated host partial; re-stamp it `'stalled'` and apply
- *   it (FR-003 — `removed` is never forced to `[]`).
- * - executor rejects with `AbortError` → a user cancel/reset moved the row;
- *   swallow (the row already left `removing`).
+ * - watchdog tripped, executor **resolves** → the boundary abort made the
+ *   executor return its accumulated host partial; re-stamp it `'stalled'` and
+ *   apply it (FR-003 — `removed` is never forced to `[]`).
+ * - watchdog tripped, executor **rejects** `AbortError` → a defensive executor
+ *   threw on abort instead of resolving; synthesise an all-failed terminal
+ *   `'stalled'` outcome so the row still terminates (FR-008 — no stuck row).
+ * - executor rejects `AbortError` with the watchdog **not** tripped → a user
+ *   cancel/reset moved the row; swallow (the row already left `removing`).
  * - executor rejects otherwise → `'executor-failed'` (real RemoveSet refs).
+ *
+ * **Termination limit (FR-009 / RISK-1, honest):** the watchdog's abort is
+ * observed only at **batch boundaries** (see `createStallWatchdog`). It cannot
+ * interrupt an in-flight host await, so a genuinely never-settling host call is
+ * **not** guaranteed to terminate — the row stays in `removing` until a
+ * route-reset (`reset()`) discards it (ADR-0019). The watchdog guards a hang
+ * *between* batches, not *within* one.
  *
  * Compute-once is structural: this helper receives `removeSet` as a parameter
  * and never calls `computeRemoveSet` (ADR-0017 / T008).
@@ -616,9 +652,31 @@ async function executeRemoveSet(args: {
     // Host-truthful outcome (full completion or boundary-abort partial).
     applyTerminalOutcome(dispatch, key, result, target, outcome);
   } catch (e) {
-    // A user cancel/reset `AbortError` — the row already moved away; discard.
-    // (A stall never lands here: the executor resolves, it does not reject.)
     if (e instanceof DOMException && e.name === 'AbortError') {
+      // Two abort sources reach here, distinguished by the `stalled` trip flag:
+      //
+      // - watchdog-stalled (`stalled === true`): the abort came from the stall
+      //   watchdog and a defensive executor *rejected* `AbortError` instead of
+      //   resolving its accumulated partial (the `if (stalled)` resolve path
+      //   above handles the resolving executor). Without this branch no
+      //   `removeComplete` would
+      //   be dispatched and the row would stay stuck on `removing` (FR-008). The
+      //   rejection carries no host partial, so synthesise the truthful
+      //   all-failed terminal `'stalled'` outcome (`removed: []`, every requested
+      //   track `failed`) — routed to `partial` by the FSM.
+      // - user cancel/reset (`stalled === false`): the row already moved away
+      //   (the FSM's own-entry guard would ignore a late `removeComplete`), so
+      //   swallow — dispatching nothing is correct.
+      if (stalled) {
+        applyTerminalOutcome(dispatch, key, result, target, {
+          removed: [],
+          failed: removeSet.tracks.map((track) => ({
+            track,
+            reason: 'removal aborted while stalled',
+          })),
+          provenance: 'stalled',
+        });
+      }
       return;
     }
     // A whole-operation executor fault → executor-failed (real RemoveSet refs).

@@ -361,20 +361,19 @@ describe('createDetectionScanner — clock injection', () => {
 // §8 — skippedLocalCount derivation
 // ---------------------------------------------------------------------------
 
-describe('createDetectionScanner — skippedLocalCount', () => {
-  it('hostTotalLength=100, tracks.length=80 → skippedLocalCount=20', async () => {
+describe('createDetectionScanner — skippedLocalCount (NEW-1: reported by enumerator, not inferred)', () => {
+  it('mirrors the enumerator-reported skippedLocalCount verbatim', async () => {
     const tracks = Array.from({ length: 80 }, (_, i) => makeRawTrack(i));
     const catalog = buildCatalog(tracks);
     const scanner = createDetectionScanner(
-      new FakeTracksEnumerator({ tracks, hostTotalLength: 100 }),
+      new FakeTracksEnumerator({ tracks, skippedLocalCount: 20 }),
       new FakeCatalogEnricher({ catalog }),
     );
     const result = await scanner.scan(LIKED_SONGS_REQUEST, neverAborted(), vi.fn());
     expect(result.skippedLocalCount).toBe(20);
   });
 
-  it('skippedLocalCount=0 fallback when enumerator emits no total', async () => {
-    // An enumerator that emits no progress events (empty collection).
+  it('skippedLocalCount=0 when the enumerator reports zero (empty collection)', async () => {
     const scanner = createDetectionScanner(
       new FakeTracksEnumerator({ tracks: [] }),
       new FakeCatalogEnricher({ catalog: new Map() }),
@@ -383,36 +382,41 @@ describe('createDetectionScanner — skippedLocalCount', () => {
     expect(result.skippedLocalCount).toBe(0);
   });
 
-  it('skippedLocalCount clamped to 0 when enumerator total is less than tracks (defensive)', async () => {
-    // Pathological: hostTotalLength < tracks.length should not produce negative.
+  it('reports the enumerator tally regardless of host total or episode count (NEW-1 root-cause regression)', async () => {
+    // The old derivation `hostTotalLength − scannedTrackCount` folded skipped
+    // episodes into the local count. A faithful tally is whatever the enumerator
+    // reports, independent of any progress-emitted host total. Here the host
+    // total (via hostTotalLength) is deliberately larger than tracks + locals to
+    // prove the scanner no longer subtracts from it.
     const tracks = Array.from({ length: 10 }, (_, i) => makeRawTrack(i));
     const catalog = buildCatalog(tracks);
     const scanner = createDetectionScanner(
-      new FakeTracksEnumerator({ tracks, hostTotalLength: 5 }),
+      new FakeTracksEnumerator({ tracks, hostTotalLength: 50, skippedLocalCount: 3 }),
       new FakeCatalogEnricher({ catalog }),
     );
     const result = await scanner.scan(LIKED_SONGS_REQUEST, neverAborted(), vi.fn());
-    expect(result.skippedLocalCount).toBeGreaterThanOrEqual(0);
+    // 3 — the reported tally — NOT 50 − 10 = 40 (the old inference).
+    expect(result.skippedLocalCount).toBe(3);
   });
 
-  it('skippedLocalCount=0 when enumerating event has total:null', async () => {
-    // Exercises the event.total !== null guard at line 76: when the host emits
-    // an enumerating event with total:null, hostTotalLength stays null and
-    // skippedLocalCount falls back to 0.
+  it('uses the reported count even when an enumerating event carries total:null', async () => {
+    // A custom enumerator that emits a null-total progress event and reports its
+    // own skippedLocalCount on the return value. The scanner reads the return
+    // value; the progress total is irrelevant to the tally now.
     const tracks = Array.from({ length: 5 }, (_, i) => makeRawTrack(i));
     const catalog = buildCatalog(tracks);
-    const nullTotalEnumerator: import('../../src/ports/tracks-enumerator').TracksEnumerator = {
+    const customEnumerator: import('../../src/ports/tracks-enumerator').TracksEnumerator = {
       async enumerate(_req, _sig, onProgress) {
         onProgress({ stage: 'enumerating', processed: 5, total: null });
-        return tracks;
+        return { tracks, skippedLocalCount: 4 };
       },
     };
     const scanner = createDetectionScanner(
-      nullTotalEnumerator,
+      customEnumerator,
       new FakeCatalogEnricher({ catalog }),
     );
     const result = await scanner.scan(LIKED_SONGS_REQUEST, neverAborted(), vi.fn());
-    expect(result.skippedLocalCount).toBe(0);
+    expect(result.skippedLocalCount).toBe(4);
   });
 });
 

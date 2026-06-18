@@ -14,8 +14,8 @@ subtasks:
 - T012
 phase: Phase 3 - Dead code
 assignee: ''
-agent: ''
-shell_pid: '45439'
+agent: "claude:opus:implementer:implementer"
+shell_pid: "45439"
 history:
 - timestamp: '2026-06-18T00:00:00Z'
   agent: system
@@ -95,3 +95,4 @@ existing `isRemovalError` / code-handling tests green; full suite + strict typec
 ## Activity Log
 
 - (pending)
+- 2026-06-18T15:55:22Z – claude:opus:implementer:implementer – shell_pid=45439 – Assigned agent via action command

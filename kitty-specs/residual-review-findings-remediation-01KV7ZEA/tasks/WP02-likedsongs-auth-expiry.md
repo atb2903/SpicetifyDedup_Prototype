@@ -94,3 +94,4 @@ rejection on the count fetch still generic.
 
 - (pending)
 - 2026-06-18T11:30:28Z – claude:opus:implementer:implementer – shell_pid=20209 – Assigned agent via action command
+- 2026-06-18T11:32:20Z – claude:opus:implementer:implementer – shell_pid=20209 – Ready for review: Liked-Songs count fetch routes through looksLikeHostAuthExpired; symmetry + non-auth regression tests; gates green

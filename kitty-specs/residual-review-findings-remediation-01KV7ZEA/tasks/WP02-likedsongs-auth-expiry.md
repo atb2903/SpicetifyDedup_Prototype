@@ -14,8 +14,8 @@ subtasks:
 - T004
 phase: Phase 1 - Detection
 assignee: ''
-agent: "claude:opus:implementer:implementer"
-shell_pid: "20209"
+agent: "claude:opus:reviewer:reviewer"
+shell_pid: "21577"
 history:
 - timestamp: '2026-06-18T00:00:00Z'
   agent: system
@@ -95,3 +95,4 @@ rejection on the count fetch still generic.
 - (pending)
 - 2026-06-18T11:30:28Z – claude:opus:implementer:implementer – shell_pid=20209 – Assigned agent via action command
 - 2026-06-18T11:32:20Z – claude:opus:implementer:implementer – shell_pid=20209 – Ready for review: Liked-Songs count fetch routes through looksLikeHostAuthExpired; symmetry + non-auth regression tests; gates green
+- 2026-06-18T11:32:46Z – claude:opus:reviewer:reviewer – shell_pid=21577 – Started review via action command

@@ -1,6 +1,6 @@
 ---
 work_package_id: WP01
-title: "NEW-1 — true local-only skip tally via EnumerationResult return type"
+title: NEW-1 — true local-only skip tally via EnumerationResult return type
 dependencies: []
 requirement_refs:
 - FR-001
@@ -9,6 +9,9 @@ requirement_refs:
 planning_base_branch: main
 merge_target_branch: main
 branch_strategy: Planning artifacts for this feature were generated on main. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into main unless the human explicitly redirects the landing branch.
+base_branch: kitty/mission-residual-review-findings-remediation-01KV7ZEA
+base_commit: bd014fd7e410d050e22156101d25f543593945ce
+created_at: '2026-06-18T11:17:22.261364+00:00'
 subtasks:
 - T001
 - T002
@@ -16,7 +19,7 @@ subtasks:
 phase: Phase 1 - Detection
 assignee: ''
 agent: ''
-shell_pid: ''
+shell_pid: '15264'
 history:
 - timestamp: '2026-06-18T00:00:00Z'
   agent: system

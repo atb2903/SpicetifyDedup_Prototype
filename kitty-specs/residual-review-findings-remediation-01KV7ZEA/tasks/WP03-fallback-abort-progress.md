@@ -16,8 +16,8 @@ subtasks:
 - T006
 phase: Phase 2 - Removal resilience
 assignee: ''
-agent: "claude:opus:implementer:implementer"
-shell_pid: "22722"
+agent: "claude:opus:reviewer:reviewer"
+shell_pid: "24764"
 history:
 - timestamp: '2026-06-18T00:00:00Z'
   agent: system
@@ -126,3 +126,4 @@ at retry 0, mid, and last.
 - (pending)
 - 2026-06-18T11:34:43Z – claude:opus:implementer:implementer – shell_pid=22722 – Assigned agent via action command
 - 2026-06-18T11:39:08Z – claude:opus:implementer:implementer – shell_pid=22722 – Ready for review: fallback abort-between-retries + per-track progress (reused event shape); RISK-1 in-flight-await limit asserted; BATCH_SIZE boundary tests; gates green
+- 2026-06-18T11:39:39Z – claude:opus:reviewer:reviewer – shell_pid=24764 – Started review via action command

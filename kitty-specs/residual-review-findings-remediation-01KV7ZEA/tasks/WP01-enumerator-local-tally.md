@@ -18,8 +18,8 @@ subtasks:
 - T003
 phase: Phase 1 - Detection
 assignee: ''
-agent: ''
-shell_pid: '15264'
+agent: "claude:opus:implementer:implementer"
+shell_pid: "15264"
 history:
 - timestamp: '2026-06-18T00:00:00Z'
   agent: system
@@ -165,3 +165,4 @@ count. Existing scanner abort/empty-collection tests stay green.
 ## Activity Log
 
 - (pending)
+- 2026-06-18T11:17:22Z – claude:opus:implementer:implementer – shell_pid=15264 – Assigned agent via action command

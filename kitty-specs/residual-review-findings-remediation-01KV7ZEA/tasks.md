@@ -110,7 +110,7 @@ Prompt: `tasks/WP03-fallback-abort-progress.md`.
 
 Included subtasks:
 
-- [ ] T007 compute-failed terminal, no-retry view branch (WP04)
+- [x] T007 compute-failed terminal, no-retry view branch (WP04)
 
 Prompt: `tasks/WP04-compute-failed-terminal.md`.
 

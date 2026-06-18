@@ -1,7 +1,7 @@
 {
-  "event_count": 24,
-  "last_event_id": "01KVDNZCAKRS7S3WFQC0GCEZEK",
-  "materialized_at": "2026-06-18T15:35:42.163494+00:00",
+  "event_count": 25,
+  "last_event_id": "01KVDP0AQ2RVZ6AV6P4RRX536T",
+  "materialized_at": "2026-06-18T15:36:13.282722+00:00",
   "mission_number": "",
   "mission_slug": "residual-review-findings-remediation-01KV7ZEA",
   "mission_type": "software-dev",
@@ -11,9 +11,9 @@
     "canceled": 0,
     "claimed": 0,
     "done": 0,
-    "for_review": 1,
+    "for_review": 0,
     "in_progress": 0,
-    "in_review": 0,
+    "in_review": 1,
     "planned": 2
   },
   "work_packages": {
@@ -39,11 +39,11 @@
       "last_transition_at": "2026-06-18T11:41:01.815126+00:00"
     },
     "WP04": {
-      "actor": "user",
+      "actor": "claude:opus:reviewer:reviewer",
       "force_count": 1,
-      "lane": "for_review",
-      "last_event_id": "01KVDNZCAKRS7S3WFQC0GCEZEK",
-      "last_transition_at": "2026-06-18T15:35:42.163494+00:00"
+      "lane": "in_review",
+      "last_event_id": "01KVDP0AQ2RVZ6AV6P4RRX536T",
+      "last_transition_at": "2026-06-18T15:36:13.282722+00:00"
     },
     "WP05": {
       "actor": "finalize-tasks",

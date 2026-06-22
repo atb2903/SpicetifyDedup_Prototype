@@ -1,10 +1,10 @@
 {
   "name": "spicetify-dedup",
-  "version": "0.1.0",
-  "private": true,
+  "version": "1.0.0",
   "scripts": {
     "build": "spicetify-creator",
     "build-local": "spicetify-creator --out=dist --minify",
+    "stage:marketplace": "spicetify-creator --out=dist --minify && node -e \"const fs=require('fs');fs.mkdirSync('marketplace/dedup',{recursive:true});for(const f of ['index.js','style.css','manifest.json'])fs.copyFileSync('dist/'+f,'marketplace/dedup/'+f);\"",
     "watch": "spicetify-creator --watch",
     "test": "vitest",
     "test:run": "vitest run",

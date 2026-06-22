@@ -1,111 +1,98 @@
-# SpicetifyDedup
+# Dedup
 
-A Spicetify Custom App that will (eventually) deduplicate your Spotify saved tracks from inside the Spotify desktop client — avoiding the `502 Bad Gateway` that the public `GET /v1/me/tracks` endpoint returns for large libraries.
+Find and remove duplicate tracks from your Liked Songs and playlists, safely, from inside Spotify. An in-client port of José M. Pérez's spotify-dedup.
 
-## Current state
+## What it does and why
 
-The Dedup page (registered in the Spotify sidebar as **Dedup**) renders an
-idle landing surface with a single **Load** button. Clicking the button
-fetches the user's library and lists their dedup-eligible collections:
+Dedup is a Spicetify Custom App that finds and removes duplicate tracks from your
+Spotify library — your Liked Songs and the playlists you own or can edit — directly
+inside the Spotify desktop client.
 
-- Playlists the user owns
-- Collaborative playlists the user can edit
-- Liked Songs (always pinned first)
+It runs in-client on purpose. The original web-based [spotify-dedup](https://github.com/JMPerez/spotify-dedup)
+relies on the public `GET /v1/me/tracks` Web API endpoint, which returns
+`502 Bad Gateway` for large libraries (roughly 20k+ saved tracks) — a long-standing
+gateway-side issue with no public-API workaround. Running inside the Spotify client
+sidesteps that path entirely, so Dedup works regardless of library size.
 
-Followed playlists, Spotify-curated playlists, and other users' playlists
-the user cannot mutate are excluded.
+## Install (manual)
 
-The page is **idle until the user clicks Load** — no Spotify Platform
-calls are issued before the click. A failure during load surfaces a
-typed error explanation and a Retry button.
+Copy the app bundle into Spicetify's `CustomApps/` directory, then register and
+apply it.
 
-The Dedup page now hosts its own scroll surface so the Load button
-stays below Spotify's topbar — click it with a real mouse to start a
-load. The page renders five state views — idle, loading, list, empty,
-and failed — each with intentional visual styling so a reader can
-distinguish them at a glance.
+1. Copy the `marketplace/dedup/` folder from this repository into your Spicetify
+   `CustomApps/` directory, naming the destination folder `spicetify-dedup`:
 
-Each listed collection can be **scanned** for duplicates from its row.
-A scan enumerates the collection's tracks in-client and reports the
-duplicate groups it finds; collections with removable duplicates then
-expose a **Remove duplicates** action (see below).
+   - **Linux / macOS:** `~/.config/spicetify/CustomApps/spicetify-dedup`
+   - **Windows:** `%appdata%\spicetify\CustomApps\spicetify-dedup`
 
-## Remove duplicates
+2. Register the app with Spicetify and apply:
 
-After a collection is scanned, a per-row **Remove duplicates** button
-appears whenever that collection has removable duplicates. Pressing it
-keeps the **earliest copy** of each duplicate group and removes the
-rest — from **that collection only**. Each row acts on its own
-collection; removing duplicates in one playlist never touches Liked
-Songs or any other row.
+   ```bash
+   spicetify config custom_apps spicetify-dedup
+   spicetify apply
+   ```
 
-Nothing runs automatically. The button opens a confirmation that names
-the collection and the **exact number** of tracks to be removed. When a
-removal would delete **more than 25** tracks, a second confirmation is
-required before anything is changed.
+Spotify restarts when you apply, and a **Dedup** entry appears in the left sidebar.
+Click it to open the app.
 
-If some removals fail (for example, a track that is no longer present),
-the failures are surfaced and the copies that could not be removed stay
-visible in the row. The row updates in-client to reflect what was
-actually removed — there is no automatic re-scan.
+## Usage
 
-## Prerequisites
+Dedup never runs automatically — nothing happens on launch, and no data is read
+until you ask for it.
 
-- Node.js (any current LTS) and `npm`.
-- Spicetify installed and pointed at a working Spotify desktop client. See the [Spicetify getting-started guide](https://spicetify.app/docs/getting-started) for installation and initial setup.
+1. **Load.** Open the Dedup page and click **Load**. No Spotify data is fetched
+   before this click. Loading lists your dedup-eligible collections: the playlists
+   you own, collaborative playlists you can edit, and **Liked Songs** (always pinned
+   first). Followed playlists, Spotify-curated playlists, and other users' playlists
+   you cannot modify are excluded.
 
-## Install
+2. **Scan a collection.** From any collection's row, **scan** it to find duplicate
+   groups. The scan enumerates that collection's tracks in-client and reports the
+   duplicate groups it finds.
 
-```sh
-git clone <this-repo-url>
-cd SpicetifyDedup
-npm install
-```
+3. **Remove duplicates.** When a scanned collection has removable duplicates, a
+   per-row **Remove duplicates** action appears. It keeps the **earliest copy** of
+   each duplicate group and removes the rest — **from that collection only**.
+   Removing duplicates from one playlist never touches Liked Songs or any other row.
 
-## Run the tests
+   Removal always asks first. A confirmation names the collection and the **exact
+   number** of tracks to be removed. When more than **25** tracks would be removed, a
+   **second confirmation** is required before anything changes.
 
-```sh
-npm test          # watch mode
-npm run test:run  # one-shot
-```
+   If some removals fail (for example, a track that is no longer present), the
+   failures are surfaced and the copies that could not be removed stay visible in the
+   row. The row updates in-client to reflect what was actually removed — there is no
+   automatic re-scan.
 
-The test suite uses Vitest + happy-dom + React Testing Library. `npm run test:coverage` enforces 100 % line, branch, function, and statement coverage across `src/`.
+## Credits
 
-## Build and install into the Spicetify config dir
+The duplicate-detection algorithm is ported from
+[JMPerez/spotify-dedup](https://github.com/JMPerez/spotify-dedup) by
+**José M. Pérez**, licensed under MIT. Dedup adapts that work to run inside the
+Spotify desktop client via Spicetify.
 
-For active development (rebuilds on save):
+## Generative AI disclosure
 
-```sh
-npm run watch
-```
+> Built with Claude Code (Anthropic's Claude) using the Spec Kitty spec-driven
+> workflow. Code, tests, and documentation were generated by AI under human
+> direction and review.
 
-For a one-shot production build:
+## License
 
-```sh
-npm run build
-```
+Dedup is released under the MIT License. See [LICENSE](LICENSE) for the full text
+and upstream attribution.
 
-Both commands write the compiled app to `~/.config/spicetify/CustomApps/spicetify-dedup/` on Linux (the path is platform-specific on macOS and Windows — consult the Spicetify docs).
+## For maintainers
 
-## Register the app with Spicetify and apply
+This repository contains **two distinct `manifest.json` files** with different
+roles. They are independent — editing one does not affect the other:
 
-The first time you install the app — and any time you change the Spicetify config — you need to register it and re-apply:
+- **`manifest.json`** (repo root) — the **Spicetify Marketplace listing**. It
+  describes the catalog card (name, description, preview image, tags, authors) that
+  users see when browsing the Marketplace.
+- **`marketplace/dedup/manifest.json`** — the **spicetify-creator install manifest**
+  shipped inside the app bundle. It defines how the app installs into the Spotify
+  client (sidebar name, icons).
 
-```sh
-spicetify config custom_apps spicetify-dedup
-spicetify apply
-```
-
-Then (re)open Spotify. A new entry labelled `Dedup` will appear in the left sidebar; clicking it opens the idle landing page with the Load button.
-
-For an active dev loop that keeps the Spotify client in sync as you edit code, use:
-
-```sh
-spicetify watch -a -l
-```
-
-(`-a` re-applies on change, `-l` tails logs.) With this running, you don't need to re-run `spicetify apply` for every edit — only the first-time `spicetify config custom_apps spicetify-dedup` registration step is one-off.
-
-## Customization
-
-Users whose Spotify build has a non-default topbar height (the default the page assumes is `110px`) can override the Load-button vertical offset by setting the `--dedup-topbar-offset` CSS custom property in their Spicetify `user.css` — for example, `:root { --dedup-topbar-offset: 128px; }`. This keeps the Load button clear of the topbar without rebuilding the app.
+The release version is tracked in `package.json` (`1.0.0`) and must stay consistent
+with the `CHANGELOG.md` entry and the git tag.

@@ -1,0 +1,12 @@
+{
+  "name": "Dedup",
+  "description": "Find and remove duplicate tracks from your Liked Songs and playlists, safely, from inside Spotify. An in-client port of José M. Pérez's spotify-dedup.",
+  "preview": "preview.png",
+  "main": "marketplace/dedup/index.js",
+  "readme": "README.md",
+  "tags": ["dedup", "duplicates", "library", "playlists", "liked-songs"],
+  "authors": [
+    { "name": "atb2903 (port)", "url": "https://github.com/atb2903" },
+    { "name": "José M. Pérez — original spotify-dedup", "url": "https://github.com/JMPerez" }
+  ]
+}

@@ -19,6 +19,8 @@ subtasks:
 - T020
 - T021
 - T022
+agent: "claude:opus:implementer:implementer"
+shell_pid: "56857"
 history:
 - date: '2026-06-22'
   note: Drafted by /spec-kitty.tasks.
@@ -155,3 +157,7 @@ suites — NFR-003 regression guard) is green.
 - Confirm the agent did **not** push, tag, or change the GitHub topic — those are
   documented maintainer steps only.
 - Confirm no wall-clock claim about when the crawler will list the app.
+
+## Activity Log
+
+- 2026-06-22T17:51:19Z – claude:opus:implementer:implementer – shell_pid=56857 – Started implementation via action command

@@ -19,12 +19,12 @@ independently implementable; execution worktrees/lanes are allocated by
 | T005 | `ManifestPathResolver` port + fake adapter (test-first) | WP01 | [D] |
 | T006 | `fs` real path-resolver adapter (test-first) | WP01 | | [D] |
 | T007 | WP01 gate: full suite green (100% coverage + typecheck) | WP01 | | [D] |
-| T008 | ADR-0022: marketplace built-bundle placement (dedicated tracked dir) | WP02 | |
-| T009 | `.gitignore`: keep `marketplace/` tracked (dist/ stays ignored) | WP02 | [P] |
-| T010 | Build + stage `marketplace/dedup/{index.js,style.css,manifest.json}` | WP02 | |
-| T011 | Author root listing `manifest.json` (card content per contract) | WP02 | |
-| T012 | `package.json`: version `1.0.0`, drop `private`, add `stage:marketplace` script | WP02 | [P] |
-| T013 | WP02 gate: build sanity + structural manifest check | WP02 | |
+| T008 | ADR-0022: marketplace built-bundle placement (dedicated tracked dir) | WP02 | | [D] |
+| T009 | `.gitignore`: keep `marketplace/` tracked (dist/ stays ignored) | WP02 | [D] |
+| T010 | Build + stage `marketplace/dedup/{index.js,style.css,manifest.json}` | WP02 | | [D] |
+| T011 | Author root listing `manifest.json` (card content per contract) | WP02 | | [D] |
+| T012 | `package.json`: version `1.0.0`, drop `private`, add `stage:marketplace` script | WP02 | [D] |
+| T013 | WP02 gate: build sanity + structural manifest check | WP02 | | [D] |
 | T014 | `LICENSE` (MIT) with spotify-dedup attribution line | WP03 | [P] |
 | T015 | Rewrite `README.md` (end-user: what/why, manual install, usage, Credits, AI disclosure) | WP03 | |
 | T016 | `CHANGELOG.md` 1.0.0 entry (capabilities + upstream credit + AI disclosure) | WP03 | [P] |
@@ -78,12 +78,12 @@ index.js+style.css+manifest.json reproducible from `npm run build-local`,
 **Dependencies**: none
 **Est. size**: ~400 lines
 
-- [ ] T008 ADR-0022: marketplace built-bundle placement (WP02)
-- [ ] T009 `.gitignore` keeps `marketplace/` tracked, `dist/` ignored (WP02)
-- [ ] T010 Build + stage `marketplace/dedup/{index.js,style.css,manifest.json}` (WP02)
-- [ ] T011 Author root listing `manifest.json` per contract + card content (WP02)
-- [ ] T012 `package.json`: version `1.0.0`, drop `private`, add `stage:marketplace` (WP02)
-- [ ] T013 WP02 gate: build sanity + structural manifest check (WP02)
+- [x] T008 ADR-0022: marketplace built-bundle placement (WP02)
+- [x] T009 `.gitignore` keeps `marketplace/` tracked, `dist/` ignored (WP02)
+- [x] T010 Build + stage `marketplace/dedup/{index.js,style.css,manifest.json}` (WP02)
+- [x] T011 Author root listing `manifest.json` per contract + card content (WP02)
+- [x] T012 `package.json`: version `1.0.0`, drop `private`, add `stage:marketplace` (WP02)
+- [x] T013 WP02 gate: build sanity + structural manifest check (WP02)
 
 **Risks**: confusing the two manifests (root listing vs `marketplace/dedup/manifest.json`
 install manifest); committing a stale bundle; accidentally re-adding `dist/` to git.

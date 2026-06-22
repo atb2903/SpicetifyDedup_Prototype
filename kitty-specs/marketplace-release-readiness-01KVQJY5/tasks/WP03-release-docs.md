@@ -18,6 +18,8 @@ subtasks:
 - T015
 - T016
 - T017
+agent: "claude:opus:implementer:implementer"
+shell_pid: "49932"
 history:
 - date: '2026-06-22'
   note: Drafted by /spec-kitty.tasks.
@@ -154,3 +156,7 @@ AI disclosure line.
 - Confirm José M. Pérez / spotify-dedup credit appears in README **and** CHANGELOG.
 - Confirm no "Hello World"/"prototype"/"current state/iteration" framing remains.
 - Confirm version consistency with `package.json`.
+
+## Activity Log
+
+- 2026-06-22T15:28:57Z – claude:opus:implementer:implementer – shell_pid=49932 – Started implementation via action command

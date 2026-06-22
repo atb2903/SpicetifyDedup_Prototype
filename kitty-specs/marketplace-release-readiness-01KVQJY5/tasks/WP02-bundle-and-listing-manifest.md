@@ -193,3 +193,4 @@ present; `marketplace/` tracked.
 - 2026-06-22T15:22:02Z – claude:opus:implementer:implementer – shell_pid=46741 – Started implementation via action command
 - 2026-06-22T15:25:56Z – claude:opus:implementer:implementer – shell_pid=46741 – Ready for review: marketplace bundle + root listing manifest + 1.0.0 packaging; build reproducible, validator passes, 100% coverage
 - 2026-06-22T15:26:22Z – claude:opus:reviewer:reviewer – shell_pid=48609 – Started review via action command
+- 2026-06-22T15:28:32Z – claude:opus:reviewer:reviewer – shell_pid=48609 – Review passed: two manifests distinct (root listing + install), root manifest validates via WP01 validator (5 tags, 2 authors, main -> marketplace/dedup/index.js), bundle byte-identical to fresh build-local, marketplace/ tracked + dist/ ignored, package.json 1.0.0 with private removed + stage:marketplace, ADR-0022 present, 100% coverage, typecheck clean, scope clean

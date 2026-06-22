@@ -1,0 +1,93 @@
+{
+  "version": 1,
+  "mission_slug": "marketplace-release-readiness-01KVQJY5",
+  "mission_id": "01KVQJY5Q2VEXZZ3N2J3FC23E6",
+  "mission_branch": "kitty/mission-marketplace-release-readiness-01KVQJY5",
+  "target_branch": "main",
+  "lanes": [
+    {
+      "lane_id": "lane-a",
+      "wp_ids": [
+        "WP01"
+      ],
+      "write_scope": [
+        ".claude/adr/0023-release-tooling-listing-manifest-validator.md",
+        "src/release/**",
+        "test/release/fake-manifest-path-resolver.test.ts",
+        "test/release/fs-manifest-path-resolver.test.ts",
+        "test/release/listing-manifest-error.test.ts",
+        "test/release/listing-manifest-validator.test.ts"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "tests",
+        "tracker-integration"
+      ],
+      "depends_on_lanes": [],
+      "parallel_group": 0
+    },
+    {
+      "lane_id": "lane-b",
+      "wp_ids": [
+        "WP02",
+        "WP03"
+      ],
+      "write_scope": [
+        ".claude/adr/0022-marketplace-bundle-placement.md",
+        ".gitignore",
+        "CHANGELOG.md",
+        "LICENSE",
+        "README.md",
+        "manifest.json",
+        "marketplace/**",
+        "package.json"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "artifact-rendering",
+        "legacy-cleanup",
+        "tests"
+      ],
+      "depends_on_lanes": [],
+      "parallel_group": 0
+    },
+    {
+      "lane_id": "lane-c",
+      "wp_ids": [
+        "WP04"
+      ],
+      "write_scope": [
+        "kitty-specs/marketplace-release-readiness-01KVQJY5/live-verification/**",
+        "preview.png",
+        "test/release/listing-manifest-integration.test.ts"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "app-shell",
+        "artifact-rendering",
+        "legacy-cleanup",
+        "tests"
+      ],
+      "depends_on_lanes": [],
+      "parallel_group": 0
+    }
+  ],
+  "computed_at": "2026-06-22T15:09:40.262634+00:00",
+  "computed_from": "dependency_graph+ownership",
+  "planning_artifact_wps": [],
+  "collapse_report": {
+    "events": [
+      {
+        "wp_a": "WP03",
+        "wp_b": "WP02",
+        "rule": "dependency",
+        "evidence": "WP03 depends on WP02"
+      }
+    ],
+    "total_merges": 1,
+    "independent_wps_collapsed": 0,
+    "by_rule": {
+      "dependency": 1
+    }
+  }
+}

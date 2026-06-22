@@ -161,3 +161,4 @@ suites — NFR-003 regression guard) is green.
 ## Activity Log
 
 - 2026-06-22T17:51:19Z – claude:opus:implementer:implementer – shell_pid=56857 – Started implementation via action command
+- 2026-06-22T18:01:38Z – claude:opus:implementer:implementer – shell_pid=56857 – Live-verified (styled install + load/scan/remove + confirmation); preview.png captured; integration test green at 100%; verification + publish handoff on main

@@ -1,0 +1,60 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/atb2903/SpicetifyDedup/contracts/listing-manifest.schema.json",
+  "title": "Spicetify Marketplace custom-app listing manifest",
+  "description": "External crawler contract. The Spicetify Marketplace reads this file from the repository root on the default branch (repo must carry the 'spicetify-extensions' GitHub topic). Distinct from the spicetify-creator install manifest (dist/manifest.json).",
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["name", "description", "preview", "main", "readme"],
+  "properties": {
+    "name": {
+      "type": "string",
+      "minLength": 1,
+      "description": "App name shown on the card."
+    },
+    "description": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Card description. For this release, notes the spotify-dedup port lineage."
+    },
+    "preview": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Repo-root-relative path to a preview image, or an http(s) URL."
+    },
+    "main": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Repo-root-relative path to the built entry JS, or an http(s) URL. Relative paths must end in .js.",
+      "examples": ["marketplace/dedup/index.js"]
+    },
+    "readme": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Repo-root-relative path to the README, or an http(s) URL."
+    },
+    "tags": {
+      "type": "array",
+      "description": "Optional tags shown on the card.",
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "authors": {
+      "type": "array",
+      "description": "Optional author attribution. Defaults to repo owner if omitted.",
+      "items": {
+        "type": "object",
+        "required": ["name", "url"],
+        "additionalProperties": false,
+        "properties": {
+          "name": { "type": "string", "minLength": 1 },
+          "url": { "type": "string", "format": "uri", "pattern": "^https?://" }
+        }
+      }
+    },
+    "branch": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Optional publish branch. Omitted -> crawler uses the repo default branch (main)."
+    }
+  }
+}

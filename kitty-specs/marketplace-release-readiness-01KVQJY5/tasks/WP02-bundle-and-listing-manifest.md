@@ -19,8 +19,8 @@ subtasks:
 - T011
 - T012
 - T013
-agent: "claude:opus:implementer:implementer"
-shell_pid: "46741"
+agent: "claude:opus:reviewer:reviewer"
+shell_pid: "48609"
 history:
 - date: '2026-06-22'
   note: Drafted by /spec-kitty.tasks.
@@ -192,3 +192,4 @@ present; `marketplace/` tracked.
 
 - 2026-06-22T15:22:02Z – claude:opus:implementer:implementer – shell_pid=46741 – Started implementation via action command
 - 2026-06-22T15:25:56Z – claude:opus:implementer:implementer – shell_pid=46741 – Ready for review: marketplace bundle + root listing manifest + 1.0.0 packaging; build reproducible, validator passes, 100% coverage
+- 2026-06-22T15:26:22Z – claude:opus:reviewer:reviewer – shell_pid=48609 – Started review via action command

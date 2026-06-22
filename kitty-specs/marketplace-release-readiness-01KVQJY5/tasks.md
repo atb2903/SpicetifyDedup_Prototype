@@ -25,10 +25,10 @@ independently implementable; execution worktrees/lanes are allocated by
 | T011 | Author root listing `manifest.json` (card content per contract) | WP02 | | [D] |
 | T012 | `package.json`: version `1.0.0`, drop `private`, add `stage:marketplace` script | WP02 | [D] |
 | T013 | WP02 gate: build sanity + structural manifest check | WP02 | | [D] |
-| T014 | `LICENSE` (MIT) with spotify-dedup attribution line | WP03 | [P] |
-| T015 | Rewrite `README.md` (end-user: what/why, manual install, usage, Credits, AI disclosure) | WP03 | |
-| T016 | `CHANGELOG.md` 1.0.0 entry (capabilities + upstream credit + AI disclosure) | WP03 | [P] |
-| T017 | Version consistency + two-manifests maintainer note in README | WP03 | |
+| T014 | `LICENSE` (MIT) with spotify-dedup attribution line | WP03 | [D] |
+| T015 | Rewrite `README.md` (end-user: what/why, manual install, usage, Credits, AI disclosure) | WP03 | | [D] |
+| T016 | `CHANGELOG.md` 1.0.0 entry (capabilities + upstream credit + AI disclosure) | WP03 | [D] |
+| T017 | Version consistency + two-manifests maintainer note in README | WP03 | | [D] |
 | T018 | Integration test: real manifest validates + all paths resolve + bundle complete | WP04 | |
 | T019 | Capture fresh `preview.png` from live client (maintainer-driven) | WP04 | |
 | T020 | Live-client verification: manual install renders styled, behaves as before | WP04 | |
@@ -105,10 +105,10 @@ alone; version strings match `package.json`; disclosure + credits present.
 **Est. size**: ~320 lines (version cross-check needs `package.json` 1.0.0; install
 steps reference the `marketplace/dedup/` bundle)
 
-- [ ] T014 `LICENSE` (MIT) + spotify-dedup attribution line (WP03)
-- [ ] T015 Rewrite `README.md` for end users (install/usage/Credits/AI disclosure) (WP03)
-- [ ] T016 `CHANGELOG.md` 1.0.0 entry (capabilities + upstream credit + AI disclosure) (WP03)
-- [ ] T017 Version-consistency check + two-manifests maintainer note in README (WP03)
+- [x] T014 `LICENSE` (MIT) + spotify-dedup attribution line (WP03)
+- [x] T015 Rewrite `README.md` for end users (install/usage/Credits/AI disclosure) (WP03)
+- [x] T016 `CHANGELOG.md` 1.0.0 entry (capabilities + upstream credit + AI disclosure) (WP03)
+- [x] T017 Version-consistency check + two-manifests maintainer note in README (WP03)
 
 **Risks**: leaving prototype-status language in the README; burying the AI
 disclosure; version drift between changelog and package.json.

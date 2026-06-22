@@ -19,8 +19,8 @@ subtasks:
 - T020
 - T021
 - T022
-agent: "claude:opus:implementer:implementer"
-shell_pid: "56857"
+agent: "claude:opus:reviewer:reviewer"
+shell_pid: "61273"
 history:
 - date: '2026-06-22'
   note: Drafted by /spec-kitty.tasks.
@@ -162,3 +162,4 @@ suites — NFR-003 regression guard) is green.
 
 - 2026-06-22T17:51:19Z – claude:opus:implementer:implementer – shell_pid=56857 – Started implementation via action command
 - 2026-06-22T18:01:38Z – claude:opus:implementer:implementer – shell_pid=56857 – Live-verified (styled install + load/scan/remove + confirmation); preview.png captured; integration test green at 100%; verification + publish handoff on main
+- 2026-06-22T18:01:49Z – claude:opus:reviewer:reviewer – shell_pid=61273 – Started review via action command

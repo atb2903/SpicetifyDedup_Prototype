@@ -18,8 +18,8 @@ subtasks:
 - T015
 - T016
 - T017
-agent: "claude:opus:implementer:implementer"
-shell_pid: "49932"
+agent: "claude:opus:reviewer:reviewer"
+shell_pid: "51349"
 history:
 - date: '2026-06-22'
   note: Drafted by /spec-kitty.tasks.
@@ -161,3 +161,4 @@ AI disclosure line.
 
 - 2026-06-22T15:28:57Z – claude:opus:implementer:implementer – shell_pid=49932 – Started implementation via action command
 - 2026-06-22T15:31:38Z – claude:opus:implementer:implementer – shell_pid=49932 – Ready for review
+- 2026-06-22T15:32:02Z – claude:opus:reviewer:reviewer – shell_pid=51349 – Started review via action command

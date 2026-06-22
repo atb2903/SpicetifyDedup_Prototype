@@ -163,3 +163,4 @@ AI disclosure line.
 - 2026-06-22T15:31:38Z – claude:opus:implementer:implementer – shell_pid=49932 – Ready for review
 - 2026-06-22T15:32:02Z – claude:opus:reviewer:reviewer – shell_pid=51349 – Started review via action command
 - 2026-06-22T15:33:29Z – claude:opus:reviewer:reviewer – shell_pid=51349 – Review passed: MIT LICENSE w/ JMPerez attribution; end-user README (manual install Linux/macOS+Windows paths, faithful usage incl. earliest-copy/that-collection-only/exact-count + >25 second confirmation/surfaced failures/no auto-run, exact AI disclosure, JMPerez credit, two-manifests maintainer note, no prototype language); CHANGELOG 1.0.0 w/ José M. Pérez credit + AI disclosure; version 1.0.0 consistent with package.json; scope = LICENSE/README/CHANGELOG only; coverage 100% (1311 tests, 52 files), typecheck clean.
+- 2026-06-22T18:06:01Z – claude:opus:reviewer:reviewer – shell_pid=51349 – Done override: Mission merged to main (1026efa)

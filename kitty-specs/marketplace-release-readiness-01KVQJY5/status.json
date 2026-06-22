@@ -1,16 +1,16 @@
 {
-  "event_count": 26,
-  "last_event_id": "01KVR85EZ6P62WP7Q1S0DQTJ4P",
-  "materialized_at": "2026-06-22T18:06:00.166513+00:00",
+  "event_count": 27,
+  "last_event_id": "01KVR85G9ATP881CKHCX7A8A39",
+  "materialized_at": "2026-06-22T18:06:01.514945+00:00",
   "mission_number": "10",
   "mission_slug": "marketplace-release-readiness-01KVQJY5",
   "mission_type": "software-dev",
   "summary": {
-    "approved": 2,
+    "approved": 1,
     "blocked": 0,
     "canceled": 0,
     "claimed": 0,
-    "done": 2,
+    "done": 3,
     "for_review": 0,
     "in_progress": 0,
     "in_review": 0,
@@ -33,10 +33,10 @@
     },
     "WP03": {
       "actor": "user",
-      "force_count": 1,
-      "lane": "approved",
-      "last_event_id": "01KVQZE6WRKYFBJAZA99WT65BF",
-      "last_transition_at": "2026-06-22T15:33:29.624139+00:00"
+      "force_count": 2,
+      "lane": "done",
+      "last_event_id": "01KVR85G9ATP881CKHCX7A8A39",
+      "last_transition_at": "2026-06-22T18:06:01.514945+00:00"
     },
     "WP04": {
       "actor": "user",

@@ -191,3 +191,4 @@ present; `marketplace/` tracked.
 ## Activity Log
 
 - 2026-06-22T15:22:02Z – claude:opus:implementer:implementer – shell_pid=46741 – Started implementation via action command
+- 2026-06-22T15:25:56Z – claude:opus:implementer:implementer – shell_pid=46741 – Ready for review: marketplace bundle + root listing manifest + 1.0.0 packaging; build reproducible, validator passes, 100% coverage

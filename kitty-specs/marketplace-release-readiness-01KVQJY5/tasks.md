@@ -49,7 +49,8 @@ manifest (FR-012).
 **Priority**: P1 (quality gate) · **Independent test**: `npm run test:coverage`
 green for `src/release/**` with the boundary table; no app behavior touched.
 **Prompt**: [tasks/WP01-listing-manifest-validator.md](./tasks/WP01-listing-manifest-validator.md)
-**Dependencies**: none · **Est. size**: ~420 lines
+**Dependencies**: none
+**Est. size**: ~420 lines
 
 - [ ] T001 ADR-0023: release-tooling module + validator architecture (WP01)
 - [ ] T002 `ListingManifest` types (WP01)
@@ -74,7 +75,8 @@ architecture-test layers — confirm the suite stays green, do not edit rules.
 index.js+style.css+manifest.json reproducible from `npm run build-local`,
 `package.json` is `1.0.0` and not private.
 **Prompt**: [tasks/WP02-bundle-and-listing-manifest.md](./tasks/WP02-bundle-and-listing-manifest.md)
-**Dependencies**: none · **Est. size**: ~400 lines
+**Dependencies**: none
+**Est. size**: ~400 lines
 
 - [ ] T008 ADR-0022: marketplace built-bundle placement (WP02)
 - [ ] T009 `.gitignore` keeps `marketplace/` tracked, `dist/` ignored (WP02)
@@ -99,8 +101,9 @@ AI disclosure), and a `CHANGELOG` 1.0.0 entry. Documents the two-manifests roles
 **Priority**: P2 · **Independent test**: a reader can install from the README
 alone; version strings match `package.json`; disclosure + credits present.
 **Prompt**: [tasks/WP03-release-docs.md](./tasks/WP03-release-docs.md)
-**Dependencies**: WP02 (version cross-check needs `package.json` 1.0.0; install
-steps reference the `marketplace/dedup/` bundle) · **Est. size**: ~320 lines
+**Dependencies**: WP02
+**Est. size**: ~320 lines (version cross-check needs `package.json` 1.0.0; install
+steps reference the `marketplace/dedup/` bundle)
 
 - [ ] T014 `LICENSE` (MIT) + spotify-dedup attribution line (WP03)
 - [ ] T015 Rewrite `README.md` for end users (install/usage/Credits/AI disclosure) (WP03)
@@ -124,7 +127,8 @@ steps (GitHub topic, push, tag). This is the mission's definition-of-done gate.
 against the real artifacts; live-verification artifact captured; publish steps
 documented.
 **Prompt**: [tasks/WP04-verify-and-publish.md](./tasks/WP04-verify-and-publish.md)
-**Dependencies**: WP01, WP02, WP03 · **Est. size**: ~360 lines
+**Dependencies**: WP01, WP02, WP03
+**Est. size**: ~360 lines
 
 - [ ] T018 Integration test: real manifest validates + paths resolve + bundle complete (WP04)
 - [ ] T019 Capture fresh `preview.png` from live client (maintainer-driven) (WP04)

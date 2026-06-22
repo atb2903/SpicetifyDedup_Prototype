@@ -1,7 +1,7 @@
 {
-  "event_count": 7,
-  "last_event_id": "01KVQYKXAPJVM4GPAQ9F0JJVQJ",
-  "materialized_at": "2026-06-22T15:19:07.862183+00:00",
+  "event_count": 8,
+  "last_event_id": "01KVQYMS1QTAYF58ZK63841F0P",
+  "materialized_at": "2026-06-22T15:19:36.247963+00:00",
   "mission_number": "",
   "mission_slug": "marketplace-release-readiness-01KVQJY5",
   "mission_type": "software-dev",
@@ -11,18 +11,18 @@
     "canceled": 0,
     "claimed": 0,
     "done": 0,
-    "for_review": 1,
+    "for_review": 0,
     "in_progress": 0,
-    "in_review": 0,
+    "in_review": 1,
     "planned": 3
   },
   "work_packages": {
     "WP01": {
-      "actor": "user",
+      "actor": "claude:opus:reviewer:reviewer",
       "force_count": 1,
-      "lane": "for_review",
-      "last_event_id": "01KVQYKXAPJVM4GPAQ9F0JJVQJ",
-      "last_transition_at": "2026-06-22T15:19:07.862183+00:00"
+      "lane": "in_review",
+      "last_event_id": "01KVQYMS1QTAYF58ZK63841F0P",
+      "last_transition_at": "2026-06-22T15:19:36.247963+00:00"
     },
     "WP02": {
       "actor": "finalize-tasks",

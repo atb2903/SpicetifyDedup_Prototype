@@ -18,7 +18,8 @@ subtasks:
 - T005
 - T006
 - T007
-shell_pid: '42740'
+shell_pid: "42740"
+agent: "claude:opus:implementer:implementer"
 history:
 - date: '2026-06-22'
   note: Drafted by /spec-kitty.tasks.
@@ -220,3 +221,7 @@ deterministic boundary tests.
 - Verify the classifier cannot throw (garbage input returns `false`).
 - Confirm `isListingManifestError` distinguishes from plain `Error`/non-errors.
 - Confirm no architecture-rule weakening and no app-layer edits.
+
+## Activity Log
+
+- 2026-06-22T15:12:53Z – claude:opus:implementer:implementer – shell_pid=42740 – Assigned agent via action command

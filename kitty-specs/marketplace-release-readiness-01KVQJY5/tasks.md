@@ -29,11 +29,11 @@ independently implementable; execution worktrees/lanes are allocated by
 | T015 | Rewrite `README.md` (end-user: what/why, manual install, usage, Credits, AI disclosure) | WP03 | | [D] |
 | T016 | `CHANGELOG.md` 1.0.0 entry (capabilities + upstream credit + AI disclosure) | WP03 | [D] |
 | T017 | Version consistency + two-manifests maintainer note in README | WP03 | | [D] |
-| T018 | Integration test: real manifest validates + all paths resolve + bundle complete | WP04 | |
-| T019 | Capture fresh `preview.png` from live client (maintainer-driven) | WP04 | |
-| T020 | Live-client verification: manual install renders styled, behaves as before | WP04 | |
-| T021 | Publish handoff doc: GitHub topic + push + `v1.0.0` tag + version consistency | WP04 | |
-| T022 | WP04 gate: full suite green with integration test included | WP04 | |
+| T018 | Integration test: real manifest validates + all paths resolve + bundle complete | WP04 | | [D] |
+| T019 | Capture fresh `preview.png` from live client (maintainer-driven) | WP04 | | [D] |
+| T020 | Live-client verification: manual install renders styled, behaves as before | WP04 | | [D] |
+| T021 | Publish handoff doc: GitHub topic + push + `v1.0.0` tag + version consistency | WP04 | | [D] |
+| T022 | WP04 gate: full suite green with integration test included | WP04 | | [D] |
 
 ---
 
@@ -130,11 +130,11 @@ documented.
 **Dependencies**: WP01, WP02, WP03
 **Est. size**: ~360 lines
 
-- [ ] T018 Integration test: real manifest validates + paths resolve + bundle complete (WP04)
-- [ ] T019 Capture fresh `preview.png` from live client (maintainer-driven) (WP04)
-- [ ] T020 Live-client verification: manual install renders styled + behaves as before (WP04)
-- [ ] T021 Publish handoff doc: GitHub topic + push + `v1.0.0` tag + version consistency (WP04)
-- [ ] T022 WP04 gate: full suite green with integration test (WP04)
+- [x] T018 Integration test: real manifest validates + paths resolve + bundle complete (WP04)
+- [x] T019 Capture fresh `preview.png` from live client (maintainer-driven) (WP04)
+- [x] T020 Live-client verification: manual install renders styled + behaves as before (WP04)
+- [x] T021 Publish handoff doc: GitHub topic + push + `v1.0.0` tag + version consistency (WP04)
+- [x] T022 WP04 gate: full suite green with integration test (WP04)
 
 **Risks**: integration test references files owned by other WPs — must run after
 they merge; preview/topic/push are maintainer/outward-facing steps (do not

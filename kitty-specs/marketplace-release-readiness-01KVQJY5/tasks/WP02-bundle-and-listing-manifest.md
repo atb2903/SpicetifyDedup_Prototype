@@ -19,6 +19,8 @@ subtasks:
 - T011
 - T012
 - T013
+agent: "claude:opus:implementer:implementer"
+shell_pid: "46741"
 history:
 - date: '2026-06-22'
   note: Drafted by /spec-kitty.tasks.
@@ -185,3 +187,7 @@ present; `marketplace/` tracked.
 - Confirm `git check-ignore -v marketplace/dedup/index.js` returns nothing.
 - Confirm `private` is gone and version is exactly `1.0.0`.
 - The root manifest's `preview`/`readme` targets need not exist yet (WP04/WP03).
+
+## Activity Log
+
+- 2026-06-22T15:22:02Z – claude:opus:implementer:implementer – shell_pid=46741 – Started implementation via action command

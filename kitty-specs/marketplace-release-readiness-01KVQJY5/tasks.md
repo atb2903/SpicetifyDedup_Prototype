@@ -12,13 +12,13 @@ independently implementable; execution worktrees/lanes are allocated by
 
 | ID | Description | WP | Parallel |
 |----|-------------|----|----------|
-| T001 | ADR-0023: release-tooling module + listing-manifest validator architecture | WP01 | |
-| T002 | `ListingManifest` types | WP01 | [P] |
-| T003 | `ListingManifestError` + `isListingManifestError` (test-first) | WP01 | [P] |
-| T004 | `validateListingManifest` + `isValidListingManifest` (test-first, full boundary table) | WP01 | |
-| T005 | `ManifestPathResolver` port + fake adapter (test-first) | WP01 | [P] |
-| T006 | `fs` real path-resolver adapter (test-first) | WP01 | |
-| T007 | WP01 gate: full suite green (100% coverage + typecheck) | WP01 | |
+| T001 | ADR-0023: release-tooling module + listing-manifest validator architecture | WP01 | | [D] |
+| T002 | `ListingManifest` types | WP01 | [D] |
+| T003 | `ListingManifestError` + `isListingManifestError` (test-first) | WP01 | [D] |
+| T004 | `validateListingManifest` + `isValidListingManifest` (test-first, full boundary table) | WP01 | | [D] |
+| T005 | `ManifestPathResolver` port + fake adapter (test-first) | WP01 | [D] |
+| T006 | `fs` real path-resolver adapter (test-first) | WP01 | | [D] |
+| T007 | WP01 gate: full suite green (100% coverage + typecheck) | WP01 | | [D] |
 | T008 | ADR-0022: marketplace built-bundle placement (dedicated tracked dir) | WP02 | |
 | T009 | `.gitignore`: keep `marketplace/` tracked (dist/ stays ignored) | WP02 | [P] |
 | T010 | Build + stage `marketplace/dedup/{index.js,style.css,manifest.json}` | WP02 | |
@@ -52,13 +52,13 @@ green for `src/release/**` with the boundary table; no app behavior touched.
 **Dependencies**: none
 **Est. size**: ~420 lines
 
-- [ ] T001 ADR-0023: release-tooling module + validator architecture (WP01)
-- [ ] T002 `ListingManifest` types (WP01)
-- [ ] T003 `ListingManifestError` + `isListingManifestError`, test-first (WP01)
-- [ ] T004 `validateListingManifest` + `isValidListingManifest`, test-first with full boundary table (WP01)
-- [ ] T005 `ManifestPathResolver` port + fake adapter, test-first (WP01)
-- [ ] T006 `fs` real path-resolver adapter, test-first (WP01)
-- [ ] T007 WP01 gate: full suite green (100% coverage + typecheck) (WP01)
+- [x] T001 ADR-0023: release-tooling module + validator architecture (WP01)
+- [x] T002 `ListingManifest` types (WP01)
+- [x] T003 `ListingManifestError` + `isListingManifestError`, test-first (WP01)
+- [x] T004 `validateListingManifest` + `isValidListingManifest`, test-first with full boundary table (WP01)
+- [x] T005 `ManifestPathResolver` port + fake adapter, test-first (WP01)
+- [x] T006 `fs` real path-resolver adapter, test-first (WP01)
+- [x] T007 WP01 gate: full suite green (100% coverage + typecheck) (WP01)
 
 **Risks**: forgetting a boundary case breaks the 100% gate; keep the validator
 pure (no fs) so coverage is deterministic. `src/release/` is outside the

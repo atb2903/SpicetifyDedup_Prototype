@@ -1,3 +1,7 @@
+# ⚠️ Warning
+
+This is a vibe-coded proof-of-concept prototype of a currently in-progress plugin. Use at your own risk. Support will not be provided and this repo will receive no further updates. This message will be updated with a link to the production repo when it is ready to be made public. 
+
 # Dedup
 
 Find and remove duplicate tracks from your Liked Songs and playlists, safely, from inside Spotify. An in-client port of José M. Pérez's spotify-dedup.
